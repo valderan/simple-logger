@@ -1,2 +1,2 @@
 # simple-logger
-simple logger for simple projects
+simple logger for projects
