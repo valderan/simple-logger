@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+    container_name: logger_app
+    volumes:
+      - .:/workspace
+    ports:
+      - "3000:3000"
+      - "9229:9229"
+    environment:
+      MONGO_URI: mongodb://mongo:27017/logger-db
+    depends_on:
+      - mongo
+    networks:
+      - logger-network
+    command: tail -f /dev/null # от зависания
+
+  mongo:
+    image: mongo:latest
+    container_name: logger_db
+    restart: always
+    ports:
+      - "localhost:27017:27017"
+    volumes:
+      # Меняем именованный том на bind mount
+      - ./mongodata:/data/db
+    networks:
+      - logger-network
+
+networks:
+  logger-network:
+    driver: bridge

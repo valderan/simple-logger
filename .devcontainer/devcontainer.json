@@ -1,0 +1,29 @@
+{
+  "name": "NestJS Dev",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "remoteUser": "node",
+  "forwardPorts": [3000, 9229],
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "extensions": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-vscode.vscode-typescript-next",
+    "ms-vscode.js-debug",
+    "christian-kohler.npm-intellisense",
+    "christian-kohler.path-intellisense",
+    "ionutvmi.path-autocomplete",
+    "formulahendry.code-runner",
+    "formulahendry.auto-close-tag",
+    "formulahendry.auto-rename-tag",
+    "mongodb.mongodb-vscode",
+    "rooveterinaryinc.roo-cline",
+    "kilocode.kilo-code",
+    "file://.devcontainer/gigacode.vsix"
+  ],
+  "initializeCommand": "if [ -f package.json ]; then npm install; else echo '⚠️ package.json not found, skipping npm install'; fi",
+  "postCreateCommand": "bash -c '$HOME/.vscode-server/bin/*/bin/code-server --install-extension .devcontainer/gigacode.vsix || true'"
+}
