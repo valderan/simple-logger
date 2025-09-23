@@ -12,7 +12,9 @@ services:
       - "3000:3000"
       - "9229:9229"
     environment:
-      MONGO_URI: mongodb://mongo:27017/logger-db
+      MONGO_URI: mongodb://mongo:27017/logger
+      ADMIN_USER: "admin"
+      ADMIN_PASS: "admin"
     depends_on:
       - mongo
     networks:
@@ -24,10 +26,10 @@ services:
     container_name: logger_db
     restart: always
     ports:
-      - "localhost:27017:27017"
+      - "27017:27017"
     volumes:
       # Меняем именованный том на bind mount
-      - ./mongodata:/data/db
+      - ./mongodata:/data/logger
     networks:
       - logger-network
 
