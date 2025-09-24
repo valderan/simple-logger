@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import type { SxProps } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { Bar } from 'react-chartjs-2';
+import { Chart } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   BarElement,
@@ -197,7 +197,8 @@ export const DashboardPage = (): JSX.Element => {
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
                 {t('dashboard.logDistribution')}
               </Typography>
-              <Bar
+              <Chart
+                type="bar"
                 data={logLevelsDistribution}
                 options={{
                   responsive: true,
