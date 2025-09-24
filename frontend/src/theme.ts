@@ -21,14 +21,15 @@ export const createAppTheme = (mode: PaletteMode) =>
               default: '#0f1117',
               paper: '#161b26'
             },
-      divider: mode === 'light' ? undefined : 'rgba(255, 255, 255, 0.12)',
-      text:
-        mode === 'light'
-          ? undefined
-          : {
+      ...(mode === 'dark'
+        ? {
+            divider: 'rgba(255, 255, 255, 0.12)',
+            text: {
               primary: '#f5f7fa',
               secondary: '#b0b8c4'
             }
+          }
+        : {})
     },
     typography: {
       fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
