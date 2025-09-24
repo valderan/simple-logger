@@ -8,18 +8,25 @@ import {
   Card,
   CardContent,
   Collapse,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
+  FormControlLabel,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
   SelectChangeEvent,
   Stack,
+  Switch,
   TextField,
   Tooltip,
   Typography
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, GridColDef, GridEventListener } from '@mui/x-data-grid';
 import { deleteLogs, fetchProjects, filterLogs } from '../api';
 import { LogEntry, LogFilter, Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
@@ -29,6 +36,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
+import CloseIcon from '@mui/icons-material/Close';
 import { copyToClipboard } from '../utils/clipboard';
 
 const defaultFilter: LogFilter = { uuid: '', projectUuid: undefined, logId: undefined };
@@ -39,6 +47,8 @@ export const LogsPage = (): JSX.Element => {
   const [filterState, setFilterState] = useState<LogFilter>(defaultFilter);
   const [activeFilter, setActiveFilter] = useState<LogFilter | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [detailsModeEnabled, setDetailsModeEnabled] = useState(false);
+  const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const { t } = useTranslation();
 
   const {
@@ -110,12 +120,18 @@ export const LogsPage = (): JSX.Element => {
     await copyToClipboard(JSON.stringify(log, null, 2));
   }, []);
 
-  const {
+  const { 
     mutate: mutateDeleteLog,
     isPending: isDeleteLogPending,
     variables: deleteLogVariables
   } = deleteLogMutation;
   const deletingLogId = deleteLogVariables?.logId;
+
+  useEffect(() => {
+    if (!detailsModeEnabled) {
+      setSelectedLog(null);
+    }
+  }, [detailsModeEnabled]);
 
   const columns = useMemo<GridColDef<LogEntry>[]>(
     () => [
@@ -124,7 +140,7 @@ export const LogsPage = (): JSX.Element => {
         headerName: t('logs.timestampHeader'),
         width: 220,
         renderCell: (params) => (
-          <Stack spacing={0.5}>
+          <Stack spacing={0.5} sx={{ width: '100%' }}>
             <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
               {formatDateTime(params.row.timestamp)}
             </Typography>
@@ -135,7 +151,7 @@ export const LogsPage = (): JSX.Element => {
               <Typography
                 variant="caption"
                 color="text.secondary"
-                sx={{ fontFamily: 'monospace' }}
+                sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}
               >
                 {params.row._id}
               </Typography>
@@ -148,8 +164,19 @@ export const LogsPage = (): JSX.Element => {
         headerName: t('logs.messageHeader'),
         flex: 1.5,
         renderCell: (params) => (
-          <Stack spacing={1}>
-            <Typography variant="body2">{params.row.message}</Typography>
+          <Stack spacing={1} sx={{ width: '100%' }}>
+            <Typography
+              variant="body2"
+              sx={{
+                display: '-webkit-box',
+                WebkitLineClamp: 3,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                whiteSpace: 'normal'
+              }}
+            >
+              {params.row.message}
+            </Typography>
             {params.row.tags.length > 0 && (
               <Typography variant="caption" color="text.secondary">
                 {t('logs.tagsLabel', { tags: params.row.tags.join(', ') })}
@@ -168,10 +195,25 @@ export const LogsPage = (): JSX.Element => {
           const service = metadata.service ?? t('common.notAvailable');
           const user = metadata.user ?? t('common.notAvailable');
           return (
-            <Stack spacing={0.5}>
-              <Typography variant="body2">{t('logs.metadata.ip', { value: ip })}</Typography>
-              <Typography variant="body2">{t('logs.metadata.service', { value: service })}</Typography>
-              <Typography variant="body2">{t('logs.metadata.user', { value: user })}</Typography>
+            <Stack spacing={0.5} sx={{ width: '100%' }}>
+              <Typography
+                variant="body2"
+                sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {t('logs.metadata.ip', { value: ip })}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {t('logs.metadata.service', { value: service })}
+              </Typography>
+              <Typography
+                variant="body2"
+                sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+              >
+                {t('logs.metadata.user', { value: user })}
+              </Typography>
             </Stack>
           );
         }
@@ -182,41 +224,66 @@ export const LogsPage = (): JSX.Element => {
         width: 220,
         sortable: false,
         filterable: false,
+        align: 'center',
+        headerAlign: 'center',
         renderCell: (params) => {
           const isDeleting = isDeleteLogPending && deletingLogId === params.row._id;
           return (
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-              <Tooltip title={t('logs.copyLog')}>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => handleCopyLog(params.row)}
-                  startIcon={<ContentCopyIcon fontSize="small" />}
-                >
-                  {t('common.copy')}
-                </Button>
-              </Tooltip>
-              <Tooltip title={t('logs.deleteLog')}>
-                <span>
+            <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                <Tooltip title={t('logs.copyLog')}>
                   <Button
                     size="small"
                     variant="outlined"
-                    color="error"
-                    disabled={isDeleting}
-                    aria-label={t('logs.deleteLog')}
-                    onClick={() => mutateDeleteLog({ projectUuid: params.row.projectUuid, logId: params.row._id })}
+                    onClick={() => handleCopyLog(params.row)}
+                    startIcon={<ContentCopyIcon fontSize="small" />}
                   >
-                    {isDeleting ? t('common.deleteInProgress') : 'х'}
+                    {t('common.copy')}
                   </Button>
-                </span>
-              </Tooltip>
-            </Stack>
+                </Tooltip>
+                <Tooltip title={t('logs.deleteLog')}>
+                  <span>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      color="error"
+                      disabled={isDeleting}
+                      aria-label={t('logs.deleteLog')}
+                      onClick={() => mutateDeleteLog({ projectUuid: params.row.projectUuid, logId: params.row._id })}
+                    >
+                      {isDeleting ? t('common.deleteInProgress') : 'х'}
+                    </Button>
+                  </span>
+                </Tooltip>
+              </Stack>
+            </Box>
           );
         }
       }
     ],
     [deletingLogId, handleCopyLog, isDeleteLogPending, mutateDeleteLog, t]
   );
+
+  const handleDetailsModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setDetailsModeEnabled(event.target.checked);
+  };
+
+  const handleCellClick = useCallback<GridEventListener<'cellClick'>>(
+    (params, event) => {
+      if (!detailsModeEnabled || params.field === 'actions') {
+        return;
+      }
+      if (event) {
+        event.defaultMuiPrevented = true;
+      }
+      setSelectedLog(params.row as LogEntry);
+    },
+    [detailsModeEnabled]
+  );
+
+  const handleCloseDetailsDialog = useCallback(() => {
+    setSelectedLog(null);
+  }, []);
 
   const handleProjectUuidChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -463,28 +530,40 @@ export const LogsPage = (): JSX.Element => {
                 </Button>
               </Box>
             </Stack>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} flexWrap="wrap">
-              <Button
-                variant="contained"
-                onClick={applyFilter}
-                disabled={!(filterState.uuid || filterState.projectUuid?.trim())}
-              >
-                {t('logs.apply')}
-              </Button>
-              <Button variant="outlined" onClick={handleClearFilters}>
-                {t('logs.clear')}
-              </Button>
-              <Button variant="outlined" onClick={exportLogs} disabled={!displayLogs.length}>
-                {t('logs.export')}
-              </Button>
-              <Button
-                color="error"
-                variant="outlined"
-                onClick={() => bulkDeleteMutation.mutate()}
-                disabled={bulkDeleteMutation.isPending || !filterState.uuid}
-              >
-                {bulkDeleteMutation.isPending ? t('logs.deleting') : t('logs.deleteByFilter')}
-              </Button>
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              flexWrap="wrap"
+              alignItems={{ xs: 'stretch', md: 'center' }}
+              justifyContent="space-between"
+            >
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} flexWrap="wrap">
+                <Button
+                  variant="contained"
+                  onClick={applyFilter}
+                  disabled={!(filterState.uuid || filterState.projectUuid?.trim())}
+                >
+                  {t('logs.apply')}
+                </Button>
+                <Button variant="outlined" onClick={handleClearFilters}>
+                  {t('logs.clear')}
+                </Button>
+                <Button variant="outlined" onClick={exportLogs} disabled={!displayLogs.length}>
+                  {t('logs.export')}
+                </Button>
+                <Button
+                  color="error"
+                  variant="outlined"
+                  onClick={() => bulkDeleteMutation.mutate()}
+                  disabled={bulkDeleteMutation.isPending || !filterState.uuid}
+                >
+                  {bulkDeleteMutation.isPending ? t('logs.deleting') : t('logs.deleteByFilter')}
+                </Button>
+              </Stack>
+              <FormControlLabel
+                control={<Switch checked={detailsModeEnabled} onChange={handleDetailsModeChange} color="primary" />}
+                label={t('logs.detailsToggleLabel')}
+              />
             </Stack>
             {logsQuery.isLoading && <LoadingState label={t('common.loadingLogs')} />}
             {logsQuery.isError && <ErrorState message={t('logs.logsLoadError')} onRetry={() => logsQuery.refetch()} />}
@@ -501,10 +580,28 @@ export const LogsPage = (): JSX.Element => {
                     rows={displayLogs}
                     columns={columns}
                     getRowId={(row) => row._id}
+                    rowHeight={96}
                     pageSizeOptions={[10, 25, 50]}
                     initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
                     disableRowSelectionOnClick
+                    onCellClick={handleCellClick}
                     localeText={{ noRowsLabel: t('logs.noLogs') }}
+                    sx={{
+                      '& .MuiDataGrid-cell': {
+                        alignItems: 'flex-start',
+                        py: 1.5
+                      },
+                      '& .MuiDataGrid-cellContent': {
+                        whiteSpace: 'normal',
+                        lineHeight: 1.4
+                      },
+                      '& .MuiDataGrid-row:hover': {
+                        cursor: detailsModeEnabled ? 'pointer' : 'default'
+                      },
+                      '& .MuiDataGrid-cell[data-field="actions"]': {
+                        cursor: 'default'
+                      }
+                    }}
                   />
                 </Box>
               </>
@@ -512,6 +609,118 @@ export const LogsPage = (): JSX.Element => {
           </Stack>
         </CardContent>
       </Card>
+      <Dialog
+        open={Boolean(selectedLog)}
+        onClose={handleCloseDetailsDialog}
+        fullWidth
+        maxWidth="md"
+        aria-labelledby="log-details-dialog"
+      >
+        <DialogTitle id="log-details-dialog" sx={{ pr: 6 }}>
+          {t('logs.detailsDialogTitle')}
+          <IconButton
+            aria-label={t('common.close')}
+            onClick={handleCloseDetailsDialog}
+            sx={{ position: 'absolute', right: 8, top: 8 }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {selectedLog && (
+            <Stack spacing={2}>
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2">{t('logs.project')}</Typography>
+                <Typography variant="body2">{logsQuery.data?.project?.name ?? t('common.notAvailable')}</Typography>
+                <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                  {t('logs.projectUuid')}: {selectedLog.projectUuid}
+                </Typography>
+              </Stack>
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} useFlexGap>
+                <Stack spacing={0.5} flex={1}>
+                  <Typography variant="subtitle2">{t('logs.logId')}</Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                    {selectedLog._id}
+                  </Typography>
+                </Stack>
+                <Stack spacing={0.5} flex={1}>
+                  <Typography variant="subtitle2">{t('logs.timestampHeader')}</Typography>
+                  <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                    {formatDateTime(selectedLog.timestamp)}
+                  </Typography>
+                </Stack>
+                <Stack spacing={0.5} flex={1}>
+                  <Typography variant="subtitle2">{t('logs.level')}</Typography>
+                  <Typography variant="body2">{selectedLog.level}</Typography>
+                </Stack>
+              </Stack>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">{t('logs.metadataHeader')}</Typography>
+                <Typography variant="body2">
+                  {t('logs.metadata.ip', { value: selectedLog.metadata?.ip ?? t('common.notAvailable') })}
+                </Typography>
+                <Typography variant="body2">
+                  {t('logs.metadata.service', { value: selectedLog.metadata?.service ?? t('common.notAvailable') })}
+                </Typography>
+                <Typography variant="body2">
+                  {t('logs.metadata.user', { value: selectedLog.metadata?.user ?? t('common.notAvailable') })}
+                </Typography>
+              </Stack>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">{t('logs.messageHeader')}</Typography>
+                <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>
+                  {selectedLog.message}
+                </Typography>
+              </Stack>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">
+                  {t('logs.tagsLabel', {
+                    tags: selectedLog.tags.length > 0 ? selectedLog.tags.join(', ') : t('common.notAvailable')
+                  })}
+                </Typography>
+              </Stack>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">{t('logs.detailsRaw')}</Typography>
+                <Box
+                  component="pre"
+                  sx={{
+                    m: 0,
+                    p: 2,
+                    borderRadius: 1,
+                    bgcolor: 'action.hover',
+                    fontFamily: 'monospace',
+                    fontSize: 13,
+                    overflowX: 'auto'
+                  }}
+                >
+                  {JSON.stringify(selectedLog, null, 2)}
+                </Box>
+              </Stack>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Tooltip title={t('logs.copyLog')}>
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={<ContentCopyIcon fontSize="small" />}
+                onClick={() => {
+                  if (selectedLog) {
+                    void handleCopyLog(selectedLog);
+                  }
+                }}
+                disabled={!selectedLog}
+              >
+                {t('common.copy')}
+              </Button>
+            </span>
+          </Tooltip>
+          <Button variant="contained" onClick={handleCloseDetailsDialog}>
+            {t('common.close')}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Stack>
   );
 };
