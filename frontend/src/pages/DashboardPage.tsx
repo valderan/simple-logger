@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import {
   Alert,
+  Box,
   Card,
   CardContent,
   Chip,
@@ -13,6 +14,7 @@ import {
   Stack,
   Typography
 } from '@mui/material';
+import type { SxProps } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { Bar } from 'react-chartjs-2';
 import {
@@ -120,75 +122,72 @@ export const DashboardPage = (): JSX.Element => {
 
   const apiBaseUrl = API_URL?.trim() ? API_URL : '';
 
+  const summaryCards: {
+    key: string;
+    title: string;
+    value: string | number;
+    description: string;
+    valueVariant: 'h3' | 'body1';
+    valueStyles?: SxProps;
+  }[] = [
+    {
+      key: 'total-projects',
+      title: t('dashboard.totalProjects'),
+      value: projects?.length ?? 0,
+      description: t('dashboard.totalProjectsDescription'),
+      valueVariant: 'h3'
+    },
+    {
+      key: 'ping-monitoring',
+      title: t('dashboard.pingMonitoring'),
+      value: totalPingServices,
+      description: t('dashboard.pingMonitoringDescription'),
+      valueVariant: 'h3'
+    },
+    {
+      key: 'telegram-enabled',
+      title: t('dashboard.telegramEnabled'),
+      value: projectsWithAlerts,
+      description: t('dashboard.telegramEnabledDescription'),
+      valueVariant: 'h3'
+    },
+    {
+      key: 'api-url',
+      title: t('dashboard.apiUrlLabel'),
+      value: apiBaseUrl || t('dashboard.apiUrlNotConfigured'),
+      description: t('dashboard.apiUrlDescription'),
+      valueVariant: 'body1',
+      valueStyles: { fontFamily: 'monospace', wordBreak: 'break-all' }
+    }
+  ];
+
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
         {t('dashboard.title')}
       </Typography>
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                {t('dashboard.totalProjects')}
-              </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                {projects?.length ?? 0}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('dashboard.totalProjectsDescription')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                {t('dashboard.pingMonitoring')}
-              </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                {totalPingServices}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('dashboard.pingMonitoringDescription')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                {t('dashboard.telegramEnabled')}
-              </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 700 }}>
-                {projectsWithAlerts}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('dashboard.telegramEnabledDescription')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid size={{ xs: 12, md: 3 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="subtitle2" color="text.secondary">
-                {t('dashboard.apiUrlLabel')}
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{ fontWeight: 600, fontFamily: 'monospace', wordBreak: 'break-all' }}
-              >
-                {apiBaseUrl || t('dashboard.apiUrlNotConfigured')}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {t('dashboard.apiUrlDescription')}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
+        {summaryCards.map((card) => (
+          <Grid key={card.key} size={{ xs: 12, md: 3 }} sx={{ display: 'flex' }}>
+            <Card sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', height: '100%' }}>
+              <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, height: '100%' }}>
+                <Typography variant="subtitle2" color="text.secondary">
+                  {card.title}
+                </Typography>
+                <Typography
+                  variant={card.valueVariant}
+                  sx={{ fontWeight: card.valueVariant === 'h3' ? 700 : 600, ...card.valueStyles }}
+                >
+                  {card.value}
+                </Typography>
+                <Box sx={{ flexGrow: 1 }} />
+                <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto' }}>
+                  {card.description}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
 
       <Grid container spacing={3}>

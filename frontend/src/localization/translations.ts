@@ -86,7 +86,8 @@ export const translations: Record<Locale, TranslationRecord> = {
       toggleThemeDark: 'Switch to dark theme',
       logout: 'Sign out',
       appBarTitle: 'Control panel',
-      versionLabel: 'Version {{version}}'
+      versionLabel: 'Version {{version}}',
+      openMenu: 'Open navigation menu'
     },
     dashboard: {
       title: 'Overview',
@@ -456,7 +457,8 @@ export const translations: Record<Locale, TranslationRecord> = {
       toggleThemeDark: 'Включить тёмную тему',
       logout: 'Выйти',
       appBarTitle: 'Панель управления',
-      versionLabel: 'Версия {{version}}'
+      versionLabel: 'Версия {{version}}',
+      openMenu: 'Открыть меню навигации'
     },
     dashboard: {
       title: 'Общая сводка',

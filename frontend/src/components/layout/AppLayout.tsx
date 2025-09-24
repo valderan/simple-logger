@@ -36,6 +36,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useThemeMode } from '../../hooks/useThemeMode';
 import { LOGGER_PAGE_URL, LOGGER_VERSION } from '../../config';
 import { useTranslation } from '../../hooks/useTranslation';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 
 const drawerWidth = 260;
 const collapsedDrawerWidth = 80;
@@ -71,6 +73,10 @@ export const AppLayout = (): JSX.Element => {
     return window.localStorage.getItem(MENU_COLLAPSED_STORAGE_KEY) === 'true';
   });
   const { t, language, setLanguage } = useTranslation();
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  const mobileDrawerAnchor = isSmallScreen ? 'top' : 'left';
+  const handleMobileClose = () => setMobileOpen(false);
 
   const handleToggleCollapsed = useCallback(() => {
     setIsCollapsed((prev) => {
@@ -106,9 +112,120 @@ export const AppLayout = (): JSX.Element => {
     );
   }, [location.pathname]);
 
-  const isDrawerExpanded = !isCollapsed;
+  const isPermanentDrawer = !isSmallScreen;
+  const isDrawerExpanded = isPermanentDrawer ? !isCollapsed : true;
   const currentDrawerWidth = isDrawerExpanded ? drawerWidth : collapsedDrawerWidth;
   const logoSrc = mode === 'light' ? '/logo_light.png' : '/logo_dark.png';
+
+  const desktopControls = (
+    <Stack
+      direction="row"
+      spacing={1}
+      alignItems="center"
+      sx={{
+        flexWrap: 'wrap',
+        rowGap: 1,
+        justifyContent: { xs: 'flex-end', sm: 'flex-start' },
+        display: { xs: 'none', sm: 'flex' }
+      }}
+    >
+      <Tooltip title={isCollapsed ? t('navigation.expand') : t('navigation.collapse')}>
+        <span>
+          <IconButton
+            color="inherit"
+            onClick={handleToggleCollapsed}
+            sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+          >
+            {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        </span>
+      </Tooltip>
+      <Tooltip title={mode === 'light' ? t('navigation.toggleThemeDark') : t('navigation.toggleThemeLight')}>
+        <IconButton color="inherit" onClick={toggleMode}>
+          {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+        </IconButton>
+      </Tooltip>
+      <Tooltip title={t('navigation.language')}>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={language}
+          onChange={(_, value) => {
+            if (value) {
+              setLanguage(value);
+            }
+          }}
+          aria-label={t('navigation.language')}
+          sx={{
+            bgcolor: 'rgba(255,255,255,0.16)',
+            borderRadius: 2,
+            '& .MuiToggleButton-root': {
+              color: 'inherit',
+              border: 'none',
+              px: 1.5,
+              '&.Mui-selected': {
+                bgcolor: 'rgba(255,255,255,0.24)'
+              }
+            }
+          }}
+        >
+          <ToggleButton value="en">EN</ToggleButton>
+          <ToggleButton value="ru">RU</ToggleButton>
+        </ToggleButtonGroup>
+      </Tooltip>
+      <Tooltip title={t('navigation.logout')}>
+        <IconButton color="inherit" onClick={logout}>
+          <LogoutIcon />
+        </IconButton>
+      </Tooltip>
+    </Stack>
+  );
+
+  const mobileControls = (
+    <Stack spacing={2} alignItems="stretch">
+      <Stack direction="row" spacing={1.5} justifyContent="center">
+        <Tooltip title={mode === 'light' ? t('navigation.toggleThemeDark') : t('navigation.toggleThemeLight')}>
+          <IconButton color="inherit" onClick={toggleMode}>
+            {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={t('navigation.logout')}>
+          <IconButton color="inherit" onClick={logout}>
+            <LogoutIcon />
+          </IconButton>
+        </Tooltip>
+      </Stack>
+      <Tooltip title={t('navigation.language')}>
+        <ToggleButtonGroup
+          size="small"
+          exclusive
+          value={language}
+          onChange={(_, value) => {
+            if (value) {
+              setLanguage(value);
+            }
+          }}
+          aria-label={t('navigation.language')}
+          sx={{
+            alignSelf: 'center',
+            bgcolor: 'rgba(255,255,255,0.16)',
+            borderRadius: 2,
+            '& .MuiToggleButton-root': {
+              color: 'inherit',
+              border: 'none',
+              px: 1.5,
+              '&.Mui-selected': {
+                bgcolor: 'rgba(255,255,255,0.24)'
+              }
+            }
+          }}
+        >
+          <ToggleButton value="en">EN</ToggleButton>
+          <ToggleButton value="ru">RU</ToggleButton>
+        </ToggleButtonGroup>
+      </Tooltip>
+    </Stack>
+  );
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -133,7 +250,7 @@ export const AppLayout = (): JSX.Element => {
               component={RouterLink}
               to={item.path}
               selected={activePath === item.path}
-              onClick={() => setMobileOpen(false)}
+              onClick={handleMobileClose}
               sx={{
                 justifyContent: isDrawerExpanded ? 'flex-start' : 'center',
                 px: isDrawerExpanded ? 2 : 1.5
@@ -164,6 +281,12 @@ export const AppLayout = (): JSX.Element => {
           );
         })}
       </List>
+      {isSmallScreen && (
+        <>
+          <Divider />
+          <Box sx={{ p: 2 }}>{mobileControls}</Box>
+        </>
+      )}
       <Box sx={{ flexGrow: 1 }} />
       <Divider />
       {isDrawerExpanded && (
@@ -222,75 +345,28 @@ export const AppLayout = (): JSX.Element => {
   return (
     <Box sx={{ display: 'flex' }}>
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar>
+        <Toolbar sx={{ position: 'relative' }}>
           <IconButton
             color="inherit"
-            aria-label="open drawer"
-            edge="start"
+            aria-label={t('navigation.openMenu')}
             onClick={() => setMobileOpen(true)}
-            sx={{ mr: 2, display: { sm: 'none' } }}
+            sx={{
+              display: { xs: 'flex', sm: 'none' },
+              position: { xs: 'absolute', sm: 'static' },
+              left: { xs: '50%', sm: 'auto' },
+              transform: { xs: 'translateX(-50%)', sm: 'none' }
+            }}
           >
             <MenuIcon />
           </IconButton>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
+          <Typography
+            variant="h6"
+            component="div"
+            sx={{ flexGrow: 1, fontWeight: 600, display: { xs: 'none', sm: 'block' } }}
+          >
             {t('navigation.appBarTitle')}
           </Typography>
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="center"
-            sx={{ flexWrap: 'wrap', rowGap: 1, justifyContent: { xs: 'flex-end', sm: 'flex-start' } }}
-          >
-            <Tooltip title={isCollapsed ? t('navigation.expand') : t('navigation.collapse')}>
-              <span>
-                <IconButton
-                  color="inherit"
-                  onClick={handleToggleCollapsed}
-                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
-                >
-                  {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title={mode === 'light' ? t('navigation.toggleThemeDark') : t('navigation.toggleThemeLight')}>
-              <IconButton color="inherit" onClick={toggleMode}>
-                {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
-              </IconButton>
-            </Tooltip>
-            <Tooltip title={t('navigation.language')}>
-              <ToggleButtonGroup
-                size="small"
-                exclusive
-                value={language}
-                onChange={(_, value) => {
-                  if (value) {
-                    setLanguage(value);
-                  }
-                }}
-                aria-label={t('navigation.language')}
-                sx={{
-                  bgcolor: 'rgba(255,255,255,0.16)',
-                  borderRadius: 2,
-                  '& .MuiToggleButton-root': {
-                    color: 'inherit',
-                    border: 'none',
-                    px: 1.5,
-                    '&.Mui-selected': {
-                      bgcolor: 'rgba(255,255,255,0.24)'
-                    }
-                  }
-                }}
-              >
-                <ToggleButton value="en">EN</ToggleButton>
-                <ToggleButton value="ru">RU</ToggleButton>
-              </ToggleButtonGroup>
-            </Tooltip>
-            <Tooltip title={t('navigation.logout')}>
-              <IconButton color="inherit" onClick={logout}>
-                <LogoutIcon />
-              </IconButton>
-            </Tooltip>
-          </Stack>
+          {desktopControls}
         </Toolbar>
       </AppBar>
       <Box
@@ -303,12 +379,18 @@ export const AppLayout = (): JSX.Element => {
       >
         <Drawer
           variant="temporary"
+          anchor={mobileDrawerAnchor}
           open={mobileOpen}
-          onClose={() => setMobileOpen(false)}
+          onClose={handleMobileClose}
           ModalProps={{ keepMounted: true }}
           sx={{
             display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }
+            '& .MuiDrawer-paper': {
+              boxSizing: 'border-box',
+              width: mobileDrawerAnchor === 'left' ? drawerWidth : '100%',
+              height: mobileDrawerAnchor === 'top' ? 'auto' : '100%',
+              maxHeight: mobileDrawerAnchor === 'top' ? '80vh' : undefined
+            }
           }}
         >
           {drawer}
