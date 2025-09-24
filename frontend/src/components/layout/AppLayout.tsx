@@ -75,6 +75,7 @@ export const AppLayout = (): JSX.Element => {
 
   const isDrawerExpanded = !isCollapsed;
   const currentDrawerWidth = isDrawerExpanded ? drawerWidth : collapsedDrawerWidth;
+  const logoSrc = mode === 'light' ? '/logo_light.png' : '/logo_dark.png';
 
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -134,7 +135,18 @@ export const AppLayout = (): JSX.Element => {
       <Divider />
       {isDrawerExpanded && (
         <Box sx={{ p: 2 }}>
-          <Stack spacing={1}>
+          <Stack spacing={1.5} alignItems="flex-start">
+            <Box
+              component="img"
+              src={logoSrc}
+              alt={t('common.projectName')}
+              sx={{
+                width: '100%',
+                maxWidth: 160,
+                height: 'auto',
+                objectFit: 'contain'
+              }}
+            />
             {LOGGER_PAGE_URL ? (
               <MuiLink
                 href={LOGGER_PAGE_URL}
