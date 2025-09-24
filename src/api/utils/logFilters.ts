@@ -1,4 +1,4 @@
-import { FilterQuery } from 'mongoose';
+import { FilterQuery, Types } from 'mongoose';
 import { LogDocument } from '../models/Log';
 
 export interface LogFilterParams {
@@ -10,6 +10,7 @@ export interface LogFilterParams {
   service?: string;
   startDate?: string;
   endDate?: string;
+  logId?: string;
 }
 
 /**
@@ -34,6 +35,11 @@ export function buildLogFilter(projectUuid: string, params: LogFilterParams): Fi
   }
   if (params.service) {
     query['metadata.service'] = params.service;
+  }
+  if (params.logId) {
+    query._id = Types.ObjectId.isValid(params.logId)
+      ? new Types.ObjectId(params.logId)
+      : new Types.ObjectId('000000000000000000000000');
   }
   if (params.startDate || params.endDate) {
     query.timestamp = {};
