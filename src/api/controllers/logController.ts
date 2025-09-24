@@ -4,6 +4,7 @@ import { ProjectModel } from '../models/Project';
 import { LogModel } from '../models/Log';
 import { buildLogFilter } from '../utils/logFilters';
 import { defaultNotifier } from '../../telegram/notifier';
+import { writeSystemLog } from '../utils/systemLogger';
 
 const logSchema = z.object({
   uuid: z.string(),
@@ -27,18 +28,33 @@ const logSchema = z.object({
 export async function ingestLog(req: Request, res: Response): Promise<Response> {
   const parsed = logSchema.safeParse(req.body);
   if (!parsed.success) {
+    const rawUuid = typeof req.body?.uuid === 'string' ? req.body.uuid : undefined;
+    if (rawUuid) {
+      const project = await ProjectModel.findOne({ uuid: rawUuid });
+      if (project) {
+        const issues = parsed.error.issues
+          .map((issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`)
+          .join('; ');
+        await writeSystemLog(`Получен лог неверного формата для проекта ${rawUuid}`, {
+          level: 'WARNING',
+          tags: ['INGEST', 'VALIDATION'],
+          metadata: {
+            ip: req.ip,
+            service: 'log-ingest',
+            extra: { issues, projectUuid: rawUuid }
+          }
+        });
+      }
+    }
     return res.status(400).json({ message: 'Неверный формат лога', details: parsed.error.flatten() });
   }
   const { uuid, log } = parsed.data;
   const project = await ProjectModel.findOne({ uuid });
   if (!project) {
-    await LogModel.create({
-      projectUuid: 'logger-system',
+    await writeSystemLog(`Получен лог с неверным UUID: ${uuid}`, {
       level: 'SECURITY',
-      message: `Получен лог с неверным UUID: ${uuid}`,
       tags: ['SECURITY'],
-      timestamp: new Date(),
-      metadata: { ip: req.ip }
+      metadata: { ip: req.ip, service: 'log-ingest', extra: { projectUuid: uuid } }
     });
     return res.status(404).json({ message: 'Проект не найден' });
   }
