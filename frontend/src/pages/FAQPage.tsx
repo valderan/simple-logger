@@ -1,62 +1,71 @@
 import { Alert, Box, Card, CardContent, Stack, Typography } from '@mui/material';
 import { useTranslation } from '../hooks/useTranslation';
 
-const pythonLoginExample = `"""Authenticate against the Simple Logger API using the requests library."""
+const pythonIngestLogExample = String.raw`"""Send a structured log message to the collector."""
 
 import requests
 
 BASE_URL = "http://localhost:3000/api"
+PROJECT_UUID = "<project-uuid>"
 
 
-def login(username: str, password: str) -> str:
-    """Perform POST /api/auth/login and return the received token."""
-
-    response = requests.post(
-        f"{BASE_URL}/auth/login",
-        json={"username": username, "password": password},
-        timeout=10,
-    )
+def ingest_log() -> None:
+    payload = {
+        "uuid": PROJECT_UUID,
+        "log": {
+            "level": "ERROR",
+            "message": "Payment gateway returned non-200 response",
+            "tags": ["PAYMENT"],
+            "metadata": {
+                "service": "billing-service",
+                "user": "user-42",
+                "ip": "10.0.0.12",
+                "extra": {"orderId": "A-42"},
+            },
+        },
+    }
+    response = requests.post(f"{BASE_URL}/logs", json=payload, timeout=10)
     response.raise_for_status()
-    token = response.json()["token"]
-    print("Received token:", token)
-    return token
+    print("Stored log ID:", response.json()["_id"])
 
 
 if __name__ == "__main__":
-    login("admin", "secret")`;
+    ingest_log()`;
 
-const typescriptCreateProjectExample = `import { LoggerApiClient } from './loggerClient';
+const typescriptIngestLogExample = String.raw`import { LoggerApiClient } from './loggerClient';
 
 /**
- * Creates a new logging project and prints its UUID.
+ * Sends an application log entry to the collector.  This endpoint does not require
+ * administrator authentication because it is intended for services emitting logs.
  */
 async function main(): Promise<void> {
   const client = new LoggerApiClient({ baseUrl: 'http://localhost:3000/api' });
-  client.setToken('<paste token from login example>');
 
   try {
-    const project = await client.createProject({
-      name: 'Orders Service',
-      description: 'Handles order processing events',
-      logFormat: { level: 'string', message: 'string', timestamp: 'ISO8601' },
-      customTags: ['PAYMENT', 'SHIPPING'],
-      telegramNotify: {
-        enabled: true,
-        recipients: [{ chatId: '123456', tags: ['ERROR', 'CRITICAL'] }],
-        antiSpamInterval: 30
-      },
-      debugMode: false
+    const log = await client.ingestLog({
+      uuid: '<project-uuid>',
+      log: {
+        level: 'ERROR',
+        message: 'Payment gateway returned non-200 response',
+        tags: ['PAYMENT'],
+        metadata: {
+          service: 'billing-service',
+          user: 'user-42',
+          ip: '10.0.0.12',
+          extra: { orderId: 'A-42' }
+        }
+      }
     });
 
-    console.log('Created project UUID:', project.uuid);
+    console.log('Stored log with id:', log._id);
   } catch (error) {
-    console.error('Failed to create project:', error);
+    console.error('Failed to send log:', error);
   }
 }
 
 void main();`;
 
-const goIngestLogExample = `// Command ingest_log demonstrates how services can push logs to the collector.
+const goIngestLogExample = String.raw`// Command ingest_log demonstrates how services can push logs to the collector.
 package main
 
 import (
@@ -107,18 +116,30 @@ func main() {
     fmt.Println("Stored log ID:", logEntry.ID)
 }`;
 
-const bashWhitelistExample = `#!/usr/bin/env bash
-# Add an IP address to the whitelist.
+const bashIngestLogExample = String.raw`#!/usr/bin/env bash
+# Send an application log entry to the collector.
 
 set -euo pipefail
 
 BASE_URL="http://localhost:3000/api"
-TOKEN="<token>"
+PROJECT_UUID="<project-uuid>"
 
-curl -sS -X POST "\${BASE_URL}/settings/whitelist" \
+curl -sS -X POST "\${BASE_URL}/logs" \
   -H 'Content-Type: application/json' \
-  -H "Authorization: Bearer \${TOKEN}" \
-  -d '{"ip": "192.168.0.10", "description": "VPN gateway"}' | jq`;
+  -d '{
+        "uuid": "'"\${PROJECT_UUID}"'",
+        "log": {
+          "level": "ERROR",
+          "message": "Payment gateway returned non-200 response",
+          "tags": ["PAYMENT"],
+          "metadata": {
+            "service": "billing-service",
+            "user": "user-42",
+            "ip": "10.0.0.12",
+            "extra": {"orderId": "A-42"}
+          }
+        }
+      }' | jq`;
 
 const helpSectionKeys = ['dashboard', 'projects', 'addProject', 'logs', 'ping', 'telegram', 'settings', 'faq'] as const;
 const addProjectKeys = [
@@ -137,10 +158,10 @@ const addProjectKeys = [
 const environmentKeys = ['apiUrl', 'loggerPageUrl', 'loggerVersion', 'botApiKey', 'jwtSecret', 'mongoUri'] as const;
 
 const apiExamples = [
-  { titleKey: 'faq.apiExamples.login', language: 'Python', code: pythonLoginExample },
-  { titleKey: 'faq.apiExamples.createProject', language: 'TypeScript', code: typescriptCreateProjectExample },
-  { titleKey: 'faq.apiExamples.ingestLog', language: 'Go', code: goIngestLogExample },
-  { titleKey: 'faq.apiExamples.whitelist', language: 'Bash', code: bashWhitelistExample }
+  { titleKey: 'faq.apiExamples.ingestLogPython', code: pythonIngestLogExample },
+  { titleKey: 'faq.apiExamples.ingestLogTypeScript', code: typescriptIngestLogExample },
+  { titleKey: 'faq.apiExamples.ingestLogGo', code: goIngestLogExample },
+  { titleKey: 'faq.apiExamples.ingestLogBash', code: bashIngestLogExample },
 ] as const;
 
 export const FAQPage = (): JSX.Element => {
@@ -200,7 +221,7 @@ export const FAQPage = (): JSX.Element => {
               {apiExamples.map((example) => (
                 <Box key={example.titleKey}>
                   <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                    {t(example.titleKey)} ({example.language})
+                    {t(example.titleKey)}
                   </Typography>
                   <Box
                     component="pre"
