@@ -29,6 +29,7 @@ import { useTranslation } from '../hooks/useTranslation';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { copyToClipboard } from '../utils/clipboard';
 
 const defaultFilter: LogFilter = { uuid: '', projectUuid: undefined, logId: undefined };
@@ -83,7 +84,7 @@ export const LogsPage = (): JSX.Element => {
     enabled: Boolean(activeFilter?.uuid)
   });
 
-  const deleteMutation = useMutation({
+  const bulkDeleteMutation = useMutation({
     mutationFn: () => deleteLogs(filterState.uuid, {
       level: filterState.level,
       text: filterState.text,
@@ -99,9 +100,23 @@ export const LogsPage = (): JSX.Element => {
     }
   });
 
+  const deleteLogMutation = useMutation<{ deleted: number }, unknown, { projectUuid: string; logId: string }>({
+    mutationFn: ({ projectUuid, logId }) => deleteLogs(projectUuid, { logId }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['logs'] });
+    }
+  });
+
   const handleCopyLog = useCallback(async (log: LogEntry) => {
     await copyToClipboard(JSON.stringify(log, null, 2));
   }, []);
+
+  const {
+    mutate: mutateDeleteLog,
+    isPending: isDeleteLogPending,
+    variables: deleteLogVariables
+  } = deleteLogMutation;
+  const deletingLogId = deleteLogVariables?.logId;
 
   const columns = useMemo<GridColDef<LogEntry>[]>(
     () => [
@@ -159,24 +174,43 @@ export const LogsPage = (): JSX.Element => {
       {
         field: 'actions',
         headerName: t('logs.actionsHeader'),
-        width: 160,
+        width: 220,
         sortable: false,
         filterable: false,
-        renderCell: (params) => (
-          <Tooltip title={t('logs.copyLog')}>
-            <Button
-              size="small"
-              variant="outlined"
-              onClick={() => handleCopyLog(params.row)}
-              startIcon={<ContentCopyIcon fontSize="small" />}
-            >
-              {t('common.copy')}
-            </Button>
-          </Tooltip>
-        )
+        renderCell: (params) => {
+          const isDeleting = isDeleteLogPending && deletingLogId === params.row._id;
+          return (
+            <Stack spacing={1} alignItems="flex-start">
+              <Tooltip title={t('logs.copyLog')}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleCopyLog(params.row)}
+                  startIcon={<ContentCopyIcon fontSize="small" />}
+                >
+                  {t('common.copy')}
+                </Button>
+              </Tooltip>
+              <Tooltip title={t('logs.deleteLog')}>
+                <span>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="error"
+                    startIcon={<DeleteOutlineIcon fontSize="small" />}
+                    disabled={isDeleting}
+                    onClick={() => mutateDeleteLog({ projectUuid: params.row.projectUuid, logId: params.row._id })}
+                  >
+                    {isDeleting ? t('common.deleteInProgress') : t('common.delete')}
+                  </Button>
+                </span>
+              </Tooltip>
+            </Stack>
+          );
+        }
       }
     ],
-    [handleCopyLog, t]
+    [deletingLogId, handleCopyLog, isDeleteLogPending, mutateDeleteLog, t]
   );
 
   const handleProjectUuidChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -441,10 +475,10 @@ export const LogsPage = (): JSX.Element => {
               <Button
                 color="error"
                 variant="outlined"
-                onClick={() => deleteMutation.mutate()}
-                disabled={deleteMutation.isPending || !filterState.uuid}
+                onClick={() => bulkDeleteMutation.mutate()}
+                disabled={bulkDeleteMutation.isPending || !filterState.uuid}
               >
-                {deleteMutation.isPending ? t('logs.deleting') : t('logs.deleteByFilter')}
+                {bulkDeleteMutation.isPending ? t('logs.deleting') : t('logs.deleteByFilter')}
               </Button>
             </Stack>
             {logsQuery.isLoading && <LoadingState label={t('common.loadingLogs')} />}

@@ -60,7 +60,8 @@ const LOG_FILTER_PARAM_KEYS: (keyof LogFilter)[] = [
   'ip',
   'service',
   'startDate',
-  'endDate'
+  'endDate',
+  'logId'
 ];
 
 export const filterLogs = async (filter: LogFilter) => {
@@ -83,7 +84,8 @@ const DELETE_FILTER_PARAM_KEYS: (keyof Omit<LogFilter, 'uuid'>)[] = [
   'ip',
   'service',
   'startDate',
-  'endDate'
+  'endDate',
+  'logId'
 ];
 
 export const deleteLogs = async (uuid: string, filter: Omit<LogFilter, 'uuid'>) => {

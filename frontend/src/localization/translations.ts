@@ -63,6 +63,8 @@ export const translations: Record<Locale, TranslationRecord> = {
       failed: 'Sign-in failed',
       themeLight: 'Switch to light theme',
       themeDark: 'Switch to dark theme',
+      languageToggle: 'Switch language',
+      logoAlt: 'Simple Logger logo',
       apiUrlLabel: 'API URL',
       apiUrlPlaceholder: 'https://example.com/api',
       apiUrlHelp: 'Specify the API base URL you want to use.'
@@ -235,7 +237,8 @@ export const translations: Record<Locale, TranslationRecord> = {
       messageHeader: 'Message',
       timestampHeader: 'Timestamp',
       tagsLabel: 'Tags: {{tags}}',
-      copyLog: 'Copy log entry'
+      copyLog: 'Copy log entry',
+      deleteLog: 'Delete log entry'
     },
     ping: {
       title: 'Ping monitoring',
@@ -423,6 +426,8 @@ export const translations: Record<Locale, TranslationRecord> = {
       failed: 'Не удалось выполнить вход',
       themeLight: 'Включить светлую тему',
       themeDark: 'Включить тёмную тему',
+      languageToggle: 'Переключить язык',
+      logoAlt: 'Логотип Simple Logger',
       apiUrlLabel: 'API URL',
       apiUrlPlaceholder: 'https://example.com/api',
       apiUrlHelp: 'Укажите базовый адрес API, с которым хотите работать.'
@@ -595,7 +600,8 @@ export const translations: Record<Locale, TranslationRecord> = {
       messageHeader: 'Сообщение',
       timestampHeader: 'Время',
       tagsLabel: 'Теги: {{tags}}',
-      copyLog: 'Скопировать лог'
+      copyLog: 'Скопировать лог',
+      deleteLog: 'Удалить лог'
     },
     ping: {
       title: 'Ping-мониторинг',
