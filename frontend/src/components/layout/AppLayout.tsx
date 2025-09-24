@@ -69,8 +69,22 @@ export const AppLayout = (): JSX.Element => {
     if (location.pathname === '/') {
       return '/';
     }
-    const item = baseNavigationItems.find((nav) => location.pathname.startsWith(nav.path));
-    return item?.path ?? '/';
+
+    return (
+      baseNavigationItems
+        .filter((nav) => nav.path !== '/')
+        .reduce<NavigationItem | undefined>((bestMatch, nav) => {
+          if (!location.pathname.startsWith(nav.path)) {
+            return bestMatch;
+          }
+
+          if (!bestMatch || nav.path.length > bestMatch.path.length) {
+            return nav;
+          }
+
+          return bestMatch;
+        }, undefined)?.path ?? '/' // fallback to dashboard when no match
+    );
   }, [location.pathname]);
 
   const isDrawerExpanded = !isCollapsed;
