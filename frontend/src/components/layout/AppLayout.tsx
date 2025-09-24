@@ -1,5 +1,19 @@
-import { useMemo } from 'react';
-import { AppBar, Box, Divider, Drawer, IconButton, List, ListItemButton, ListItemIcon, ListItemText, Toolbar, Typography } from '@mui/material';
+import { useMemo, useState } from 'react';
+import {
+  AppBar,
+  Box,
+  Divider,
+  Drawer,
+  IconButton,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Toolbar,
+  Tooltip,
+  Typography,
+  Stack
+} from '@mui/material';
 import DashboardIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import FolderIcon from '@mui/icons-material/FolderOutlined';
 import AssignmentIcon from '@mui/icons-material/AssignmentOutlined';
@@ -9,12 +23,17 @@ import TelegramIcon from '@mui/icons-material/Telegram';
 import SettingsIcon from '@mui/icons-material/SettingsOutlined';
 import LogoutIcon from '@mui/icons-material/LogoutOutlined';
 import MenuIcon from '@mui/icons-material/MenuOutlined';
+import DarkModeIcon from '@mui/icons-material/DarkModeOutlined';
+import LightModeIcon from '@mui/icons-material/LightModeOutlined';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeftOutlined';
+import ChevronRightIcon from '@mui/icons-material/ChevronRightOutlined';
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useState } from 'react';
+import { useThemeMode } from '../../hooks/useThemeMode';
 import { APP_VERSION } from '../../config';
 
 const drawerWidth = 260;
+const collapsedDrawerWidth = 80;
 
 type NavigationItem = {
   label: string;
@@ -35,7 +54,10 @@ const navigationItems: NavigationItem[] = [
 export const AppLayout = (): JSX.Element => {
   const location = useLocation();
   const { logout } = useAuth();
+  const { mode, toggleMode } = useThemeMode();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   const activePath = useMemo(() => {
     if (location.pathname === '/') {
@@ -45,36 +67,72 @@ export const AppLayout = (): JSX.Element => {
     return item?.path ?? '/';
   }, [location.pathname]);
 
+  const isDrawerExpanded = !isCollapsed || isHovered;
+  const currentDrawerWidth = isDrawerExpanded ? drawerWidth : collapsedDrawerWidth;
+
   const drawer = (
-    <div>
-      <Toolbar>
-        <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-          Logger
-        </Typography>
+    <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      <Toolbar sx={{ justifyContent: isDrawerExpanded ? 'flex-start' : 'center' }}>
+        {isDrawerExpanded ? (
+          <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
+            Logger
+          </Typography>
+        ) : (
+          <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
+            L
+          </Typography>
+        )}
       </Toolbar>
       <Divider />
       <List>
-        {navigationItems.map((item) => (
-          <ListItemButton
-            key={item.path}
-            component={RouterLink}
-            to={item.path}
-            selected={activePath === item.path}
-            onClick={() => setMobileOpen(false)}
-          >
-            <ListItemIcon>{item.icon}</ListItemIcon>
-            <ListItemText primary={item.label} />
-          </ListItemButton>
-        ))}
+        {navigationItems.map((item) => {
+          const button = (
+            <ListItemButton
+              key={item.path}
+              component={RouterLink}
+              to={item.path}
+              selected={activePath === item.path}
+              onClick={() => setMobileOpen(false)}
+              sx={{
+                justifyContent: isDrawerExpanded ? 'flex-start' : 'center',
+                px: isDrawerExpanded ? 2 : 1.5
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: isDrawerExpanded ? 40 : 'auto',
+                  mr: isDrawerExpanded ? 1.5 : 0,
+                  display: 'flex',
+                  justifyContent: 'center'
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+              {isDrawerExpanded && <ListItemText primary={item.label} />}
+            </ListItemButton>
+          );
+          if (isDrawerExpanded) {
+            return button;
+          }
+          return (
+            <Tooltip key={item.path} title={item.label} placement="right">
+              <Box component="span" sx={{ display: 'block' }}>
+                {button}
+              </Box>
+            </Tooltip>
+          );
+        })}
       </List>
       <Box sx={{ flexGrow: 1 }} />
       <Divider />
-      <Box sx={{ p: 2 }}>
-        <Typography variant="caption" color="text.secondary">
-          Версия {APP_VERSION}
-        </Typography>
-      </Box>
-    </div>
+      {isDrawerExpanded && (
+        <Box sx={{ p: 2 }}>
+          <Typography variant="caption" color="text.secondary">
+            Версия {APP_VERSION}
+          </Typography>
+        </Box>
+      )}
+    </Box>
   );
 
   return (
@@ -93,12 +151,39 @@ export const AppLayout = (): JSX.Element => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
             Панель управления Logger
           </Typography>
-          <IconButton color="inherit" onClick={logout}>
-            <LogoutIcon />
-          </IconButton>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Tooltip title={isCollapsed ? 'Развернуть меню' : 'Свернуть меню'}>
+              <span>
+                <IconButton
+                  color="inherit"
+                  onClick={() => setIsCollapsed((prev) => !prev)}
+                  sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+                >
+                  {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title={mode === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему'}>
+              <IconButton color="inherit" onClick={toggleMode}>
+                {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Выйти">
+              <IconButton color="inherit" onClick={logout}>
+                <LogoutIcon />
+              </IconButton>
+            </Tooltip>
+          </Stack>
         </Toolbar>
       </AppBar>
-      <Box component="nav" sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}>
+      <Box
+        component="nav"
+        sx={{
+          width: { sm: currentDrawerWidth },
+          flexShrink: { sm: 0 },
+          transition: (theme) => theme.transitions.create('width', { duration: theme.transitions.duration.shorter })
+        }}
+      >
         <Drawer
           variant="temporary"
           open={mobileOpen}
@@ -113,16 +198,42 @@ export const AppLayout = (): JSX.Element => {
         </Drawer>
         <Drawer
           variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth }
+          sx={{ display: { xs: 'none', sm: 'block' } }}
+          PaperProps={{
+            onMouseEnter: () => {
+              if (isCollapsed) {
+                setIsHovered(true);
+              }
+            },
+            onMouseLeave: () => {
+              if (isCollapsed) {
+                setIsHovered(false);
+              }
+            },
+            sx: {
+              boxSizing: 'border-box',
+              width: currentDrawerWidth,
+              overflowX: 'hidden',
+              transition: (theme) =>
+                theme.transitions.create('width', {
+                  duration: theme.transitions.duration.standard
+                })
+            }
           }}
           open
         >
           {drawer}
         </Drawer>
       </Box>
-      <Box component="main" sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+          width: { sm: `calc(100% - ${currentDrawerWidth}px)` },
+          transition: (theme) => theme.transitions.create('width', { duration: theme.transitions.duration.shorter })
+        }}
+      >
         <Toolbar />
         <Outlet />
       </Box>

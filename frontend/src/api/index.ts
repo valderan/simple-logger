@@ -21,12 +21,29 @@ export const fetchProjects = async () => {
   return data;
 };
 
+export const fetchProject = async (uuid: string) => {
+  const { data } = await apiClient.get<Project>(`/api/projects/${uuid}`);
+  return data;
+};
+
 export const createProject = async (payload: CreateProjectPayload) => {
   const { data } = await apiClient.post<Project>('/api/projects', {
     ...payload,
     logFormat: JSON.parse(payload.logFormat)
   });
   return data;
+};
+
+export const updateProject = async (uuid: string, payload: CreateProjectPayload) => {
+  const { data } = await apiClient.put<Project>(`/api/projects/${uuid}`, {
+    ...payload,
+    logFormat: JSON.parse(payload.logFormat)
+  });
+  return data;
+};
+
+export const deleteProject = async (uuid: string) => {
+  await apiClient.delete(`/api/projects/${uuid}`);
 };
 
 export const fetchProjectLogs = async (uuid: string) => {

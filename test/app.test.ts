@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import app, { bootstrap } from '../src/app';
 import { ProjectModel } from '../src/api/models/Project';
 import { LogModel } from '../src/api/models/Log';
+import { PingServiceModel } from '../src/api/models/PingService';
 
 jest.setTimeout(30000);
 
@@ -12,6 +13,7 @@ describe('Logger API', () => {
   let authToken: string;
   const adminUser = 'admin';
   const adminPass = 'secret';
+  let projectUuid = '';
 
   beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();
@@ -46,15 +48,32 @@ describe('Logger API', () => {
       });
     expect(response.status).toBe(201);
     expect(response.body.uuid).toBeDefined();
+    projectUuid = response.body.uuid;
+  });
+
+  it('обновляет проект без изменения uuid', async () => {
+    expect(projectUuid).not.toBe('');
+    const response = await request(app)
+      .put(`/api/projects/${projectUuid}`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        name: 'Orders Service v2',
+        description: 'Обновленное описание',
+        logFormat: { level: 'string', message: 'string' },
+        defaultTags: ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        customTags: ['PAYMENT', 'INVOICE'],
+        telegramNotify: { enabled: false, recipients: [], antiSpamInterval: 15 },
+        accessLevel: 'global',
+        debugMode: false
+      });
+    expect(response.status).toBe(200);
+    expect(response.body.uuid).toBe(projectUuid);
+    expect(response.body.name).toBe('Orders Service v2');
   });
 
   it('сохраняет лог и позволяет выполнить фильтрацию', async () => {
-    const project = await ProjectModel.findOne({ name: 'Orders Service' });
-    expect(project).not.toBeNull();
-    const uuid = project!.uuid;
-
     const logResponse = await request(app).post('/api/logs').send({
-      uuid,
+      uuid: projectUuid,
       log: {
         level: 'ERROR',
         message: 'Ошибка оплаты',
@@ -67,7 +86,7 @@ describe('Logger API', () => {
     const filterResponse = await request(app)
       .get('/api/logs')
       .set('Authorization', `Bearer ${authToken}`)
-      .query({ uuid, tag: 'PAYMENT' });
+      .query({ uuid: projectUuid, tag: 'PAYMENT' });
     expect(filterResponse.status).toBe(200);
     expect(filterResponse.body.logs).toHaveLength(1);
     expect(filterResponse.body.logs[0].message).toBe('Ошибка оплаты');
@@ -87,15 +106,66 @@ describe('Logger API', () => {
   });
 
   it('удаляет логи по фильтру', async () => {
-    const project = await ProjectModel.findOne({ name: 'Orders Service' });
-    const uuid = project!.uuid;
     const deleteResponse = await request(app)
-      .delete(`/api/logs/${uuid}`)
+      .delete(`/api/logs/${projectUuid}`)
       .set('Authorization', `Bearer ${authToken}`)
       .query({ level: 'ERROR' });
     expect(deleteResponse.status).toBe(200);
     expect(deleteResponse.body.deleted).toBeGreaterThanOrEqual(1);
-    const count = await LogModel.countDocuments({ projectUuid: uuid });
+    const count = await LogModel.countDocuments({ projectUuid });
     expect(count).toBe(0);
+  });
+
+  it('логирует системное событие при неверном формате лога', async () => {
+    const response = await request(app).post('/api/logs').send({
+      uuid: projectUuid,
+      log: {
+        level: 'INFO',
+        tags: ['TEST']
+      }
+    });
+    expect(response.status).toBe(400);
+    const systemLog = await LogModel.findOne({
+      projectUuid: 'logger-system',
+      'metadata.extra.projectUuid': projectUuid
+    })
+      .sort({ timestamp: -1 })
+      .lean();
+    expect(systemLog).not.toBeNull();
+    expect(systemLog?.metadata?.extra?.issues).toMatch(/message/);
+  });
+
+  it('удаляет проект вместе с логами и ping-сервисами', async () => {
+    await LogModel.create({
+      projectUuid,
+      level: 'INFO',
+      message: 'Перед удалением',
+      tags: [],
+      timestamp: new Date(),
+      metadata: {}
+    });
+    await PingServiceModel.create({
+      projectUuid,
+      name: 'Healthcheck',
+      url: 'http://localhost:9999/health',
+      interval: 60,
+      telegramTags: []
+    });
+
+    const response = await request(app)
+      .delete(`/api/projects/${projectUuid}`)
+      .set('Authorization', `Bearer ${authToken}`);
+
+    expect(response.status).toBe(200);
+    expect(response.body.deletedLogs).toBeGreaterThanOrEqual(1);
+
+    const project = await ProjectModel.findOne({ uuid: projectUuid });
+    expect(project).toBeNull();
+
+    const logs = await LogModel.countDocuments({ projectUuid });
+    expect(logs).toBe(0);
+
+    const pingServices = await PingServiceModel.countDocuments({ projectUuid });
+    expect(pingServices).toBe(0);
   });
 });

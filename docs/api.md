@@ -39,6 +39,49 @@ Authorization: Bearer <token>
 
 Ответ содержит созданный проект и UUID.
 
+## Получение проекта
+
+```
+GET /api/projects/<uuid>
+Authorization: Bearer <token>
+```
+
+Возвращает JSON-объект проекта.
+
+## Обновление проекта
+
+```
+PUT /api/projects/<uuid>
+Authorization: Bearer <token>
+{
+  "name": "Orders Service",
+  "description": "Обновлённое описание",
+  "logFormat": {"level": "string", "message": "string"},
+  "defaultTags": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+  "customTags": ["PAYMENT"],
+  "accessLevel": "global",
+  "telegramNotify": {
+    "enabled": true,
+    "recipients": [{"chatId": "123456", "tags": ["ERROR", "CRITICAL"]}],
+    "antiSpamInterval": 30
+  },
+  "debugMode": false
+}
+```
+
+UUID менять нельзя — при попытке изменения вернётся `400 Bad Request`. В ответе приходит обновлённый объект проекта.
+
+## Удаление проекта
+
+```
+DELETE /api/projects/<uuid>
+Authorization: Bearer <token>
+```
+
+Удаляет проект вместе со всеми логами и ping-сервисами.
+
+В ответе указывается количество удалённых логов и ping-сервисов, что позволяет убедиться в очистке связанных сущностей.
+
 ## Отправка лога
 
 ```
@@ -55,6 +98,25 @@ POST /api/logs
       "service": "billing",
       "user": "user-1",
       "extra": {"orderId": "A-42"}
+    }
+  }
+}
+```
+
+При ошибке в формате лога, но корректном UUID проекта, событие с описанием проблемы записывается в системный проект `logger-system`.
+
+Пример системного события:
+
+```
+{
+  "level": "WARNING",
+  "message": "Получен лог неверного формата для проекта 9f...",
+  "tags": ["INGEST", "VALIDATION"],
+  "metadata": {
+    "service": "log-ingest",
+    "extra": {
+      "projectUuid": "9f...",
+      "issues": "log.message: Required"
     }
   }
 }

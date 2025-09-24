@@ -50,6 +50,18 @@ export async function listProjects(_req: Request, res: Response): Promise<Respon
 }
 
 /**
+ * Возвращает информацию о конкретном проекте.
+ */
+export async function getProject(req: Request, res: Response): Promise<Response> {
+  const { uuid } = req.params;
+  const project = await ProjectModel.findOne({ uuid });
+  if (!project) {
+    return res.status(404).json({ message: 'Проект не найден' });
+  }
+  return res.json(project);
+}
+
+/**
  * Возвращает логи проекта с фильтрами.
  */
 export async function getProjectLogs(req: Request, res: Response): Promise<Response> {
@@ -61,6 +73,56 @@ export async function getProjectLogs(req: Request, res: Response): Promise<Respo
   const filter = buildLogFilter(uuid, req.query as Record<string, string>);
   const logs = await LogModel.find(filter).sort({ timestamp: -1 }).limit(5000);
   return res.json({ project, logs });
+}
+
+/**
+ * Обновляет параметры проекта, кроме UUID.
+ */
+export async function updateProject(req: Request, res: Response): Promise<Response> {
+  const { uuid } = req.params;
+
+  if (typeof req.body?.uuid === 'string' && req.body.uuid !== uuid) {
+    return res.status(400).json({ message: 'UUID проекта нельзя изменять' });
+  }
+
+  const parsed = projectSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: 'Неверный формат данных', details: parsed.error.flatten() });
+  }
+
+  const updated = await ProjectModel.findOneAndUpdate({ uuid }, parsed.data, { new: true });
+  if (!updated) {
+    return res.status(404).json({ message: 'Проект не найден' });
+  }
+
+  return res.json(updated.toJSON());
+}
+
+/**
+ * Удаляет проект и связанные данные.
+ */
+export async function deleteProject(req: Request, res: Response): Promise<Response> {
+  const { uuid } = req.params;
+
+  if (uuid === 'logger-system') {
+    return res.status(400).json({ message: 'Нельзя удалить системный проект' });
+  }
+
+  const project = await ProjectModel.findOneAndDelete({ uuid });
+  if (!project) {
+    return res.status(404).json({ message: 'Проект не найден' });
+  }
+
+  const [logsResult, pingResult] = await Promise.all([
+    LogModel.deleteMany({ projectUuid: uuid }),
+    PingServiceModel.deleteMany({ projectUuid: uuid })
+  ]);
+
+  return res.json({
+    message: 'Проект удален',
+    deletedLogs: logsResult.deletedCount ?? 0,
+    deletedPingServices: pingResult.deletedCount ?? 0
+  });
 }
 
 /**
