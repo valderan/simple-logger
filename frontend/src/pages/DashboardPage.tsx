@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import {
   Alert,
@@ -7,6 +8,7 @@ import {
   Chip,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   Stack,
   Typography
@@ -25,7 +27,7 @@ import { fetchPingServices, fetchProjectLogs, fetchProjects } from '../api';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime, formatRelative } from '../utils/formatters';
-import { Project } from '../api/types';
+import { LogEntry, Project } from '../api/types';
 import { useTranslation } from '../hooks/useTranslation';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
@@ -34,6 +36,7 @@ const criticalLevels = ['ERROR', 'CRITICAL'];
 
 export const DashboardPage = (): JSX.Element => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const {
     data: projects,
     isLoading: projectsLoading,
@@ -57,6 +60,14 @@ export const DashboardPage = (): JSX.Element => {
     }))
   });
 
+  const projectNameMap = useMemo(() => {
+    const map = new Map<string, string>();
+    (projects ?? []).forEach((project) => {
+      map.set(project.uuid, project.name);
+    });
+    return map;
+  }, [projects]);
+
   const latestIncidents = useMemo(() => {
     const allLogs = logsQueries
       .flatMap((query) => query.data?.logs ?? [])
@@ -64,6 +75,14 @@ export const DashboardPage = (): JSX.Element => {
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     return allLogs.slice(0, 8);
   }, [logsQueries]);
+
+  const handleIncidentClick = (log: LogEntry) => {
+    const params = new URLSearchParams();
+    params.set('uuid', log.projectUuid);
+    params.set('projectUuid', log.projectUuid);
+    params.set('level', log.level);
+    navigate({ pathname: '/logs', search: `?${params.toString()}` });
+  };
 
   const logLevelsDistribution = useMemo(() => {
     const levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'];
@@ -186,31 +205,45 @@ export const DashboardPage = (): JSX.Element => {
                     const ip = metadata.ip ?? t('common.notAvailable');
                     const service = metadata.service ?? t('common.notAvailable');
                     const user = metadata.user ?? t('common.notAvailable');
+                    const projectName = projectNameMap.get(log.projectUuid) ?? log.projectUuid;
                     return (
-                      <ListItem key={log._id} divider alignItems="flex-start">
-                        <ListItemText
-                          primary={
-                            <Stack direction="row" spacing={1} alignItems="center">
-                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                                {log.level}
-                              </Typography>
-                              <Chip label={log.projectUuid} size="small" />
-                              <Typography variant="caption" color="text.secondary">
-                                {formatRelative(log.timestamp)}
-                              </Typography>
-                            </Stack>
-                          }
-                          secondary={
-                            <>
-                              <Typography variant="body2" sx={{ mb: 1 }}>
-                                {log.message}
-                              </Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {t('dashboard.incidentMeta', { ip, service, user })}
-                              </Typography>
-                            </>
-                          }
-                        />
+                      <ListItem key={log._id} divider disablePadding>
+                        <ListItemButton alignItems="flex-start" onClick={() => handleIncidentClick(log)} sx={{ py: 1.5 }}>
+                          <ListItemText
+                            primary={
+                              <Stack spacing={0.5}>
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                    {log.level}
+                                  </Typography>
+                                  <Chip label={projectName} size="small" color="primary" />
+                                </Stack>
+                                <Stack
+                                  direction={{ xs: 'column', sm: 'row' }}
+                                  spacing={1}
+                                  alignItems={{ xs: 'flex-start', sm: 'center' }}
+                                >
+                                  <Typography variant="caption" sx={{ fontFamily: 'monospace' }}>
+                                    {log.projectUuid}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {formatRelative(log.timestamp)}
+                                  </Typography>
+                                </Stack>
+                              </Stack>
+                            }
+                            secondary={
+                              <>
+                                <Typography variant="body2" sx={{ mb: 1 }}>
+                                  {log.message}
+                                </Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {t('dashboard.incidentMeta', { ip, service, user })}
+                                </Typography>
+                              </>
+                            }
+                          />
+                        </ListItemButton>
                       </ListItem>
                     );
                   })}

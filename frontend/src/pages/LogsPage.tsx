@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -15,6 +15,7 @@ import {
   SelectChangeEvent,
   Stack,
   TextField,
+  Tooltip,
   Typography
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
@@ -27,8 +28,10 @@ import { formatDateTime } from '../utils/formatters';
 import { useTranslation } from '../hooks/useTranslation';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
+import { copyToClipboard } from '../utils/clipboard';
 
-const defaultFilter: LogFilter = { uuid: '' };
+const defaultFilter: LogFilter = { uuid: '', projectUuid: undefined, logId: undefined };
 
 export const LogsPage = (): JSX.Element => {
   const queryClient = useQueryClient();
@@ -46,9 +49,11 @@ export const LogsPage = (): JSX.Element => {
   } = useQuery({ queryKey: ['projects'], queryFn: fetchProjects });
 
   useEffect(() => {
-    const uuidFromQuery = searchParams.get('uuid') || projects?.[0]?.uuid || '';
+    const projectUuidFromQuery = searchParams.get('projectUuid') || undefined;
+    const uuidFromQuery = searchParams.get('uuid') || projectUuidFromQuery || projects?.[0]?.uuid || '';
     const newFilter: LogFilter = {
       uuid: uuidFromQuery,
+      projectUuid: projectUuidFromQuery ?? (uuidFromQuery || undefined),
       level: searchParams.get('level') || undefined,
       text: searchParams.get('text') || undefined,
       tag: searchParams.get('tag') || undefined,
@@ -56,7 +61,8 @@ export const LogsPage = (): JSX.Element => {
       ip: searchParams.get('ip') || undefined,
       service: searchParams.get('service') || undefined,
       startDate: searchParams.get('startDate') || undefined,
-      endDate: searchParams.get('endDate') || undefined
+      endDate: searchParams.get('endDate') || undefined,
+      logId: searchParams.get('logId') || undefined
     };
     setFilterState(newFilter);
     const hasAdvancedFilters = Boolean(
@@ -93,19 +99,26 @@ export const LogsPage = (): JSX.Element => {
     }
   });
 
+  const handleCopyLog = useCallback(async (log: LogEntry) => {
+    await copyToClipboard(JSON.stringify(log, null, 2));
+  }, []);
+
   const columns = useMemo<GridColDef<LogEntry>[]>(
     () => [
       {
         field: 'timestamp',
         headerName: t('logs.timestampHeader'),
-        width: 200,
+        width: 220,
         renderCell: (params) => (
-          <Stack>
+          <Stack spacing={0.5}>
             <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
               {formatDateTime(params.row.timestamp)}
             </Typography>
             <Typography variant="caption" color="text.secondary">
               {params.row.level}
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
+              {params.row._id}
             </Typography>
           </Stack>
         )
@@ -142,10 +155,34 @@ export const LogsPage = (): JSX.Element => {
             </Stack>
           );
         }
+      },
+      {
+        field: 'actions',
+        headerName: t('logs.actionsHeader'),
+        width: 160,
+        sortable: false,
+        filterable: false,
+        renderCell: (params) => (
+          <Tooltip title={t('logs.copyLog')}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => handleCopyLog(params.row)}
+              startIcon={<ContentCopyIcon fontSize="small" />}
+            >
+              {t('common.copy')}
+            </Button>
+          </Tooltip>
+        )
       }
     ],
-    [t]
+    [handleCopyLog, t]
   );
+
+  const handleProjectUuidChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setFilterState((prev) => ({ ...prev, projectUuid: value || undefined }));
+  };
 
   const handleFilterChange = (field: keyof LogFilter) => (event: React.ChangeEvent<HTMLInputElement>) => {
     setFilterState((prev) => ({ ...prev, [field]: event.target.value || undefined }));
@@ -153,30 +190,71 @@ export const LogsPage = (): JSX.Element => {
 
   const handleSelectChange = (field: keyof LogFilter) => (event: SelectChangeEvent) => {
     const value = event.target.value || undefined;
-    setFilterState((prev) => ({ ...prev, [field]: value }));
+    setFilterState((prev) => ({
+      ...prev,
+      [field]: value,
+      ...(field === 'uuid' ? { projectUuid: value } : {})
+    }));
   };
 
   const applyFilter = () => {
-    if (!filterState.uuid) {
+    const trimmedProjectUuid = filterState.projectUuid?.trim();
+    const trimmedLogId = filterState.logId?.trim();
+    const effectiveUuid = trimmedProjectUuid || filterState.uuid;
+    if (!effectiveUuid) {
       return;
     }
     const params = new URLSearchParams();
-    Object.entries(filterState).forEach(([key, value]) => {
+    const nextFilter: LogFilter = {
+      ...filterState,
+      uuid: effectiveUuid,
+      projectUuid: trimmedProjectUuid ?? (effectiveUuid || undefined),
+      logId: trimmedLogId || undefined
+    };
+    Object.entries(nextFilter).forEach(([key, value]) => {
       if (value) {
         params.set(key, value);
       }
     });
+    setFilterState(nextFilter);
     setSearchParams(params);
-    setActiveFilter({ ...filterState });
+    setActiveFilter({ ...nextFilter });
   };
 
+  const handleClearFilters = () => {
+    const firstProjectUuid = projects?.[0]?.uuid ?? '';
+    const baseFilter: LogFilter = firstProjectUuid
+      ? { uuid: firstProjectUuid, projectUuid: firstProjectUuid }
+      : { uuid: '' };
+    setFilterState(baseFilter);
+    setActiveFilter(firstProjectUuid ? baseFilter : null);
+    setSearchParams(new URLSearchParams());
+    setFiltersExpanded(false);
+  };
+
+  const displayLogs = useMemo(() => {
+    const logs = logsQuery.data?.logs ?? [];
+    if (!activeFilter) {
+      return logs;
+    }
+    const projectUuidFilter = activeFilter.projectUuid?.trim().toLowerCase();
+    const logIdFilter = activeFilter.logId?.trim().toLowerCase();
+    return logs.filter((log) => {
+      const matchesProjectUuid = projectUuidFilter
+        ? log.projectUuid.toLowerCase().includes(projectUuidFilter)
+        : true;
+      const matchesLogId = logIdFilter ? log._id.toLowerCase().includes(logIdFilter) : true;
+      return matchesProjectUuid && matchesLogId;
+    });
+  }, [activeFilter, logsQuery.data?.logs]);
+
   const exportLogs = () => {
-    const rows = logsQuery.data?.logs ?? [];
+    const rows = displayLogs;
     if (rows.length === 0) {
       return;
     }
     const csv = [
-      ['timestamp', 'level', 'message', 'tags', 'ip', 'service', 'user'].join(';'),
+      ['timestamp', 'level', 'message', 'tags', 'ip', 'service', 'user', 'projectUuid', '_id'].join(';'),
       ...rows.map((row) =>
         [
           formatDateTime(row.timestamp),
@@ -185,7 +263,9 @@ export const LogsPage = (): JSX.Element => {
           row.tags.join(','),
           row.metadata?.ip ?? '',
           row.metadata?.service ?? '',
-          row.metadata?.user ?? ''
+          row.metadata?.user ?? '',
+          row.projectUuid,
+          row._id
         ].join(';')
       )
     ].join('\n');
@@ -217,7 +297,7 @@ export const LogsPage = (): JSX.Element => {
           <Stack spacing={3}>
             <Stack spacing={2}>
               <Grid container spacing={2}>
-                <Grid size={{ xs: 12, md: 4 }}>
+                <Grid size={{ xs: 12, md: 3 }}>
                   <FormControl fullWidth>
                     <InputLabel id="project-select">{t('logs.project')}</InputLabel>
                     <Select
@@ -233,6 +313,14 @@ export const LogsPage = (): JSX.Element => {
                       ))}
                     </Select>
                   </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <TextField
+                    label={t('logs.projectUuid')}
+                    fullWidth
+                    value={filterState.projectUuid ?? ''}
+                    onChange={handleProjectUuidChange}
+                  />
                 </Grid>
                 <Grid size={{ xs: 12, md: 3 }}>
                   <FormControl fullWidth>
@@ -252,8 +340,21 @@ export const LogsPage = (): JSX.Element => {
                     </Select>
                   </FormControl>
                 </Grid>
-                <Grid size={{ xs: 12, md: 5 }}>
-                  <TextField label={t('logs.tag')} fullWidth value={filterState.tag ?? ''} onChange={handleFilterChange('tag')} />
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <TextField
+                    label={t('logs.logId')}
+                    fullWidth
+                    value={filterState.logId ?? ''}
+                    onChange={handleFilterChange('logId')}
+                  />
+                </Grid>
+                <Grid size={{ xs: 12, md: 6 }}>
+                  <TextField
+                    label={t('logs.tag')}
+                    fullWidth
+                    value={filterState.tag ?? ''}
+                    onChange={handleFilterChange('tag')}
+                  />
                 </Grid>
               </Grid>
               <Collapse in={filtersExpanded} unmountOnExit>
@@ -323,11 +424,18 @@ export const LogsPage = (): JSX.Element => {
                 </Button>
               </Box>
             </Stack>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
-              <Button variant="contained" onClick={applyFilter} disabled={!filterState.uuid}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} flexWrap="wrap">
+              <Button
+                variant="contained"
+                onClick={applyFilter}
+                disabled={!(filterState.uuid || filterState.projectUuid?.trim())}
+              >
                 {t('logs.apply')}
               </Button>
-              <Button variant="outlined" onClick={exportLogs} disabled={!(logsQuery.data?.logs?.length)}>
+              <Button variant="outlined" onClick={handleClearFilters}>
+                {t('logs.clear')}
+              </Button>
+              <Button variant="outlined" onClick={exportLogs} disabled={!displayLogs.length}>
                 {t('logs.export')}
               </Button>
               <Button
@@ -345,13 +453,13 @@ export const LogsPage = (): JSX.Element => {
               <>
                 <Alert severity="info">
                   {t('logs.filtersApplied', {
-                    count: logsQuery.data.logs.length,
+                    count: displayLogs.length,
                     project: logsQuery.data.project.name
                   })}
                 </Alert>
                 <Box sx={{ height: 520, width: '100%' }}>
                   <DataGrid
-                    rows={logsQuery.data.logs}
+                    rows={displayLogs}
                     columns={columns}
                     getRowId={(row) => row._id}
                     pageSizeOptions={[10, 25, 50]}

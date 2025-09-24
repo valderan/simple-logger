@@ -193,7 +193,9 @@ export const translations: Record<Locale, TranslationRecord> = {
     logs: {
       title: 'Logs viewer',
       project: 'Project',
+      projectUuid: 'Project UUID',
       level: 'Level',
+      logId: 'Log ID',
       allLevels: 'All',
       tag: 'Tag',
       text: 'Text',
@@ -205,6 +207,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       showFilters: 'Show additional filters',
       hideFilters: 'Hide additional filters',
       apply: 'Apply filters',
+      clear: 'Clear filter',
       export: 'Export to CSV',
       deleteByFilter: 'Delete by filter',
       deleting: 'Deleting...',
@@ -222,6 +225,7 @@ export const translations: Record<Locale, TranslationRecord> = {
         critical: 'CRITICAL',
         all: 'All'
       },
+      actionsHeader: 'Actions',
       metadata: {
         ip: 'IP: {{value}}',
         service: 'Service: {{value}}',
@@ -230,7 +234,8 @@ export const translations: Record<Locale, TranslationRecord> = {
       metadataHeader: 'Metadata',
       messageHeader: 'Message',
       timestampHeader: 'Timestamp',
-      tagsLabel: 'Tags: {{tags}}'
+      tagsLabel: 'Tags: {{tags}}',
+      copyLog: 'Copy log entry'
     },
     ping: {
       title: 'Ping monitoring',
@@ -377,6 +382,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       hide: 'Скрыть',
       show: 'Показать',
       apply: 'Применить',
+      clear: 'Очистить фильтр',
       export: 'Экспорт',
       notAvailable: '—',
       minutesShort: 'мин',
@@ -547,7 +553,9 @@ export const translations: Record<Locale, TranslationRecord> = {
     logs: {
       title: 'Просмотр логов',
       project: 'Проект',
+      projectUuid: 'UUID проекта',
       level: 'Уровень',
+      logId: 'ID записи',
       allLevels: 'Все',
       tag: 'Тег',
       text: 'Текст',
@@ -559,6 +567,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       showFilters: 'Показать дополнительные фильтры',
       hideFilters: 'Скрыть дополнительные фильтры',
       apply: 'Применить фильтры',
+      clear: 'Очистить фильтр',
       export: 'Экспорт в CSV',
       deleteByFilter: 'Удалить по фильтру',
       deleting: 'Очистка...',
@@ -576,6 +585,7 @@ export const translations: Record<Locale, TranslationRecord> = {
         critical: 'CRITICAL',
         all: 'Все'
       },
+      actionsHeader: 'Действия',
       metadata: {
         ip: 'IP: {{value}}',
         service: 'Сервис: {{value}}',
@@ -584,7 +594,8 @@ export const translations: Record<Locale, TranslationRecord> = {
       metadataHeader: 'Метаданные',
       messageHeader: 'Сообщение',
       timestampHeader: 'Время',
-      tagsLabel: 'Теги: {{tags}}'
+      tagsLabel: 'Теги: {{tags}}',
+      copyLog: 'Скопировать лог'
     },
     ping: {
       title: 'Ping-мониторинг',
