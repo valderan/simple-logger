@@ -87,7 +87,10 @@ export const translations: Record<Locale, TranslationRecord> = {
       logout: 'Sign out',
       appBarTitle: 'Control panel',
       versionLabel: 'Version {{version}}',
-      openMenu: 'Open navigation menu'
+      openMenu: 'Open navigation menu',
+      showControls: 'Open control panel',
+      hideControls: 'Hide control panel',
+      closeControls: 'Hide control panel'
     },
     dashboard: {
       title: 'Overview',
@@ -458,7 +461,10 @@ export const translations: Record<Locale, TranslationRecord> = {
       logout: 'Выйти',
       appBarTitle: 'Панель управления',
       versionLabel: 'Версия {{version}}',
-      openMenu: 'Открыть меню навигации'
+      openMenu: 'Открыть меню навигации',
+      showControls: 'Открыть панель управления',
+      hideControls: 'Скрыть панель управления',
+      closeControls: 'Скрыть панель управления'
     },
     dashboard: {
       title: 'Общая сводка',

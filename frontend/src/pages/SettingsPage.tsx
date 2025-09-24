@@ -139,7 +139,13 @@ export const SettingsPage = (): JSX.Element => {
                 {addMutation.isPending ? t('common.savingWhitelist') : t('settings.add')}
               </Button>
             </Stack>
-            <Box sx={{ height: isSmDown ? 'auto' : 360, width: '100%' }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: isSmDown ? 'auto' : 360,
+                overflowX: 'auto'
+              }}
+            >
               <DataGrid
                 rows={whitelistQuery.data ?? []}
                 columns={whitelistColumns}
@@ -151,6 +157,7 @@ export const SettingsPage = (): JSX.Element => {
                 disableRowSelectionOnClick
                 localeText={{ noRowsLabel: t('settings.whitelistEmpty') }}
                 sx={{
+                  minWidth: isSmDown ? 520 : undefined,
                   '& .MuiDataGrid-cell': {
                     alignItems: 'flex-start',
                     whiteSpace: 'normal',
@@ -161,6 +168,11 @@ export const SettingsPage = (): JSX.Element => {
                     whiteSpace: 'normal',
                     lineHeight: 1.2,
                     fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  },
+                  '& .MuiDataGrid-footerContainer': {
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    justifyContent: { xs: 'center', sm: 'space-between' }
                   }
                 }}
                 density={isSmDown ? 'comfortable' : 'standard'}

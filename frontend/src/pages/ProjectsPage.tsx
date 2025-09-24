@@ -118,7 +118,7 @@ export const ProjectsPage = (): JSX.Element => {
       {
         field: 'telegram',
         headerName: t('projects.columns.telegram'),
-        minWidth: 160,
+        minWidth: isSmDown ? 140 : 160,
         flex: isMdDown ? 1 : 0.7,
         renderCell: (params) =>
           params.row.telegramNotify.enabled ? (
@@ -135,7 +135,7 @@ export const ProjectsPage = (): JSX.Element => {
       {
         field: 'accessLevel',
         headerName: t('projects.columns.access'),
-        minWidth: 140,
+        minWidth: isSmDown ? 120 : 140,
         flex: isMdDown ? 0.8 : 0.5,
         valueGetter: (value) => value,
         renderCell: (params) => <Chip label={params.row.accessLevel} size="small" color="info" />
@@ -143,7 +143,7 @@ export const ProjectsPage = (): JSX.Element => {
       {
         field: 'createdAt',
         headerName: t('projects.columns.createdAt'),
-        minWidth: 180,
+        minWidth: isSmDown ? 160 : 180,
         flex: isMdDown ? 0.9 : 0.6,
         renderCell: (params) => <Typography variant="body2">{formatDateTime(params.row.createdAt)}</Typography>
       },
@@ -151,7 +151,7 @@ export const ProjectsPage = (): JSX.Element => {
         field: 'actions',
         headerName: t('projects.columns.actions'),
         flex: 1.2,
-        minWidth: isSmDown ? 240 : 360,
+        minWidth: isSmDown ? 200 : 360,
         sortable: false,
         filterable: false,
         renderCell: (params) => (
@@ -260,7 +260,13 @@ export const ProjectsPage = (): JSX.Element => {
                 {t('projects.addProject')}
               </Button>
             </Stack>
-            <Box sx={{ height: isSmDown ? 'auto' : 520, width: '100%' }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: isSmDown ? 'auto' : 520,
+                overflowX: 'auto'
+              }}
+            >
               <DataGrid
                 rows={filteredProjects}
                 columns={columns}
@@ -282,6 +288,7 @@ export const ProjectsPage = (): JSX.Element => {
                     })
                 }}
                 sx={{
+                  minWidth: isSmDown ? 560 : undefined,
                   '& .MuiDataGrid-row': {
                     maxHeight: 'none !important'
                   },
@@ -296,6 +303,11 @@ export const ProjectsPage = (): JSX.Element => {
                     whiteSpace: 'normal',
                     lineHeight: 1.2,
                     fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  },
+                  '& .MuiDataGrid-footerContainer': {
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    justifyContent: { xs: 'center', sm: 'space-between' }
                   }
                 }}
                 density={isSmDown ? 'comfortable' : 'standard'}
