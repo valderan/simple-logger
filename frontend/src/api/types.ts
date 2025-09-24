@@ -40,7 +40,7 @@ export interface LogEntry {
   message: string;
   tags: string[];
   timestamp: string;
-  metadata: LogMetadata;
+  metadata?: LogMetadata;
 }
 
 export interface ProjectLogResponse {
