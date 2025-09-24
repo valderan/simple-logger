@@ -19,7 +19,9 @@ import {
   SelectChangeEvent,
   Stack,
   TextField,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import {
@@ -40,6 +42,9 @@ export const PingServicesPage = (): JSX.Element => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', url: '', interval: 60, telegramTags: '' });
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMdDown = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
   const {
     data: projects,
     isLoading: projectsLoading,
@@ -104,11 +109,17 @@ export const PingServicesPage = (): JSX.Element => {
           </Typography>
         )
       },
-      { field: 'interval', headerName: t('ping.intervalHeader'), width: 150 },
+      {
+        field: 'interval',
+        headerName: t('ping.intervalHeader'),
+        minWidth: 140,
+        flex: isMdDown ? 0.7 : 0.5
+      },
       {
         field: 'lastStatus',
         headerName: t('ping.statusHeader'),
-        width: 160,
+        minWidth: 160,
+        flex: isMdDown ? 0.9 : 0.6,
         renderCell: (params) => {
           const status = params.row.lastStatus ?? 'unknown';
           const color = status === 'ok' ? 'success' : status === 'degraded' ? 'warning' : status === 'down' ? 'error' : 'info';
@@ -126,7 +137,8 @@ export const PingServicesPage = (): JSX.Element => {
       {
         field: 'lastCheckedAt',
         headerName: t('ping.lastCheckHeader'),
-        width: 200,
+        minWidth: 200,
+        flex: isMdDown ? 1 : 0.7,
         renderCell: (params) => (
           <Stack>
             <Typography variant="body2">{formatDateTime(params.row.lastCheckedAt)}</Typography>
@@ -155,7 +167,14 @@ export const PingServicesPage = (): JSX.Element => {
         )
       }
     ],
-    [t]
+    [isMdDown, t]
+  );
+
+  const columnVisibilityModel = useMemo(
+    () => ({
+      telegramTags: !isSmDown
+    }),
+    [isSmDown]
   );
 
   if (projectsLoading || servicesLoading) {
@@ -182,8 +201,8 @@ export const PingServicesPage = (): JSX.Element => {
       <Card>
         <CardContent>
           <Stack spacing={3}>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
-              <FormControl sx={{ minWidth: 260 }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+              <FormControl sx={{ minWidth: { xs: '100%', md: 260 } }}>
                 <InputLabel id="project-select-label">{t('ping.project')}</InputLabel>
                 <Select
                   labelId="project-select-label"
@@ -202,22 +221,39 @@ export const PingServicesPage = (): JSX.Element => {
                 variant="outlined"
                 onClick={() => triggerMutation.mutate()}
                 disabled={!selectedUuid || triggerMutation.isPending}
+                fullWidth={isSmDown}
               >
                 {triggerMutation.isPending ? t('ping.triggering') : t('ping.trigger')}
               </Button>
-              <Button variant="contained" onClick={() => setDialogOpen(true)} disabled={!selectedUuid}>
+              <Button variant="contained" onClick={() => setDialogOpen(true)} disabled={!selectedUuid} fullWidth={isSmDown}>
                 {t('ping.addService')}
               </Button>
             </Stack>
-            <Box sx={{ height: 500, width: '100%' }}>
+            <Box sx={{ height: isSmDown ? 'auto' : 500, width: '100%' }}>
               <DataGrid
                 rows={services ?? []}
                 columns={columns}
                 getRowId={(row) => row._id}
+                columnVisibilityModel={columnVisibilityModel}
+                autoHeight={isSmDown}
                 pageSizeOptions={[5, 10, 25]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 disableRowSelectionOnClick
                 localeText={{ noRowsLabel: t('ping.noServices') }}
+                sx={{
+                  '& .MuiDataGrid-cell': {
+                    alignItems: 'flex-start',
+                    whiteSpace: 'normal',
+                    py: 1.25,
+                    fontSize: { xs: '0.875rem', sm: '0.95rem' }
+                  },
+                  '& .MuiDataGrid-columnHeaderTitle': {
+                    whiteSpace: 'normal',
+                    lineHeight: 1.2,
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  }
+                }}
+                density={isSmDown ? 'comfortable' : 'standard'}
               />
             </Box>
           </Stack>
@@ -233,12 +269,14 @@ export const PingServicesPage = (): JSX.Element => {
               value={formData.name}
               onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
               required
+              fullWidth
             />
             <TextField
               label={t('ping.url')}
               value={formData.url}
               onChange={(event) => setFormData((prev) => ({ ...prev, url: event.target.value }))}
               required
+              fullWidth
             />
             <TextField
               label={t('ping.interval')}
@@ -246,12 +284,14 @@ export const PingServicesPage = (): JSX.Element => {
               value={formData.interval}
               onChange={(event) => setFormData((prev) => ({ ...prev, interval: Number(event.target.value) }))}
               inputProps={{ min: 5, max: 3600 }}
+              fullWidth
             />
             <TextField
               label={t('ping.telegramTags')}
               value={formData.telegramTags}
               onChange={(event) => setFormData((prev) => ({ ...prev, telegramTags: event.target.value }))}
               helperText={t('ping.telegramTagsHint')}
+              fullWidth
             />
           </Stack>
         </DialogContent>

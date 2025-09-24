@@ -47,7 +47,7 @@ export const TelegramPage = (): JSX.Element => {
             <Card>
               <CardContent>
                 <Stack spacing={2}>
-                  <Stack direction="row" spacing={2} alignItems="center">
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }}>
                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
                       {project.name}
                     </Typography>
@@ -62,9 +62,9 @@ export const TelegramPage = (): JSX.Element => {
                     />
                     {project.debugMode && <Chip label={t('common.debug')} color="warning" size="small" />}
                   </Stack>
-                  <Typography variant="body2" color="text.secondary">
-                    UUID: {project.uuid}
-                  </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      UUID: {project.uuid}
+                    </Typography>
                   {project.telegramNotify.enabled ? (
                     <Stack spacing={1}>
                       <Typography variant="subtitle2">

@@ -216,7 +216,12 @@ export const AppLayout = (): JSX.Element => {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
             {t('navigation.appBarTitle')}
           </Typography>
-          <Stack direction="row" spacing={1} alignItems="center">
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            sx={{ flexWrap: 'wrap', rowGap: 1, justifyContent: { xs: 'flex-end', sm: 'flex-start' } }}
+          >
             <Tooltip title={isCollapsed ? t('navigation.expand') : t('navigation.collapse')}>
               <span>
                 <IconButton
@@ -312,7 +317,7 @@ export const AppLayout = (): JSX.Element => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
+          p: { xs: 2, md: 3 },
           width: { sm: `calc(100% - ${currentDrawerWidth}px)` },
           transition: (theme) => theme.transitions.create('width', { duration: theme.transitions.duration.shorter })
         }}
