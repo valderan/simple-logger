@@ -164,6 +164,50 @@ export class LoggerApiClient {
     });
   }
 
+  /** Fetches a single project by its UUID. */
+  async getProject(uuid: string): Promise<Project> {
+    return this.request<Project>({
+      method: 'GET',
+      path: `/projects/${encodeURIComponent(uuid)}`,
+      requiresAuth: true
+    });
+  }
+
+  /** Updates an existing project. UUID remains immutable. */
+  async updateProject(
+    uuid: string,
+    payload: {
+      name: string;
+      description?: string;
+      logFormat: Record<string, unknown>;
+      defaultTags?: string[];
+      customTags?: string[];
+      accessLevel?: 'global' | 'whitelist' | 'docker';
+      telegramNotify?: {
+        enabled?: boolean;
+        recipients?: Array<{ chatId: string; tags?: string[] }>;
+        antiSpamInterval?: number;
+      };
+      debugMode?: boolean;
+    }
+  ): Promise<Project> {
+    return this.request<Project>({
+      method: 'PUT',
+      path: `/projects/${encodeURIComponent(uuid)}`,
+      body: payload,
+      requiresAuth: true
+    });
+  }
+
+  /** Removes a project together with all stored logs. */
+  async deleteProject(uuid: string): Promise<{ message: string; deletedLogs: number; deletedPingServices: number }> {
+    return this.request<{ message: string; deletedLogs: number; deletedPingServices: number }>({
+      method: 'DELETE',
+      path: `/projects/${encodeURIComponent(uuid)}`,
+      requiresAuth: true
+    });
+  }
+
   /** Retrieves logs for a specific project using optional filtering parameters. */
   async getProjectLogs(uuid: string, query: Record<string, string> = {}): Promise<PaginatedLogsResponse> {
     const search = new URLSearchParams(query);

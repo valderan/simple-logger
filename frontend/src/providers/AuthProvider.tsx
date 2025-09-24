@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { PropsWithChildren, createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { onUnauthorized, setAuthToken } from '../api/client';
 

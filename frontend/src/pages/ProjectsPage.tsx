@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Button,
@@ -12,21 +12,38 @@ import {
   Typography
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { fetchProjects } from '../api';
+import { deleteProject, fetchProjects } from '../api';
 import { Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime } from '../utils/formatters';
+import { ProjectDeleteDialog } from '../components/projects/ProjectDeleteDialog';
+import { parseApiError } from '../utils/apiError';
 
 export const ProjectsPage = (): JSX.Element => {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   const {
     data: projects,
     isLoading,
     isError,
     refetch
   } = useQuery({ queryKey: ['projects'], queryFn: fetchProjects });
+
+  const deleteMutation = useMutation({
+    mutationFn: (uuid: string) => deleteProject(uuid),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      setDeleteTarget(null);
+    },
+    onError: (error: unknown) => {
+      const { message } = parseApiError(error);
+      setDeleteError(message ?? 'Не удалось удалить проект');
+    }
+  });
 
   const filteredProjects = useMemo(() => {
     const term = search.toLowerCase();
@@ -109,11 +126,25 @@ export const ProjectsPage = (): JSX.Element => {
       {
         field: 'actions',
         headerName: 'Действия',
-        width: 220,
+        width: 320,
         sortable: false,
         filterable: false,
         renderCell: (params) => (
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} flexWrap="wrap">
+            <Button size="small" variant="outlined" onClick={() => navigate(`/projects/${params.row.uuid}/edit`)}>
+              Изменить
+            </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              color="error"
+              onClick={() => {
+                setDeleteError(null);
+                setDeleteTarget(params.row);
+              }}
+            >
+              Удалить
+            </Button>
             <Button size="small" variant="outlined" onClick={() => navigate(`/logs?uuid=${params.row.uuid}`)}>
               Логи
             </Button>
@@ -172,6 +203,23 @@ export const ProjectsPage = (): JSX.Element => {
           </Stack>
         </CardContent>
       </Card>
+      <ProjectDeleteDialog
+        open={Boolean(deleteTarget)}
+        projectName={deleteTarget?.name ?? ''}
+        onClose={() => {
+          if (!deleteMutation.isPending) {
+            setDeleteTarget(null);
+          }
+        }}
+        onConfirm={() => {
+          if (deleteTarget) {
+            setDeleteError(null);
+            deleteMutation.mutate(deleteTarget.uuid);
+          }
+        }}
+        isLoading={deleteMutation.isPending}
+        error={deleteError}
+      />
     </Stack>
   );
 };
