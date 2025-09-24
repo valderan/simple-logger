@@ -341,11 +341,11 @@ export const translations: Record<Locale, TranslationRecord> = {
       apiExamples: {
         title: 'API usage examples',
         description:
-          'Use the REST API to authenticate, manage projects, ingest logs and configure ping services. Below are selected examples from the documentation.',
-        login: 'Authentication (Python)',
-        createProject: 'Create project (TypeScript)',
-        ingestLog: 'Ingest log (Go)',
-        whitelist: 'Manage whitelist (Bash)'
+          'Send logs to the collector using the REST endpoint. Below are ready-to-use snippets for popular languages.',
+        ingestLogPython: 'Send log (Python)',
+        ingestLogTypeScript: 'Send log (TypeScript)',
+        ingestLogGo: 'Send log (Go)',
+        ingestLogBash: 'Send log (Bash)'
       },
       environment: {
         title: 'Environment variables',
@@ -698,11 +698,11 @@ export const translations: Record<Locale, TranslationRecord> = {
       apiExamples: {
         title: 'Примеры работы с API',
         description:
-          'REST API позволяет аутентифицироваться, управлять проектами, отправлять логи и настраивать ping-сервисы. Ниже приведены выбранные примеры из документации.',
-        login: 'Авторизация (Python)',
-        createProject: 'Создание проекта (TypeScript)',
-        ingestLog: 'Отправка лога (Go)',
-        whitelist: 'Управление whitelist (Bash)'
+          'Отправляйте логи в коллектор через REST-эндпоинт. Ниже представлены готовые сниппеты для популярных языков.',
+        ingestLogPython: 'Отправка лога (Python)',
+        ingestLogTypeScript: 'Отправка лога (TypeScript)',
+        ingestLogGo: 'Отправка лога (Go)',
+        ingestLogBash: 'Отправка лога (Bash)'
       },
       environment: {
         title: 'Переменные окружения',
