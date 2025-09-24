@@ -1,0 +1,871 @@
+openapi: 3.1.0
+info:
+  title: Simple Logger API
+  version: 1.0.0
+  description: |
+    Спецификация REST API централизованного сервиса логирования Simple Logger.
+    Все административные эндпоинты требуют авторизационного токена администратора,
+    передаваемого в заголовке `Authorization: Bearer <token>`.
+servers:
+  - url: http://localhost:3000
+    description: Локальный сервер API
+security:
+  - BearerAuth: []
+tags:
+  - name: Health
+    description: Проверки доступности сервиса
+  - name: Authentication
+    description: Авторизация администратора
+  - name: Projects
+    description: Управление проектами и их настройками
+  - name: Logs
+    description: Приём и управление логами
+  - name: PingServices
+    description: Мониторинг внешних ping-сервисов
+  - name: Settings
+    description: Системные настройки и белый список IP
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Проверка состояния API
+      description: Возвращает состояние сервиса и может использоваться для мониторинга.
+      security: []
+      responses:
+        '200':
+          description: Сервис работает.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Авторизация администратора
+      description: Выдаёт сессионный токен администратора по паре логин/пароль.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Авторизация прошла успешно.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Неверные учётные данные.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '423':
+          description: IP временно заблокирован из-за частых неудачных попыток входа.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects:
+    post:
+      tags: [Projects]
+      summary: Создание проекта
+      description: Создаёт новый проект логирования.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        '201':
+          description: Проект создан.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: Некорректные параметры проекта.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    get:
+      tags: [Projects]
+      summary: Список проектов
+      description: Возвращает проекты, отсортированные по времени создания (от новых к старым).
+      responses:
+        '200':
+          description: Проекты успешно получены.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+  /api/projects/{uuid}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+    get:
+      tags: [Projects]
+      summary: Получение проекта
+      description: Возвращает проект по его UUID.
+      responses:
+        '200':
+          description: Найденный проект.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Projects]
+      summary: Обновление проекта
+      description: Изменяет параметры проекта. UUID изменять нельзя.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        '200':
+          description: Проект обновлён.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: Некорректные параметры или попытка изменить UUID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Projects]
+      summary: Удаление проекта
+      description: Удаляет проект, а также связанные логи и ping-сервисы. Системный проект `logger-system` удалить нельзя.
+      responses:
+        '200':
+          description: Проект удалён.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Проект удален
+                  deletedLogs:
+                    type: integer
+                    minimum: 0
+                  deletedPingServices:
+                    type: integer
+                    minimum: 0
+        '400':
+          description: Нельзя удалить системный проект.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects/{uuid}/logs:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+      - $ref: '#/components/parameters/LogLevelQueryParam'
+      - $ref: '#/components/parameters/LogTextQueryParam'
+      - $ref: '#/components/parameters/LogTagQueryParam'
+      - $ref: '#/components/parameters/LogUserQueryParam'
+      - $ref: '#/components/parameters/LogIpQueryParam'
+      - $ref: '#/components/parameters/LogServiceQueryParam'
+      - $ref: '#/components/parameters/LogStartDateQueryParam'
+      - $ref: '#/components/parameters/LogEndDateQueryParam'
+      - $ref: '#/components/parameters/LogIdQueryParam'
+    get:
+      tags: [Projects, Logs]
+      summary: Логи проекта
+      description: Возвращает до 5000 логов выбранного проекта с учётом фильтров.
+      responses:
+        '200':
+          description: Список логов проекта.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectLogResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects/{uuid}/ping-services:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+    get:
+      tags: [Projects, PingServices]
+      summary: Список ping-сервисов
+      description: Возвращает ping-сервисы проекта.
+      responses:
+        '200':
+          description: Ping-сервисы получены.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PingService'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    post:
+      tags: [Projects, PingServices]
+      summary: Добавление ping-сервиса
+      description: Регистрирует новый ping-сервис и выполняет первую проверку.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PingServiceInput'
+      responses:
+        '201':
+          description: Ping-сервис создан.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingService'
+        '400':
+          description: Некорректные параметры ping-сервиса.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects/{uuid}/ping-services/check:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+    post:
+      tags: [Projects, PingServices]
+      summary: Принудительная проверка ping-сервисов
+      description: Выполняет немедленную проверку всех ping-сервисов проекта и возвращает актуальные данные.
+      responses:
+        '200':
+          description: Результаты проверки.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PingService'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+  /api/logs:
+    get:
+      tags: [Logs]
+      summary: Фильтрация логов
+      description: Возвращает логи проекта по переданным фильтрам.
+      parameters:
+        - $ref: '#/components/parameters/LogProjectUuidQueryParam'
+        - $ref: '#/components/parameters/LogLevelQueryParam'
+        - $ref: '#/components/parameters/LogTextQueryParam'
+        - $ref: '#/components/parameters/LogTagQueryParam'
+        - $ref: '#/components/parameters/LogUserQueryParam'
+        - $ref: '#/components/parameters/LogIpQueryParam'
+        - $ref: '#/components/parameters/LogServiceQueryParam'
+        - $ref: '#/components/parameters/LogStartDateQueryParam'
+        - $ref: '#/components/parameters/LogEndDateQueryParam'
+        - $ref: '#/components/parameters/LogIdQueryParam'
+      responses:
+        '200':
+          description: Результат фильтрации.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectLogResponse'
+        '400':
+          description: Не указан UUID проекта.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Logs]
+      summary: Приём лога
+      description: Принимает и сохраняет лог от клиента.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogIngestRequest'
+      responses:
+        '201':
+          description: Лог сохранён.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          description: Тело запроса не соответствует схеме.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/logs/{uuid}:
+    delete:
+      tags: [Logs]
+      summary: Удаление логов проекта
+      description: Удаляет логи проекта, соответствующие фильтру.
+      parameters:
+        - $ref: '#/components/parameters/ProjectUuidPathParam'
+        - $ref: '#/components/parameters/LogLevelQueryParam'
+        - $ref: '#/components/parameters/LogTextQueryParam'
+        - $ref: '#/components/parameters/LogTagQueryParam'
+        - $ref: '#/components/parameters/LogUserQueryParam'
+        - $ref: '#/components/parameters/LogIpQueryParam'
+        - $ref: '#/components/parameters/LogServiceQueryParam'
+        - $ref: '#/components/parameters/LogStartDateQueryParam'
+        - $ref: '#/components/parameters/LogEndDateQueryParam'
+        - $ref: '#/components/parameters/LogIdQueryParam'
+      responses:
+        '200':
+          description: Количество удалённых логов.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: integer
+                    minimum: 0
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/settings/whitelist:
+    get:
+      tags: [Settings]
+      summary: Список IP в белом списке
+      description: Возвращает все записи белого списка IP.
+      responses:
+        '200':
+          description: Текущий белый список.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WhitelistEntry'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    post:
+      tags: [Settings]
+      summary: Добавление IP в белый список
+      description: Создаёт или обновляет запись белого списка.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhitelistPayload'
+      responses:
+        '201':
+          description: Запись белого списка сохранена.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhitelistEntry'
+        '400':
+          description: Некорректные параметры записи.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+  /api/settings/whitelist/{ip}:
+    parameters:
+      - name: ip
+        in: path
+        required: true
+        description: IP адрес, который нужно удалить из белого списка.
+        schema:
+          type: string
+          example: 192.168.0.10
+    delete:
+      tags: [Settings]
+      summary: Удаление IP из белого списка
+      description: Удаляет запись по IP адресу.
+      responses:
+        '200':
+          description: IP удалён из списка.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Запись не найдена.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+      description: Сессионный токен администратора.
+  responses:
+    UnauthorizedResponse:
+      description: Отсутствует или недействительный токен администратора.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ForbiddenResponse:
+      description: Доступ запрещён белым списком IP.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  parameters:
+    ProjectUuidPathParam:
+      name: uuid
+      in: path
+      required: true
+      description: UUID проекта.
+      schema:
+        type: string
+        format: uuid
+    LogProjectUuidQueryParam:
+      name: uuid
+      in: query
+      required: true
+      description: UUID проекта, для которого выполняется запрос.
+      schema:
+        type: string
+        format: uuid
+    LogLevelQueryParam:
+      name: level
+      in: query
+      required: false
+      description: Фильтр по уровню логирования.
+      schema:
+        type: string
+        example: ERROR
+    LogTextQueryParam:
+      name: text
+      in: query
+      required: false
+      description: Поиск по тексту сообщения (регистронезависимый).
+      schema:
+        type: string
+    LogTagQueryParam:
+      name: tag
+      in: query
+      required: false
+      description: Фильтр по тегу.
+      schema:
+        type: string
+    LogUserQueryParam:
+      name: user
+      in: query
+      required: false
+      description: Фильтр по идентификатору пользователя.
+      schema:
+        type: string
+    LogIpQueryParam:
+      name: ip
+      in: query
+      required: false
+      description: Фильтр по IP адресу.
+      schema:
+        type: string
+    LogServiceQueryParam:
+      name: service
+      in: query
+      required: false
+      description: Фильтр по названию сервиса.
+      schema:
+        type: string
+    LogStartDateQueryParam:
+      name: startDate
+      in: query
+      required: false
+      description: Начало диапазона по времени (ISO 8601).
+      schema:
+        type: string
+        format: date-time
+    LogEndDateQueryParam:
+      name: endDate
+      in: query
+      required: false
+      description: Конец диапазона по времени (ISO 8601).
+      schema:
+        type: string
+        format: date-time
+    LogIdQueryParam:
+      name: logId
+      in: query
+      required: false
+      description: Точный идентификатор лога (Mongo ObjectId).
+      schema:
+        type: string
+        pattern: '^[0-9a-fA-F]{24}$'
+  schemas:
+    AuthRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: secret
+    AuthResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: Сессионный токен, используемый в заголовке Authorization.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    TelegramRecipient:
+      type: object
+      required: [chatId]
+      properties:
+        chatId:
+          type: string
+          description: Идентификатор пользователя Telegram.
+          example: '123456789'
+        tags:
+          type: array
+          description: Теги логов, для которых активны уведомления.
+          items:
+            type: string
+          default: []
+    TelegramSettings:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          default: false
+        recipients:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelegramRecipient'
+        antiSpamInterval:
+          type: integer
+          description: Интервал между уведомлениями в минутах.
+          default: 15
+          minimum: 1
+    ProjectInput:
+      type: object
+      required:
+        - name
+        - logFormat
+        - defaultTags
+        - customTags
+        - accessLevel
+        - telegramNotify
+        - debugMode
+      properties:
+        name:
+          type: string
+          minLength: 3
+          example: Orders Service
+        description:
+          type: string
+        logFormat:
+          type: object
+          additionalProperties: true
+          description: Схема входящего лога для отображения.
+        defaultTags:
+          type: array
+          items:
+            type: string
+          default: [DEBUG, INFO, WARNING, ERROR, CRITICAL]
+        customTags:
+          type: array
+          items:
+            type: string
+          default: []
+        accessLevel:
+          type: string
+          enum: [global, whitelist, docker]
+          default: global
+        telegramNotify:
+          $ref: '#/components/schemas/TelegramSettings'
+        debugMode:
+          type: boolean
+          default: false
+    Project:
+      allOf:
+        - $ref: '#/components/schemas/ProjectInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+              description: MongoDB идентификатор записи.
+              example: 664fa0ce4a2f0f0012a12345
+            uuid:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    LogMetadata:
+      type: object
+      properties:
+        ip:
+          type: string
+        service:
+          type: string
+        user:
+          type: string
+        extra:
+          type: object
+          additionalProperties: true
+    LogBody:
+      type: object
+      required: [level, message]
+      properties:
+        level:
+          type: string
+          example: ERROR
+        message:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+          default: []
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          $ref: '#/components/schemas/LogMetadata'
+    LogEntry:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 6650f1c79b9af0001b0d1234
+        projectUuid:
+          type: string
+          format: uuid
+        level:
+          type: string
+        message:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          $ref: '#/components/schemas/LogMetadata'
+    LogIngestRequest:
+      type: object
+      required: [uuid, log]
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        log:
+          $ref: '#/components/schemas/LogBody'
+    ProjectLogResponse:
+      type: object
+      required: [project, logs]
+      properties:
+        project:
+          $ref: '#/components/schemas/Project'
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+    PingServiceInput:
+      type: object
+      required: [name, url]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: Billing health-check
+        url:
+          type: string
+          format: uri
+          example: https://billing.example.com/health
+        interval:
+          type: integer
+          minimum: 5
+          maximum: 3600
+          default: 60
+        telegramTags:
+          type: array
+          items:
+            type: string
+          default: []
+    PingService:
+      allOf:
+        - $ref: '#/components/schemas/PingServiceInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: 6650f47f9d3ab00015a81234
+            projectUuid:
+              type: string
+              format: uuid
+            lastStatus:
+              type: string
+              enum: [ok, degraded, down]
+            lastCheckedAt:
+              type: string
+              format: date-time
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    WhitelistPayload:
+      type: object
+      required: [ip]
+      properties:
+        ip:
+          type: string
+          example: 192.168.0.10
+        description:
+          type: string
+    WhitelistEntry:
+      allOf:
+        - $ref: '#/components/schemas/WhitelistPayload'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: 6650f669d4b5c00017da1234
+            createdAt:
+              type: string
+              format: date-time
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Требуется авторизация
+        details:
+          description: Дополнительные сведения об ошибке (могут отсутствовать).
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            details:
+              description: Детали валидации с информацией по полям.
+              example:
+                fieldErrors:
+                  name: ['String must contain at least 3 character(s)']
