@@ -22,18 +22,19 @@ services:
     command: tail -f /dev/null # от зависания
 
   swagger:
-    image: swaggerapi/swagger-ui
+    image: swaggerapi/swagger-ui:latest
     container_name: logger_swagger
     ports:
       - "3001:8080"
     environment:
-      SWAGGER_JSON: /usr/share/nginx/html/openapi.yaml
+      SWAGGER_JSON: /openapi.yaml
     volumes:
-      - ./swaggerapi/openapi.yaml:/usr/share/nginx/html/openapi.yaml:ro
+      - ./swaggerapi/openapi.yaml:/openapi.yaml:ro
     depends_on:
       - app
     networks:
       - logger-network
+
 
   mongo:
     image: mongo:latest

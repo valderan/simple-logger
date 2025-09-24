@@ -1,0 +1,33 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: logger_app
+    restart: always
+    ports:
+      - "3000:3000" # настроить порты по требованию
+    environment:
+      MONGO_URI: mongodb://mongo:27017/logger
+      ADMIN_USER: "admin" # настроить логин для базы
+      ADMIN_PASS: "admin" # настроить пароль для базы
+    depends_on:
+      - mongo
+    networks:
+      - logger-network
+    command: npm run start  # от зависания
+
+  mongo:
+    image: mongo:latest
+    container_name: logger_db
+    restart: always
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - ./mongodata:/data/logger
+    networks:
+      - logger-network
+
+networks:
+  logger-network:
+    driver: bridge

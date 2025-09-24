@@ -20,10 +20,7 @@
     "formulahendry.auto-close-tag",
     "formulahendry.auto-rename-tag",
     "mongodb.mongodb-vscode",
-    "rooveterinaryinc.roo-cline",
-    "kilocode.kilo-code",
-    "file://.devcontainer/gigacode.vsix"
+    "kilocode.kilo-code"
   ],
-  "initializeCommand": "if [ -f package.json ]; then npm install; else echo '⚠️ package.json not found, skipping npm install'; fi",
-  "postCreateCommand": "bash -c '$HOME/.vscode-server/bin/*/bin/code-server --install-extension .devcontainer/gigacode.vsix || true'"
+  "initializeCommand": "if [ -f package.json ]; then npm install; else echo '⚠️ package.json not found, skipping npm install'; fi"
 }

@@ -1,0 +1,21 @@
+services:
+  static-site:
+    container_name: logger_client
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      API_URL: http://localhost:3000
+      LOGGER_VERSION: 1.0.0
+      LOGGER_PAGE_URL: https://github.com/valderan/simple-logger
+    ports:
+      - "80:80"
+      # - "127.0.0.1:80:80" # only localhost
+    restart: always
+    networks:
+      - logger-network
+
+networks:
+  logger-network:
+    driver: bridge
+    

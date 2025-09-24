@@ -8,7 +8,6 @@ Logger — сервис централизованного сбора и ана�
 
 ```
 /logger-project
-├── docs/                  # Документация
 ├── src/                   # Исходный код TypeScript
 │   ├── api/
 │   │   ├── controllers/   # Бизнес-логика REST-эндпоинтов
