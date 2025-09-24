@@ -1,61 +1,64 @@
-# Примеры использования API
+# REST API Logger
 
-## Авторизация
+Backend располагается в директории `./api` и предоставляет REST API для управления проектами логирования и приёма событий. Все эндпоинты находятся под префиксом `/api`, полный базовый URL в локальной среде — `http://localhost:3000/api`.
 
-```
+## Базовые сведения
+
+- Формат данных — `application/json`.
+- Временные метки передаются в ISO 8601 (UTC).
+- Авторизация административных запросов выполняется через заголовок `Authorization: Bearer <token>`.
+- Middleware `rateLimiter` и `ipWhitelist` находятся в `src/api/middlewares` и автоматически подключаются в `app.ts`.
+
+## Аутентификация
+
+### POST `/auth/login`
+
+Возвращает токен для доступа к административным разделам.
+
+```http
 POST /api/auth/login
+Content-Type: application/json
+
 {
   "username": "admin",
   "password": "secret"
 }
 ```
 
-Ответ:
-```
+Успешный ответ `200 OK`:
+
+```json
 {
-  "token": "<JWT-like токен>"
+  "token": "<jwt-like-token>"
 }
 ```
-Используйте токен в заголовке `Authorization: Bearer <token>`.
 
-## Создание проекта
+После нескольких неудачных попыток IP может быть заблокирован на час.
 
-```
+## Управление проектами `/projects`
+
+| Метод | Маршрут | Описание |
+|-------|---------|----------|
+| `POST` | `/` | Создать проект, вернёт UUID. |
+| `GET` | `/` | Получить список проектов. |
+| `GET` | `/:uuid` | Детали проекта. |
+| `PUT` | `/:uuid` | Обновление проекта по UUID. |
+| `DELETE` | `/:uuid` | Удаление проекта вместе с логами и ping-сервисами. |
+| `GET` | `/:uuid/logs` | Логи конкретного проекта с фильтрами. |
+| `POST` | `/:uuid/ping-services` | Добавление ping-сервиса. |
+| `GET` | `/:uuid/ping-services` | Список ping-сервисов. |
+| `POST` | `/:uuid/ping-services/check` | Ручной запуск проверки. |
+
+Пример создания проекта:
+
+```http
 POST /api/projects
 Authorization: Bearer <token>
+Content-Type: application/json
+
 {
   "name": "Orders Service",
   "description": "Обработка заказов",
-  "logFormat": {"level": "string", "message": "string"},
-  "customTags": ["PAYMENT", "SMS"],
-  "telegramNotify": {
-    "enabled": true,
-    "recipients": [{"chatId": "123456", "tags": ["ERROR", "CRITICAL"]}],
-    "antiSpamInterval": 30
-  },
-  "debugMode": false
-}
-```
-
-Ответ содержит созданный проект и UUID.
-
-## Получение проекта
-
-```
-GET /api/projects/<uuid>
-Authorization: Bearer <token>
-```
-
-Возвращает JSON-объект проекта.
-
-## Обновление проекта
-
-```
-PUT /api/projects/<uuid>
-Authorization: Bearer <token>
-{
-  "name": "Orders Service",
-  "description": "Обновлённое описание",
   "logFormat": {"level": "string", "message": "string"},
   "defaultTags": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
   "customTags": ["PAYMENT"],
@@ -69,23 +72,32 @@ Authorization: Bearer <token>
 }
 ```
 
-UUID менять нельзя — при попытке изменения вернётся `400 Bad Request`. В ответе приходит обновлённый объект проекта.
+Ответ `201 Created` содержит созданный объект с полем `uuid`.
 
-## Удаление проекта
+Удаление проекта возвращает количество удалённых логов и ping-сервисов:
 
+```json
+{
+  "message": "Проект удален",
+  "deletedLogs": 120,
+  "deletedPingServices": 3
+}
 ```
-DELETE /api/projects/<uuid>
-Authorization: Bearer <token>
-```
 
-Удаляет проект вместе со всеми логами и ping-сервисами.
+## Работа с логами `/logs`
 
-В ответе указывается количество удалённых логов и ping-сервисов, что позволяет убедиться в очистке связанных сущностей.
+| Метод | Маршрут | Описание |
+|-------|---------|----------|
+| `POST` | `/` | Приём лога по UUID проекта (не требует токена). |
+| `GET` | `/` | Фильтрация логов (нужен токен). |
+| `DELETE` | `/:uuid` | Массовое удаление по фильтрам или удаление конкретной записи (нужен токен). |
 
-## Отправка лога
+Пример отправки лога:
 
-```
+```http
 POST /api/logs
+Content-Type: application/json
+
 {
   "uuid": "<uuid проекта>",
   "log": {
@@ -103,62 +115,57 @@ POST /api/logs
 }
 ```
 
-При ошибке в формате лога, но корректном UUID проекта, событие с описанием проблемы записывается в системный проект `logger-system`.
+Если структура лога не соответствует ожидаемой, событие записывается в системный проект `logger-system`.
 
-Пример системного события:
+Фильтрация логов поддерживает параметры `uuid`, `level`, `text`, `tag`, `user`, `ip`, `service`, `startDate`, `endDate`, `logId`:
 
-```
-{
-  "level": "WARNING",
-  "message": "Получен лог неверного формата для проекта 9f...",
-  "tags": ["INGEST", "VALIDATION"],
-  "metadata": {
-    "service": "log-ingest",
-    "extra": {
-      "projectUuid": "9f...",
-      "issues": "log.message: Required"
-    }
-  }
-}
-```
-
-## Фильтрация логов
-
-```
+```http
 GET /api/logs?uuid=<uuid>&level=ERROR&tag=PAYMENT&startDate=2024-05-01
 Authorization: Bearer <token>
 ```
 
-Поддерживаемые параметры: `level`, `text`, `tag`, `user`, `ip`, `service`, `startDate`, `endDate`.
+## Настройки безопасности `/settings`
 
-## Управление ping-сервисами
+| Метод | Маршрут | Описание |
+|-------|---------|----------|
+| `GET` | `/whitelist` | Получить белый список IP. |
+| `POST` | `/whitelist` | Добавить IP. |
+| `DELETE` | `/whitelist/:ip` | Удалить IP. |
 
-```
-POST /api/projects/<uuid>/ping-services
-Authorization: Bearer <token>
-{
-  "name": "Billing",
-  "url": "https://billing.example.com/health",
-  "interval": 60,
-  "telegramTags": ["PING_DOWN"]
-}
-```
+Запрос на добавление IP:
 
-Запрос `/api/projects/<uuid>/ping-services/check` запускает проверку вручную.
-
-## Белый список IP
-
-```
+```http
 POST /api/settings/whitelist
 Authorization: Bearer <token>
+Content-Type: application/json
+
 {
   "ip": "192.168.0.10",
   "description": "VPN"
 }
 ```
 
-Удаление IP:
+## Swagger и OpenAPI
+
+Официальное описание API хранится в `api/swaggerapi/openapi.yaml`. Есть два способа работы с ним:
+
+1. Открыть файл в любом редакторе или онлайн-валидаторе Swagger.
+2. Запустить готовый контейнер Swagger UI из `docker-compose.dev.yml`:
+   ```bash
+   cd api
+   docker compose -f docker-compose.dev.yml up swagger
+   ```
+   После сборки интерфейс будет доступен на `http://localhost:3001`, где можно выполнять запросы прямо из браузера.
+
+Файлы маршрутов (`src/api/routes`) и контроллеров (`src/api/controllers`) являются первоисточником для актуализации спецификации.
+
+## Быстрый старт API
+
+```bash
+cd api
+npm install
+npm run build
+npm start
 ```
-DELETE /api/settings/whitelist/192.168.0.10
-Authorization: Bearer <token>
-```
+
+Для разработки используйте `npm run dev`, для тестов — `npm test`. Docker-файлы `docker-compose.dev.yml` и `docker-compose.prod.yml` содержат готовые сценарии запуска сервиса вместе с MongoDB и Swagger UI.
