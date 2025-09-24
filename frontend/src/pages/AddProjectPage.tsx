@@ -7,6 +7,7 @@ import { CreateProjectPayload } from '../api/types';
 import { ProjectForm } from '../components/projects/ProjectForm';
 import { LoadingState } from '../components/common/LoadingState';
 import { parseApiError } from '../utils/apiError';
+import { useTranslation } from '../hooks/useTranslation';
 
 const defaultLogFormat = JSON.stringify(
   {
@@ -38,6 +39,7 @@ const emptyProjectForm: CreateProjectPayload = {
 export const AddProjectPage = (): JSX.Element => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [formError, setFormError] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: (payload: CreateProjectPayload) => createProject(payload),
@@ -47,7 +49,7 @@ export const AddProjectPage = (): JSX.Element => {
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);
-      setFormError(message ?? 'Не удалось создать проект');
+      setFormError(message ?? t('addProject.error'));
     }
   });
   const handleSubmit = (values: CreateProjectPayload) => {
@@ -58,25 +60,25 @@ export const AddProjectPage = (): JSX.Element => {
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
-        Добавление проекта
+        {t('addProject.title')}
       </Typography>
       <Card>
         <CardContent>
           <ProjectForm
             initialValues={emptyProjectForm}
-            submitLabel="Создать проект"
+            submitLabel={t('addProject.submit')}
             isSubmitting={mutation.isPending}
             onSubmit={handleSubmit}
             error={formError}
             secondaryActions={[
               <Button key="cancel" variant="text" onClick={() => navigate('/projects')}>
-                Отмена
+                {t('addProject.cancel')}
               </Button>
             ]}
           />
         </CardContent>
       </Card>
-      {mutation.isPending && <LoadingState label="Создание проекта..." />}
+      {mutation.isPending && <LoadingState label={t('addProject.loading')} />}
     </Stack>
   );
 };

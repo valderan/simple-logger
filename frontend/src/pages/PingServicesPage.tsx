@@ -32,12 +32,14 @@ import { PingService, Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime, formatRelative } from '../utils/formatters';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const PingServicesPage = (): JSX.Element => {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [formData, setFormData] = useState({ name: '', url: '', interval: 60, telegramTags: '' });
+  const { t } = useTranslation();
   const {
     data: projects,
     isLoading: projectsLoading,
@@ -91,10 +93,10 @@ export const PingServicesPage = (): JSX.Element => {
 
   const columns = useMemo<GridColDef<PingService>[]>(
     () => [
-      { field: 'name', headerName: 'Название', flex: 1 },
+      { field: 'name', headerName: t('ping.name'), flex: 1 },
       {
         field: 'url',
-        headerName: 'URL',
+        headerName: t('ping.url'),
         flex: 1.4,
         renderCell: (params) => (
           <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
@@ -102,40 +104,49 @@ export const PingServicesPage = (): JSX.Element => {
           </Typography>
         )
       },
-      { field: 'interval', headerName: 'Интервал (сек)', width: 150 },
+      { field: 'interval', headerName: t('ping.intervalHeader'), width: 150 },
       {
         field: 'lastStatus',
-        headerName: 'Статус',
+        headerName: t('ping.statusHeader'),
         width: 160,
         renderCell: (params) => {
           const status = params.row.lastStatus ?? 'unknown';
           const color = status === 'ok' ? 'success' : status === 'degraded' ? 'warning' : status === 'down' ? 'error' : 'info';
-          const label = status === 'ok' ? 'OK' : status === 'degraded' ? 'Проблемы' : status === 'down' ? 'Недоступен' : '—';
+          const label =
+            status === 'ok'
+              ? t('ping.status.ok')
+              : status === 'degraded'
+                ? t('ping.status.degraded')
+                : status === 'down'
+                  ? t('ping.status.down')
+                  : t('ping.status.unknown');
           return <Alert severity={color}>{label}</Alert>;
         }
       },
       {
         field: 'lastCheckedAt',
-        headerName: 'Последняя проверка',
+        headerName: t('ping.lastCheckHeader'),
         width: 200,
         renderCell: (params) => (
           <Stack>
             <Typography variant="body2">{formatDateTime(params.row.lastCheckedAt)}</Typography>
             <Typography variant="caption" color="text.secondary">
-              {params.row.lastCheckedAt ? formatRelative(params.row.lastCheckedAt) : '—'}
+              {params.row.lastCheckedAt
+                ? formatRelative(params.row.lastCheckedAt)
+                : t('common.notAvailable')}
             </Typography>
           </Stack>
         )
       },
       {
         field: 'telegramTags',
-        headerName: 'Теги Telegram',
+        headerName: t('ping.telegramTagsHeader'),
         flex: 1,
         renderCell: (params) => (
           <Stack direction="row" spacing={1} flexWrap="wrap">
             {params.row.telegramTags.length === 0 ? (
               <Typography variant="caption" color="text.secondary">
-                Нет тегов
+                {t('ping.noTags')}
               </Typography>
             ) : (
               params.row.telegramTags.map((tag) => <Chip key={tag} label={tag} size="small" />)
@@ -144,7 +155,7 @@ export const PingServicesPage = (): JSX.Element => {
         )
       }
     ],
-    []
+    [t]
   );
 
   if (projectsLoading || servicesLoading) {
@@ -152,11 +163,11 @@ export const PingServicesPage = (): JSX.Element => {
   }
 
   if (projectsError) {
-    return <ErrorState message="Не удалось загрузить список проектов" onRetry={() => refetchProjects()} />;
+    return <ErrorState message={t('ping.loadProjectsError')} onRetry={() => refetchProjects()} />;
   }
 
   if (servicesError) {
-    return <ErrorState message="Не удалось загрузить ping-сервисы" onRetry={() => refetchServices()} />;
+    return <ErrorState message={t('ping.loadServicesError')} onRetry={() => refetchServices()} />;
   }
 
   const handleProjectChange = (event: SelectChangeEvent) => {
@@ -166,17 +177,17 @@ export const PingServicesPage = (): JSX.Element => {
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
-        Ping-мониторинг
+        {t('ping.title')}
       </Typography>
       <Card>
         <CardContent>
           <Stack spacing={3}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
               <FormControl sx={{ minWidth: 260 }}>
-                <InputLabel id="project-select-label">Проект</InputLabel>
+                <InputLabel id="project-select-label">{t('ping.project')}</InputLabel>
                 <Select
                   labelId="project-select-label"
-                  label="Проект"
+                  label={t('ping.project')}
                   value={selectedUuid ?? ''}
                   onChange={handleProjectChange}
                 >
@@ -192,10 +203,10 @@ export const PingServicesPage = (): JSX.Element => {
                 onClick={() => triggerMutation.mutate()}
                 disabled={!selectedUuid || triggerMutation.isPending}
               >
-                {triggerMutation.isPending ? 'Проверка...' : 'Запустить проверку'}
+                {triggerMutation.isPending ? t('ping.triggering') : t('ping.trigger')}
               </Button>
               <Button variant="contained" onClick={() => setDialogOpen(true)} disabled={!selectedUuid}>
-                Добавить сервис
+                {t('ping.addService')}
               </Button>
             </Stack>
             <Box sx={{ height: 500, width: '100%' }}>
@@ -206,7 +217,7 @@ export const PingServicesPage = (): JSX.Element => {
                 pageSizeOptions={[5, 10, 25]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 disableRowSelectionOnClick
-                localeText={{ noRowsLabel: 'Сервисы не настроены' }}
+                localeText={{ noRowsLabel: t('ping.noServices') }}
               />
             </Box>
           </Stack>
@@ -214,44 +225,44 @@ export const PingServicesPage = (): JSX.Element => {
       </Card>
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle>Новый ping-сервис</DialogTitle>
+        <DialogTitle>{t('ping.newService')}</DialogTitle>
         <DialogContent>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
-              label="Название"
+              label={t('ping.name')}
               value={formData.name}
               onChange={(event) => setFormData((prev) => ({ ...prev, name: event.target.value }))}
               required
             />
             <TextField
-              label="URL"
+              label={t('ping.url')}
               value={formData.url}
               onChange={(event) => setFormData((prev) => ({ ...prev, url: event.target.value }))}
               required
             />
             <TextField
-              label="Интервал (сек)"
+              label={t('ping.interval')}
               type="number"
               value={formData.interval}
               onChange={(event) => setFormData((prev) => ({ ...prev, interval: Number(event.target.value) }))}
               inputProps={{ min: 5, max: 3600 }}
             />
             <TextField
-              label="Telegram теги (через запятую)"
+              label={t('ping.telegramTags')}
               value={formData.telegramTags}
               onChange={(event) => setFormData((prev) => ({ ...prev, telegramTags: event.target.value }))}
-              helperText="Например: PING_DOWN,CRITICAL"
+              helperText={t('ping.telegramTagsHint')}
             />
           </Stack>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDialogOpen(false)}>Отмена</Button>
+          <Button onClick={() => setDialogOpen(false)}>{t('ping.cancel')}</Button>
           <Button
             variant="contained"
             onClick={() => addServiceMutation.mutate()}
             disabled={addServiceMutation.isPending || !formData.name || !formData.url}
           >
-            {addServiceMutation.isPending ? 'Сохранение...' : 'Добавить'}
+            {addServiceMutation.isPending ? t('ping.saving') : t('ping.save')}
           </Button>
         </DialogActions>
       </Dialog>

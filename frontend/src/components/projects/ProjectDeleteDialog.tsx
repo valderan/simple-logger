@@ -10,6 +10,7 @@ import {
   TextField,
   Typography
 } from '@mui/material';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export interface ProjectDeleteDialogProps {
   open: boolean;
@@ -18,6 +19,7 @@ export interface ProjectDeleteDialogProps {
   onConfirm: () => void;
   isLoading?: boolean;
   error?: string | null;
+  translationNamespace?: string;
 }
 
 export const ProjectDeleteDialog = ({
@@ -26,9 +28,12 @@ export const ProjectDeleteDialog = ({
   onClose,
   onConfirm,
   isLoading = false,
-  error
+  error,
+  translationNamespace
 }: ProjectDeleteDialogProps): JSX.Element => {
   const [confirmation, setConfirmation] = useState('');
+  const { t } = useTranslation();
+  const namespace = translationNamespace ?? 'projects';
 
   useEffect(() => {
     if (!open) {
@@ -37,21 +42,26 @@ export const ProjectDeleteDialog = ({
   }, [open]);
 
   const canDelete = confirmation.trim() === projectName;
+  const title = t(`${namespace}.deleteDialogTitle`);
+  const description = t(`${namespace}.deleteDialogDescription`, { name: projectName });
+  const inputLabel = t(`${namespace}.deleteDialogLabel`);
+  const cancelLabel = t(`${namespace}.deleteDialogCancel`);
+  const confirmLabel = isLoading ? t(`${namespace}.deleteDialogConfirming`) : t(`${namespace}.deleteDialogConfirm`);
+  const warningText = t(`${namespace}.projectDeletionWarning`);
 
   return (
     <Dialog open={open} onClose={isLoading ? undefined : onClose} maxWidth="sm" fullWidth>
-      <DialogTitle>Удалить проект</DialogTitle>
+      <DialogTitle>{title}</DialogTitle>
       <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         <DialogContentText>
-          Это действие удалит проект{' '}
-          <Typography component="span" fontWeight={600}>
-            "{projectName}"
-          </Typography>{' '}
-          и все связанные логи. Для подтверждения введите полное название проекта.
+          {description}
         </DialogContentText>
+        <Typography variant="caption" color="text.secondary">
+          {warningText}
+        </Typography>
         <TextField
           autoFocus
-          label="Название проекта"
+          label={inputLabel}
           value={confirmation}
           onChange={(event) => setConfirmation(event.target.value)}
           disabled={isLoading}
@@ -60,10 +70,10 @@ export const ProjectDeleteDialog = ({
       </DialogContent>
       <DialogActions>
         <Button onClick={onClose} disabled={isLoading}>
-          Отмена
+          {cancelLabel}
         </Button>
         <Button color="error" variant="contained" onClick={onConfirm} disabled={!canDelete || isLoading}>
-          {isLoading ? 'Удаление...' : 'Удалить'}
+          {confirmLabel}
         </Button>
       </DialogActions>
     </Dialog>

@@ -18,6 +18,7 @@ import {
 import Grid from '@mui/material/Grid';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import { CreateProjectPayload, TelegramRecipient } from '../../api/types';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export interface ProjectFormProps {
   initialValues: CreateProjectPayload;
@@ -53,6 +54,7 @@ export const ProjectForm = ({
   const [customTagInput, setCustomTagInput] = useState('');
   const [recipientInput, setRecipientInput] = useState({ chatId: '', tags: '' });
   const [validationError, setValidationError] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setFormState(cloneInitialValues(initialValues));
@@ -109,7 +111,7 @@ export const ProjectForm = ({
     try {
       JSON.parse(formState.logFormat);
     } catch (parseError) {
-      setValidationError('Лог-формат должен быть валидным JSON.');
+      setValidationError(t('projectForm.validationError'));
       return;
     }
     onSubmit(formState);
@@ -121,7 +123,7 @@ export const ProjectForm = ({
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
-              label="Название проекта"
+              label={t('projectForm.name')}
               value={formState.name}
               onChange={(event) => setFormState((prev) => ({ ...prev, name: event.target.value }))}
               required
@@ -130,7 +132,7 @@ export const ProjectForm = ({
           </Grid>
           <Grid size={{ xs: 12, md: 6 }}>
             <TextField
-              label="Описание"
+              label={t('projectForm.description')}
               value={formState.description ?? ''}
               onChange={(event) => setFormState((prev) => ({ ...prev, description: event.target.value }))}
               fullWidth
@@ -138,7 +140,7 @@ export const ProjectForm = ({
           </Grid>
           <Grid size={{ xs: 12 }}>
             <TextField
-              label="Лог-формат (JSON)"
+              label={t('projectForm.logFormat')}
               value={formState.logFormat}
               onChange={(event) => setFormState((prev) => ({ ...prev, logFormat: event.target.value }))}
               fullWidth
@@ -149,21 +151,21 @@ export const ProjectForm = ({
         </Grid>
 
         <Stack spacing={2}>
-          <Typography variant="h6">Теги</Typography>
+          <Typography variant="h6">{t('projectForm.tagsTitle')}</Typography>
           <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
             <FormControl sx={{ minWidth: 220 }}>
-              <InputLabel id="access-level-label">Уровень доступа</InputLabel>
+              <InputLabel id="access-level-label">{t('projectForm.accessLevel')}</InputLabel>
               <Select
                 labelId="access-level-label"
-                label="Уровень доступа"
+                label={t('projectForm.accessLevel')}
                 value={formState.accessLevel}
                 onChange={(event) =>
                   setFormState((prev) => ({ ...prev, accessLevel: event.target.value as CreateProjectPayload['accessLevel'] }))
                 }
               >
-                <MenuItem value="global">Глобальный</MenuItem>
-                <MenuItem value="whitelist">Белый список</MenuItem>
-                <MenuItem value="docker">Только Docker</MenuItem>
+                <MenuItem value="global">{t('projectForm.accessGlobal')}</MenuItem>
+                <MenuItem value="whitelist">{t('projectForm.accessWhitelist')}</MenuItem>
+                <MenuItem value="docker">{t('projectForm.accessDocker')}</MenuItem>
               </Select>
             </FormControl>
             <FormControlLabel
@@ -173,14 +175,14 @@ export const ProjectForm = ({
                   onChange={(event) => setFormState((prev) => ({ ...prev, debugMode: event.target.checked }))}
                 />
               }
-              label="Режим отладки (без Telegram уведомлений)"
+              label={t('projectForm.debugMode')}
             />
           </Stack>
           <Stack spacing={1}>
-            <Typography variant="subtitle1">Пользовательские теги</Typography>
+            <Typography variant="subtitle1">{t('projectForm.customTags')}</Typography>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <TextField
-                label="Новый тег"
+                label={t('projectForm.newTag')}
                 value={customTagInput}
                 onChange={(event) => setCustomTagInput(event.target.value)}
                 onKeyDown={(event) => {
@@ -191,13 +193,13 @@ export const ProjectForm = ({
                 }}
               />
               <Button variant="outlined" onClick={addCustomTag}>
-                Добавить тег
+                {t('projectForm.addTag')}
               </Button>
             </Stack>
             <Stack direction="row" spacing={1} flexWrap="wrap">
               {formState.customTags.length === 0 && (
                 <Typography variant="caption" color="text.secondary">
-                  Дополнительные теги не заданы
+                  {t('projectForm.noCustomTags')}
                 </Typography>
               )}
               {formState.customTags.map((tag) => (
@@ -221,10 +223,10 @@ export const ProjectForm = ({
                   }
                 />
               }
-              label="Отправлять уведомления в Telegram"
+              label={t('projectForm.telegramNotifications')}
             />
             <TextField
-              label="Анти-спам интервал (мин)"
+              label={t('projectForm.antiSpam')}
               type="number"
               sx={{ width: 220 }}
               value={formState.telegramNotify.antiSpamInterval}
@@ -239,26 +241,30 @@ export const ProjectForm = ({
           </Stack>
           {formState.telegramNotify.enabled && (
             <Stack spacing={2}>
-              <Typography variant="subtitle1">Получатели уведомлений</Typography>
+              <Typography variant="subtitle1">
+                {t('projectForm.recipientsCount', { count: formState.telegramNotify.recipients.length })}
+              </Typography>
               <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
                 <TextField
-                  label="Chat ID"
+                  label={t('projectForm.chatId')}
                   value={recipientInput.chatId}
                   onChange={(event) => setRecipientInput((prev) => ({ ...prev, chatId: event.target.value }))}
                 />
                 <TextField
-                  label="Теги (через запятую)"
+                  label={t('projectForm.telegramTagsLabel')}
+                  placeholder={t('projectForm.tagsPlaceholder')}
+                  helperText={t('projectForm.telegramTagsHelper')}
                   value={recipientInput.tags}
                   onChange={(event) => setRecipientInput((prev) => ({ ...prev, tags: event.target.value }))}
                 />
                 <Button variant="outlined" onClick={addRecipient}>
-                  Добавить получателя
+                  {t('projectForm.addRecipient')}
                 </Button>
               </Stack>
               <Stack spacing={1}>
                 {!hasTelegramRecipients && (
                   <Typography variant="caption" color="text.secondary">
-                    Получатели не добавлены
+                    {t('projectForm.noRecipients')}
                   </Typography>
                 )}
                 {formState.telegramNotify.recipients.map((recipient) => (
@@ -267,7 +273,9 @@ export const ProjectForm = ({
                       {recipient.chatId}
                     </Typography>
                     <Typography variant="caption" color="text.secondary">
-                      {recipient.tags.length > 0 ? `Теги: ${recipient.tags.join(', ')}` : 'Все теги'}
+                      {recipient.tags.length > 0
+                        ? t('projectForm.recipientTags', { tags: recipient.tags.join(', ') })
+                        : t('projectForm.recipientAllTags')}
                     </Typography>
                     <IconButton onClick={() => removeRecipient(recipient.chatId)}>
                       <DeleteIcon />
@@ -285,7 +293,7 @@ export const ProjectForm = ({
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} flexWrap="wrap">
           {secondaryActions}
           <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
-            {isSubmitting ? 'Сохранение...' : submitLabel}
+            {isSubmitting ? t('projectForm.submitting') : submitLabel}
           </Button>
         </Stack>
       </Stack>

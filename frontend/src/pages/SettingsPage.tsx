@@ -16,6 +16,7 @@ import { WhitelistEntry } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime } from '../utils/formatters';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const SettingsPage = (): JSX.Element => {
   const queryClient = useQueryClient();
@@ -43,34 +44,36 @@ export const SettingsPage = (): JSX.Element => {
     }
   });
 
+  const { t } = useTranslation();
+
   const whitelistColumns = useMemo<GridColDef<WhitelistEntry>[]>(
     () => [
-      { field: 'ip', headerName: 'IP адрес', flex: 1 },
+      { field: 'ip', headerName: t('settings.ipLabel'), flex: 1 },
       {
         field: 'description',
-        headerName: 'Описание',
+        headerName: t('settings.descriptionLabel'),
         flex: 1,
-        renderCell: (params) => params.row.description ?? '—'
+        renderCell: (params) => params.row.description ?? t('common.notAvailable')
       },
       {
         field: 'createdAt',
-        headerName: 'Добавлен',
+        headerName: t('settings.addedAt'),
         width: 180,
         renderCell: (params) => formatDateTime(params.row.createdAt)
       },
       {
         field: 'actions',
-        headerName: 'Действия',
+        headerName: t('settings.actions'),
         width: 160,
         sortable: false,
         renderCell: (params) => (
           <Button color="error" size="small" onClick={() => removeMutation.mutate(params.row.ip)}>
-            Удалить
+            {t('settings.remove')}
           </Button>
         )
       }
     ],
-    [removeMutation]
+    [removeMutation, t]
   );
 
   if (whitelistQuery.isLoading || projectsQuery.isLoading) {
@@ -78,26 +81,30 @@ export const SettingsPage = (): JSX.Element => {
   }
 
   if (whitelistQuery.isError || projectsQuery.isError) {
-    return <ErrorState message="Не удалось загрузить настройки" onRetry={() => { whitelistQuery.refetch(); projectsQuery.refetch(); }} />;
+    return (
+      <ErrorState
+        message={t('settings.loadError')}
+        onRetry={() => {
+          whitelistQuery.refetch();
+          projectsQuery.refetch();
+        }}
+      />
+    );
   }
 
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
-        Настройки безопасности
+        {t('settings.title')}
       </Typography>
       <Card>
         <CardContent>
           <Stack spacing={3}>
-            <Typography variant="h6">Белый список IP</Typography>
+            <Typography variant="h6">{t('settings.whitelistTitle')}</Typography>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
+              <TextField label={t('settings.ipLabel')} value={ipInput.ip} onChange={(event) => setIpInput((prev) => ({ ...prev, ip: event.target.value }))} />
               <TextField
-                label="IP адрес"
-                value={ipInput.ip}
-                onChange={(event) => setIpInput((prev) => ({ ...prev, ip: event.target.value }))}
-              />
-              <TextField
-                label="Описание"
+                label={t('settings.descriptionLabel')}
                 value={ipInput.description}
                 onChange={(event) => setIpInput((prev) => ({ ...prev, description: event.target.value }))}
               />
@@ -106,7 +113,7 @@ export const SettingsPage = (): JSX.Element => {
                 onClick={() => addMutation.mutate()}
                 disabled={addMutation.isPending || !ipInput.ip}
               >
-                {addMutation.isPending ? 'Сохранение...' : 'Добавить'}
+                {addMutation.isPending ? t('common.savingWhitelist') : t('settings.add')}
               </Button>
             </Stack>
             <Box sx={{ height: 360, width: '100%' }}>
@@ -117,7 +124,7 @@ export const SettingsPage = (): JSX.Element => {
                 pageSizeOptions={[5, 10, 25]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 disableRowSelectionOnClick
-                localeText={{ noRowsLabel: 'Белый список пуст' }}
+                localeText={{ noRowsLabel: t('settings.whitelistEmpty') }}
               />
             </Box>
           </Stack>
@@ -126,12 +133,12 @@ export const SettingsPage = (): JSX.Element => {
       <Card>
         <CardContent>
           <Stack spacing={2}>
-            <Typography variant="h6">Системный проект Logger</Typography>
+            <Typography variant="h6">{t('settings.systemTitle')}</Typography>
             <Typography variant="body2" color="text.secondary">
-              Системный проект хранит внутренние события: ошибки авторизации, блокировки IP и другие служебные события.
+              {t('settings.systemDescription')}
             </Typography>
-            {systemLogsQuery.isLoading && <LoadingState label="Загрузка системных логов..." />}
-            {systemLogsQuery.isError && <Alert severity="error">Не удалось загрузить системные логи.</Alert>}
+            {systemLogsQuery.isLoading && <LoadingState label={t('common.loadingSystemLogs')} />}
+            {systemLogsQuery.isError && <Alert severity="error">{t('settings.loadSystemError')}</Alert>}
             {systemLogsQuery.data && (
               <Box sx={{ maxHeight: 320, overflow: 'auto', bgcolor: 'grey.50', borderRadius: 2, p: 2 }}>
                 <Stack spacing={1.5}>
@@ -144,7 +151,10 @@ export const SettingsPage = (): JSX.Element => {
                         </Typography>
                         <Typography variant="body2">{log.message}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          IP: {metadata.ip ?? '—'} · Сервис: {metadata.service ?? '—'}
+                          {t('settings.systemLogMeta', {
+                            ip: metadata.ip ?? t('common.notAvailable'),
+                            service: metadata.service ?? t('common.notAvailable')
+                          })}
                         </Typography>
                       </Box>
                     );

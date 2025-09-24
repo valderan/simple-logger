@@ -24,6 +24,7 @@ import { LogEntry, LogFilter, Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime } from '../utils/formatters';
+import { useTranslation } from '../hooks/useTranslation';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
@@ -35,6 +36,7 @@ export const LogsPage = (): JSX.Element => {
   const [filterState, setFilterState] = useState<LogFilter>(defaultFilter);
   const [activeFilter, setActiveFilter] = useState<LogFilter | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const { t } = useTranslation();
 
   const {
     data: projects,
@@ -95,7 +97,7 @@ export const LogsPage = (): JSX.Element => {
     () => [
       {
         field: 'timestamp',
-        headerName: 'Время',
+        headerName: t('logs.timestampHeader'),
         width: 200,
         renderCell: (params) => (
           <Stack>
@@ -110,14 +112,14 @@ export const LogsPage = (): JSX.Element => {
       },
       {
         field: 'message',
-        headerName: 'Сообщение',
+        headerName: t('logs.messageHeader'),
         flex: 1.5,
         renderCell: (params) => (
           <Stack spacing={1}>
             <Typography variant="body2">{params.row.message}</Typography>
             {params.row.tags.length > 0 && (
               <Typography variant="caption" color="text.secondary">
-                Теги: {params.row.tags.join(', ')}
+                {t('logs.tagsLabel', { tags: params.row.tags.join(', ') })}
               </Typography>
             )}
           </Stack>
@@ -125,21 +127,24 @@ export const LogsPage = (): JSX.Element => {
       },
       {
         field: 'metadata',
-        headerName: 'Метаданные',
+        headerName: t('logs.metadataHeader'),
         flex: 1,
         renderCell: (params) => {
           const metadata = params.row.metadata ?? {};
+          const ip = metadata.ip ?? t('common.notAvailable');
+          const service = metadata.service ?? t('common.notAvailable');
+          const user = metadata.user ?? t('common.notAvailable');
           return (
             <Stack spacing={0.5}>
-              <Typography variant="body2">IP: {metadata.ip ?? '—'}</Typography>
-              <Typography variant="body2">Сервис: {metadata.service ?? '—'}</Typography>
-              <Typography variant="body2">Пользователь: {metadata.user ?? '—'}</Typography>
+              <Typography variant="body2">{t('logs.metadata.ip', { value: ip })}</Typography>
+              <Typography variant="body2">{t('logs.metadata.service', { value: service })}</Typography>
+              <Typography variant="body2">{t('logs.metadata.user', { value: user })}</Typography>
             </Stack>
           );
         }
       }
     ],
-    []
+    [t]
   );
 
   const handleFilterChange = (field: keyof LogFilter) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -199,13 +204,13 @@ export const LogsPage = (): JSX.Element => {
   }
 
   if (projectsError) {
-    return <ErrorState message="Не удалось загрузить проекты" onRetry={() => refetchProjects()} />;
+    return <ErrorState message={t('logs.loadError')} onRetry={() => refetchProjects()} />;
   }
 
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
-        Просмотр логов
+        {t('logs.title')}
       </Typography>
       <Card>
         <CardContent>
@@ -214,10 +219,10 @@ export const LogsPage = (): JSX.Element => {
               <Grid container spacing={2}>
                 <Grid size={{ xs: 12, md: 4 }}>
                   <FormControl fullWidth>
-                    <InputLabel id="project-select">Проект</InputLabel>
+                    <InputLabel id="project-select">{t('logs.project')}</InputLabel>
                     <Select
                       labelId="project-select"
-                      label="Проект"
+                      label={t('logs.project')}
                       value={filterState.uuid}
                       onChange={handleSelectChange('uuid')}
                     >
@@ -231,31 +236,31 @@ export const LogsPage = (): JSX.Element => {
                 </Grid>
                 <Grid size={{ xs: 12, md: 3 }}>
                   <FormControl fullWidth>
-                    <InputLabel id="level-select">Уровень</InputLabel>
+                    <InputLabel id="level-select">{t('logs.level')}</InputLabel>
                     <Select
                       labelId="level-select"
-                      label="Уровень"
+                      label={t('logs.level')}
                       value={filterState.level ?? ''}
                       onChange={handleSelectChange('level')}
                     >
-                      <MenuItem value="">Все</MenuItem>
-                      <MenuItem value="DEBUG">DEBUG</MenuItem>
-                      <MenuItem value="INFO">INFO</MenuItem>
-                      <MenuItem value="WARNING">WARNING</MenuItem>
-                      <MenuItem value="ERROR">ERROR</MenuItem>
-                      <MenuItem value="CRITICAL">CRITICAL</MenuItem>
+                      <MenuItem value="">{t('logs.allLevels')}</MenuItem>
+                      <MenuItem value="DEBUG">{t('logs.levelOptions.debug')}</MenuItem>
+                      <MenuItem value="INFO">{t('logs.levelOptions.info')}</MenuItem>
+                      <MenuItem value="WARNING">{t('logs.levelOptions.warning')}</MenuItem>
+                      <MenuItem value="ERROR">{t('logs.levelOptions.error')}</MenuItem>
+                      <MenuItem value="CRITICAL">{t('logs.levelOptions.critical')}</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 <Grid size={{ xs: 12, md: 5 }}>
-                  <TextField label="Тег" fullWidth value={filterState.tag ?? ''} onChange={handleFilterChange('tag')} />
+                  <TextField label={t('logs.tag')} fullWidth value={filterState.tag ?? ''} onChange={handleFilterChange('tag')} />
                 </Grid>
               </Grid>
               <Collapse in={filtersExpanded} unmountOnExit>
                 <Grid container spacing={2} sx={{ mt: 0 }}>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label="Текст"
+                      label={t('logs.text')}
                       fullWidth
                       value={filterState.text ?? ''}
                       onChange={handleFilterChange('text')}
@@ -263,7 +268,7 @@ export const LogsPage = (): JSX.Element => {
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label="Пользователь"
+                      label={t('logs.user')}
                       fullWidth
                       value={filterState.user ?? ''}
                       onChange={handleFilterChange('user')}
@@ -271,7 +276,7 @@ export const LogsPage = (): JSX.Element => {
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label="IP"
+                      label={t('logs.ip')}
                       fullWidth
                       value={filterState.ip ?? ''}
                       onChange={handleFilterChange('ip')}
@@ -279,7 +284,7 @@ export const LogsPage = (): JSX.Element => {
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label="Сервис"
+                      label={t('logs.service')}
                       fullWidth
                       value={filterState.service ?? ''}
                       onChange={handleFilterChange('service')}
@@ -287,7 +292,7 @@ export const LogsPage = (): JSX.Element => {
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label="Начало"
+                      label={t('logs.startDate')}
                       type="datetime-local"
                       fullWidth
                       value={filterState.startDate ?? ''}
@@ -297,7 +302,7 @@ export const LogsPage = (): JSX.Element => {
                   </Grid>
                   <Grid size={{ xs: 12, md: 6 }}>
                     <TextField
-                      label="Окончание"
+                      label={t('logs.endDate')}
                       type="datetime-local"
                       fullWidth
                       value={filterState.endDate ?? ''}
@@ -314,16 +319,16 @@ export const LogsPage = (): JSX.Element => {
                   onClick={() => setFiltersExpanded((prev) => !prev)}
                   endIcon={filtersExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                 >
-                  {filtersExpanded ? 'Скрыть дополнительные фильтры' : 'Показать дополнительные фильтры'}
+                  {filtersExpanded ? t('logs.hideFilters') : t('logs.showFilters')}
                 </Button>
               </Box>
             </Stack>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <Button variant="contained" onClick={applyFilter} disabled={!filterState.uuid}>
-                Применить фильтры
+                {t('logs.apply')}
               </Button>
               <Button variant="outlined" onClick={exportLogs} disabled={!(logsQuery.data?.logs?.length)}>
-                Экспорт в CSV
+                {t('logs.export')}
               </Button>
               <Button
                 color="error"
@@ -331,15 +336,18 @@ export const LogsPage = (): JSX.Element => {
                 onClick={() => deleteMutation.mutate()}
                 disabled={deleteMutation.isPending || !filterState.uuid}
               >
-                {deleteMutation.isPending ? 'Очистка...' : 'Удалить по фильтру'}
+                {deleteMutation.isPending ? t('logs.deleting') : t('logs.deleteByFilter')}
               </Button>
             </Stack>
-            {logsQuery.isLoading && <LoadingState label="Загрузка логов..." />}
-            {logsQuery.isError && <ErrorState message="Не удалось загрузить логи" onRetry={() => logsQuery.refetch()} />}
+            {logsQuery.isLoading && <LoadingState label={t('common.loadingLogs')} />}
+            {logsQuery.isError && <ErrorState message={t('logs.logsLoadError')} onRetry={() => logsQuery.refetch()} />}
             {logsQuery.data && (
               <>
                 <Alert severity="info">
-                  Найдено логов: {logsQuery.data.logs.length}. Проект: {logsQuery.data.project.name}
+                  {t('logs.filtersApplied', {
+                    count: logsQuery.data.logs.length,
+                    project: logsQuery.data.project.name
+                  })}
                 </Alert>
                 <Box sx={{ height: 520, width: '100%' }}>
                   <DataGrid
@@ -349,7 +357,7 @@ export const LogsPage = (): JSX.Element => {
                     pageSizeOptions={[10, 25, 50]}
                     initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
                     disableRowSelectionOnClick
-                    localeText={{ noRowsLabel: 'Логи не найдены по заданным фильтрам' }}
+                    localeText={{ noRowsLabel: t('logs.noLogs') }}
                   />
                 </Box>
               </>

@@ -19,16 +19,24 @@ import { loginRequest } from '../api';
 import { useAuth } from '../hooks/useAuth';
 import { parseApiError } from '../utils/apiError';
 import { useThemeMode } from '../hooks/useThemeMode';
+import { getApiBaseUrl, setApiBaseUrl } from '../api/client';
+import { useTranslation } from '../hooks/useTranslation';
 
 export const LoginPage = (): JSX.Element => {
   const navigate = useNavigate();
   const { login, isAuthenticated } = useAuth();
   const { mode, toggleMode } = useThemeMode();
-  const [credentials, setCredentials] = useState({ username: '', password: '' });
+  const { t } = useTranslation();
+  const [formState, setFormState] = useState({ username: '', password: '', apiUrl: getApiBaseUrl() });
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  type LoginPayload = typeof formState;
+
   const mutation = useMutation({
-    mutationFn: () => loginRequest(credentials.username, credentials.password),
+    mutationFn: ({ username, password, apiUrl }: LoginPayload) => {
+      setApiBaseUrl(apiUrl);
+      return loginRequest(username, password);
+    },
     onSuccess: (data) => {
       login(data.token);
       navigate('/');
@@ -36,10 +44,10 @@ export const LoginPage = (): JSX.Element => {
     onError: (error: unknown) => {
       const { status, message } = parseApiError(error);
       if (status === 423) {
-        setErrorMessage(message ?? 'IP временно заблокирован.');
+        setErrorMessage(message ?? t('auth.blocked'));
         return;
       }
-      setErrorMessage(message ?? 'Не удалось выполнить вход');
+      setErrorMessage(message ?? t('auth.failed'));
     }
   });
 
@@ -49,53 +57,69 @@ export const LoginPage = (): JSX.Element => {
     }
   }, [isAuthenticated, navigate]);
 
-  const handleChange = (field: 'username' | 'password') => (event: React.ChangeEvent<HTMLInputElement>) => {
-    setCredentials((prev) => ({ ...prev, [field]: event.target.value }));
+  const handleChange = (field: keyof LoginPayload) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setFormState((prev) => ({ ...prev, [field]: event.target.value }));
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setErrorMessage(null);
-    mutation.mutate();
+    const payload: LoginPayload = {
+      username: formState.username,
+      password: formState.password,
+      apiUrl: formState.apiUrl.trim()
+    };
+    mutation.mutate(payload);
   };
 
   return (
     <Container maxWidth="sm" sx={{ display: 'flex', alignItems: 'center', minHeight: '100vh' }}>
       <Stack spacing={2} sx={{ width: '100%' }}>
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-          <Tooltip title={mode === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему'}>
-            <IconButton onClick={toggleMode} color="primary" aria-label="Переключатель темы">
+          <Tooltip title={mode === 'light' ? t('auth.themeDark') : t('auth.themeLight')}>
+            <IconButton
+              onClick={toggleMode}
+              color="primary"
+              aria-label={mode === 'light' ? t('auth.themeDark') : t('auth.themeLight')}
+            >
               {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
             </IconButton>
           </Tooltip>
         </Box>
         <Paper elevation={6} sx={{ p: 5, width: '100%', borderRadius: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-            Авторизация Logger
+            {t('auth.title')}
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Введите учетные данные администратора. При пяти неудачных попытках IP блокируется на 1 час.
+            {t('auth.description')}
           </Typography>
           <Box component="form" onSubmit={handleSubmit}>
             <Stack spacing={3}>
               <TextField
-                label="Логин"
+                label={t('auth.username')}
                 required
-                value={credentials.username}
+                value={formState.username}
                 onChange={handleChange('username')}
                 autoComplete="username"
               />
               <TextField
-                label="Пароль"
+                label={t('auth.password')}
                 type="password"
                 required
-                value={credentials.password}
+                value={formState.password}
                 onChange={handleChange('password')}
                 autoComplete="current-password"
               />
+              <TextField
+                label={t('auth.apiUrlLabel')}
+                value={formState.apiUrl}
+                onChange={handleChange('apiUrl')}
+                autoComplete="url"
+                helperText={t('auth.apiUrlHelp')}
+              />
               {errorMessage && <Alert severity="error">{errorMessage}</Alert>}
               <Button type="submit" variant="contained" size="large" disabled={mutation.isPending}>
-                {mutation.isPending ? 'Вход...' : 'Войти'}
+                {mutation.isPending ? t('auth.submitting') : t('auth.submit')}
               </Button>
             </Stack>
           </Box>

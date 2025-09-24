@@ -9,6 +9,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { ProjectForm } from '../components/projects/ProjectForm';
 import { ProjectDeleteDialog } from '../components/projects/ProjectDeleteDialog';
 import { parseApiError } from '../utils/apiError';
+import { useTranslation } from '../hooks/useTranslation';
 
 const projectToFormValues = (project: Project): CreateProjectPayload => ({
   name: project.name,
@@ -28,6 +29,7 @@ export const EditProjectPage = (): JSX.Element => {
   const { uuid } = useParams<{ uuid: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [formError, setFormError] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -48,7 +50,7 @@ export const EditProjectPage = (): JSX.Element => {
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);
-      setFormError(message ?? 'Не удалось обновить проект');
+      setFormError(message ?? t('editProject.error'));
     }
   });
 
@@ -61,7 +63,7 @@ export const EditProjectPage = (): JSX.Element => {
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);
-      setDeleteError(message ?? 'Не удалось удалить проект');
+      setDeleteError(message ?? t('editProject.deleteError'));
     }
   });
 
@@ -73,15 +75,15 @@ export const EditProjectPage = (): JSX.Element => {
   }, [projectQuery.data]);
 
   if (!uuid) {
-    return <ErrorState message="Не указан UUID проекта" />;
+    return <ErrorState message={t('editProject.missingUuid')} />;
   }
 
   if (projectQuery.isLoading) {
-    return <LoadingState label="Загрузка проекта..." />;
+    return <LoadingState label={t('editProject.loadInProgress')} />;
   }
 
   if (projectQuery.isError || !projectQuery.data || !formInitialValues) {
-    return <ErrorState message="Проект не найден" onRetry={() => projectQuery.refetch()} />;
+    return <ErrorState message={t('editProject.loadError')} onRetry={() => projectQuery.refetch()} />;
   }
 
   const handleSubmit = (values: CreateProjectPayload) => {
@@ -97,28 +99,28 @@ export const EditProjectPage = (): JSX.Element => {
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
-        Редактирование проекта
+        {t('editProject.title')}
       </Typography>
       <Card>
         <CardContent>
           <ProjectForm
             initialValues={formInitialValues}
-            submitLabel="Сохранить изменения"
+            submitLabel={t('editProject.submit')}
             isSubmitting={updateMutation.isPending}
             onSubmit={handleSubmit}
             error={formError}
             secondaryActions={[
               <Button key="cancel" variant="text" onClick={() => navigate('/projects')}>
-                Отмена
+                {t('common.cancel')}
               </Button>,
               <Button key="delete" variant="outlined" color="error" onClick={() => setDeleteDialogOpen(true)}>
-                Удалить проект
+                {t('editProject.delete')}
               </Button>
             ]}
           />
         </CardContent>
       </Card>
-      {updateMutation.isPending && <LoadingState label="Сохранение изменений..." />}
+      {updateMutation.isPending && <LoadingState label={t('editProject.loading')} />}
       <ProjectDeleteDialog
         open={deleteDialogOpen}
         projectName={projectQuery.data.name}
@@ -130,6 +132,7 @@ export const EditProjectPage = (): JSX.Element => {
         onConfirm={handleDelete}
         isLoading={deleteMutation.isPending}
         error={deleteError}
+        translationNamespace="projects"
       />
     </Stack>
   );

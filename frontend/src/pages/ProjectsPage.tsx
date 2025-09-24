@@ -21,11 +21,13 @@ import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime } from '../utils/formatters';
 import { ProjectDeleteDialog } from '../components/projects/ProjectDeleteDialog';
 import { parseApiError } from '../utils/apiError';
+import { useTranslation } from '../hooks/useTranslation';
 
 const SYSTEM_PROJECT_NAME = 'Logger Core';
 
 export const ProjectsPage = (): JSX.Element => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export const ProjectsPage = (): JSX.Element => {
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);
-      setDeleteError(message ?? 'Не удалось удалить проект');
+      setDeleteError(message ?? t('projects.deleteError'));
     }
   });
 
@@ -85,7 +87,7 @@ export const ProjectsPage = (): JSX.Element => {
     () => [
       {
         field: 'name',
-        headerName: 'Название',
+        headerName: t('projects.columns.name'),
         flex: 1.2,
         renderCell: (params) => (
           <Stack spacing={1}>
@@ -93,14 +95,14 @@ export const ProjectsPage = (): JSX.Element => {
               {params.row.name}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {params.row.description ?? 'Описание не задано'}
+              {params.row.description ?? t('projects.descriptionMissing')}
             </Typography>
           </Stack>
         )
       },
       {
         field: 'uuid',
-        headerName: 'UUID',
+        headerName: t('projects.columns.uuid'),
         flex: 1,
         renderCell: (params) => (
           <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
@@ -110,43 +112,43 @@ export const ProjectsPage = (): JSX.Element => {
       },
       {
         field: 'telegram',
-        headerName: 'Telegram',
+        headerName: t('projects.columns.telegram'),
         width: 160,
         renderCell: (params) =>
           params.row.telegramNotify.enabled ? (
             <Stack spacing={1}>
-              <Chip label="Включено" color="success" size="small" />
+              <Chip label={t('projects.telegramEnabled')} color="success" size="small" />
               <Typography variant="caption" color="text.secondary">
-                Получателей: {params.row.telegramNotify.recipients.length}
+                {t('projects.telegramRecipients', { count: params.row.telegramNotify.recipients.length })}
               </Typography>
             </Stack>
           ) : (
-            <Chip label="Отключено" size="small" />
+            <Chip label={t('projects.telegramDisabled')} size="small" />
           )
       },
       {
         field: 'accessLevel',
-        headerName: 'Доступ',
+        headerName: t('projects.columns.access'),
         width: 150,
         valueGetter: (value) => value,
         renderCell: (params) => <Chip label={params.row.accessLevel} size="small" color="info" />
       },
       {
         field: 'createdAt',
-        headerName: 'Создан',
+        headerName: t('projects.columns.createdAt'),
         width: 180,
         renderCell: (params) => <Typography variant="body2">{formatDateTime(params.row.createdAt)}</Typography>
       },
       {
         field: 'actions',
-        headerName: 'Действия',
+        headerName: t('projects.columns.actions'),
         flex: 1,
         minWidth: 360,
         sortable: false,
         filterable: false,
         renderCell: (params) => (
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ width: '100%' }}>
-            <Tooltip title="Скопировать UUID">
+            <Tooltip title={t('projects.copyUuid')}>
               <span>
                 <Button
                   size="small"
@@ -154,12 +156,12 @@ export const ProjectsPage = (): JSX.Element => {
                   onClick={() => handleCopyUuid(params.row.uuid)}
                   startIcon={<ContentCopyIcon fontSize="small" />}
                 >
-                  UUID
+                  {t('common.uuid')}
                 </Button>
               </span>
             </Tooltip>
             <Button size="small" variant="outlined" onClick={() => navigate(`/logs?uuid=${params.row.uuid}`)}>
-              Логи
+              {t('projects.logs')}
             </Button>
             {params.row.name !== SYSTEM_PROJECT_NAME && (
               <>
@@ -168,7 +170,7 @@ export const ProjectsPage = (): JSX.Element => {
                   variant="outlined"
                   onClick={() => navigate(`/projects/${params.row.uuid}/edit`)}
                 >
-                  Изменить
+                  {t('projects.edit')}
                 </Button>
                 <Button
                   size="small"
@@ -179,14 +181,14 @@ export const ProjectsPage = (): JSX.Element => {
                     setDeleteTarget(params.row);
                   }}
                 >
-                  Удалить
+                  {t('projects.delete')}
                 </Button>
                 <Button
                   size="small"
                   variant="outlined"
                   onClick={() => navigate(`/ping-services?uuid=${params.row.uuid}`)}
                 >
-                  Ping
+                  {t('projects.ping')}
                 </Button>
               </>
             )}
@@ -194,7 +196,7 @@ export const ProjectsPage = (): JSX.Element => {
         )
       }
     ],
-    [handleCopyUuid, navigate]
+    [handleCopyUuid, navigate, t]
   );
 
   if (isLoading) {
@@ -202,26 +204,26 @@ export const ProjectsPage = (): JSX.Element => {
   }
 
   if (isError) {
-    return <ErrorState message="Не удалось загрузить проекты" onRetry={() => refetch()} />;
+    return <ErrorState message={t('projects.loadError')} onRetry={() => refetch()} />;
   }
 
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
-        Проекты
+        {t('projects.title')}
       </Typography>
       <Card>
         <CardContent>
           <Stack spacing={2}>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
               <TextField
-                label="Поиск по названию, описанию или UUID"
+                label={t('projects.searchPlaceholder')}
                 fullWidth
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
               <Button variant="contained" onClick={() => navigate('/projects/new')}>
-                Добавить проект
+                {t('projects.addProject')}
               </Button>
             </Stack>
             <Box sx={{ height: 520, width: '100%' }}>
@@ -235,9 +237,13 @@ export const ProjectsPage = (): JSX.Element => {
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 disableRowSelectionOnClick
                 localeText={{
-                  noRowsLabel: 'Нет проектов',
-                  columnMenuLabel: 'Меню',
-                  footerTotalVisibleRows: (visibleCount, totalCount) => `${visibleCount.toLocaleString()} из ${totalCount.toLocaleString()}`
+                  noRowsLabel: t('projects.noProjects'),
+                  columnMenuLabel: t('projects.menu'),
+                  footerTotalVisibleRows: (visibleCount, totalCount) =>
+                    t('projects.totalRows', {
+                      visible: visibleCount.toLocaleString(),
+                      total: totalCount.toLocaleString()
+                    })
                 }}
                 sx={{
                   '& .MuiDataGrid-row': {
@@ -271,6 +277,7 @@ export const ProjectsPage = (): JSX.Element => {
         }}
         isLoading={deleteMutation.isPending}
         error={deleteError}
+        translationNamespace="projects"
       />
     </Stack>
   );
