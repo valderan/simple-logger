@@ -26,12 +26,14 @@ import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime, formatRelative } from '../utils/formatters';
 import { Project } from '../api/types';
+import { useTranslation } from '../hooks/useTranslation';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
 const criticalLevels = ['ERROR', 'CRITICAL'];
 
 export const DashboardPage = (): JSX.Element => {
+  const { t } = useTranslation();
   const {
     data: projects,
     isLoading: projectsLoading,
@@ -74,13 +76,13 @@ export const DashboardPage = (): JSX.Element => {
       labels: levels,
       datasets: [
         {
-          label: 'Количество логов',
+          label: t('dashboard.logsDatasetLabel'),
           data: counts,
           backgroundColor: ['#6c757d', '#0f6efd', '#f0ad4e', '#dc3545', '#6f42c1']
         }
       ]
     };
-  }, [logsQueries]);
+  }, [logsQueries, t]);
 
   const isLoading = projectsLoading || logsQueries.some((query) => query.isLoading) || pingQueries.some((query) => query.isLoading);
   const hasError = projectsError || logsQueries.some((query) => query.isError) || pingQueries.some((query) => query.isError);
@@ -90,7 +92,7 @@ export const DashboardPage = (): JSX.Element => {
   }
 
   if (hasError) {
-    return <ErrorState message="Не удалось загрузить данные дашборда" onRetry={() => refetchProjects()} />;
+    return <ErrorState message={t('dashboard.loadError')} onRetry={() => refetchProjects()} />;
   }
 
   const totalPingServices = pingQueries.reduce((acc, query) => acc + (query.data?.length ?? 0), 0);
@@ -99,20 +101,20 @@ export const DashboardPage = (): JSX.Element => {
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
-        Общая сводка
+        {t('dashboard.title')}
       </Typography>
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, md: 4 }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
-                Всего проектов
+                {t('dashboard.totalProjects')}
               </Typography>
               <Typography variant="h3" sx={{ fontWeight: 700 }}>
                 {projects?.length ?? 0}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Управление логами и уведомлениями
+                {t('dashboard.totalProjectsDescription')}
               </Typography>
             </CardContent>
           </Card>
@@ -121,13 +123,13 @@ export const DashboardPage = (): JSX.Element => {
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
-                Мониторинг ping-сервисов
+                {t('dashboard.pingMonitoring')}
               </Typography>
               <Typography variant="h3" sx={{ fontWeight: 700 }}>
                 {totalPingServices}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Активные проверки доступности
+                {t('dashboard.pingMonitoringDescription')}
               </Typography>
             </CardContent>
           </Card>
@@ -136,13 +138,13 @@ export const DashboardPage = (): JSX.Element => {
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
-                Telegram-уведомления
+                {t('dashboard.telegramEnabled')}
               </Typography>
               <Typography variant="h3" sx={{ fontWeight: 700 }}>
                 {projectsWithAlerts}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Проектов с активными оповещениями
+                {t('dashboard.telegramEnabledDescription')}
               </Typography>
             </CardContent>
           </Card>
@@ -154,7 +156,7 @@ export const DashboardPage = (): JSX.Element => {
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Распределение логов по уровням
+                {t('dashboard.logDistribution')}
               </Typography>
               <Bar
                 data={logLevelsDistribution}
@@ -173,14 +175,17 @@ export const DashboardPage = (): JSX.Element => {
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-                Последние инциденты
+                {t('dashboard.incidents')}
               </Typography>
               {latestIncidents.length === 0 ? (
-                <Alert severity="success">Критических инцидентов не зафиксировано.</Alert>
+                <Alert severity="success">{t('dashboard.noIncidents')}</Alert>
               ) : (
                 <List>
                   {latestIncidents.map((log) => {
                     const metadata = log.metadata ?? {};
+                    const ip = metadata.ip ?? t('common.notAvailable');
+                    const service = metadata.service ?? t('common.notAvailable');
+                    const user = metadata.user ?? t('common.notAvailable');
                     return (
                       <ListItem key={log._id} divider alignItems="flex-start">
                         <ListItemText
@@ -201,7 +206,7 @@ export const DashboardPage = (): JSX.Element => {
                                 {log.message}
                               </Typography>
                               <Typography variant="caption" color="text.secondary">
-                                IP: {metadata.ip ?? '—'} · Сервис: {metadata.service ?? '—'} · Пользователь: {metadata.user ?? '—'}
+                                {t('dashboard.incidentMeta', { ip, service, user })}
                               </Typography>
                             </>
                           }
@@ -219,7 +224,7 @@ export const DashboardPage = (): JSX.Element => {
       <Card>
         <CardContent>
           <Typography variant="h6" gutterBottom sx={{ fontWeight: 600 }}>
-            Активные проекты
+            {t('dashboard.activeProjects')}
           </Typography>
           <List>
             {(projects ?? []).map((project: Project) => (
@@ -230,11 +235,15 @@ export const DashboardPage = (): JSX.Element => {
                       <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
                         {project.name}
                       </Typography>
-                      {project.telegramNotify.enabled && <Chip label="Telegram" color="primary" size="small" />}
-                      {project.debugMode && <Chip label="Debug" color="warning" size="small" />}
+                      {project.telegramNotify.enabled && <Chip label={t('common.telegram')} color="primary" size="small" />}
+                      {project.debugMode && <Chip label={t('common.debug')} color="warning" size="small" />}
                     </Stack>
                   }
-                  secondary={`UUID: ${project.uuid} · Создан: ${formatDateTime(project.createdAt)} · Доступ: ${project.accessLevel}`}
+                  secondary={t('dashboard.createdAt', {
+                    uuid: project.uuid,
+                    date: formatDateTime(project.createdAt),
+                    access: project.accessLevel
+                  })}
                 />
               </ListItem>
             ))}

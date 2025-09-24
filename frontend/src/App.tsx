@@ -9,6 +9,7 @@ import { EditProjectPage } from './pages/EditProjectPage';
 import { TelegramPage } from './pages/TelegramPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { LoginPage } from './pages/LoginPage';
+import { FAQPage } from './pages/FAQPage';
 import { useAuth } from './hooks/useAuth';
 
 const RequireAuth = ({ children }: { children: JSX.Element }) => {
@@ -39,6 +40,7 @@ export default function App(): JSX.Element {
         <Route path="logs" element={<LogsPage />} />
         <Route path="telegram" element={<TelegramPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="faq" element={<FAQPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

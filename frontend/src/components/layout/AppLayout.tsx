@@ -13,7 +13,9 @@ import {
   Toolbar,
   Tooltip,
   Typography,
-  Stack
+  Stack,
+  ToggleButton,
+  ToggleButtonGroup
 } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import FolderIcon from '@mui/icons-material/FolderOutlined';
@@ -28,28 +30,31 @@ import DarkModeIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeIcon from '@mui/icons-material/LightModeOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRightOutlined';
+import HelpIcon from '@mui/icons-material/HelpOutline';
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useThemeMode } from '../../hooks/useThemeMode';
 import { LOGGER_PAGE_URL, LOGGER_VERSION } from '../../config';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const drawerWidth = 260;
 const collapsedDrawerWidth = 80;
 
 type NavigationItem = {
-  label: string;
+  labelKey: string;
   path: string;
   icon: JSX.Element;
 };
 
-const navigationItems: NavigationItem[] = [
-  { label: 'Дашборд', path: '/', icon: <DashboardIcon /> },
-  { label: 'Проекты', path: '/projects', icon: <FolderIcon /> },
-  { label: 'Просмотр логов', path: '/logs', icon: <AssignmentIcon /> },
-  { label: 'Ping-мониторинг', path: '/ping-services', icon: <WifiIcon /> },
-  { label: 'Добавить проект', path: '/projects/new', icon: <AddCircleIcon /> },
-  { label: 'Telegram', path: '/telegram', icon: <TelegramIcon /> },
-  { label: 'Настройки', path: '/settings', icon: <SettingsIcon /> }
+const baseNavigationItems: NavigationItem[] = [
+  { labelKey: 'navigation.dashboard', path: '/', icon: <DashboardIcon /> },
+  { labelKey: 'navigation.projects', path: '/projects', icon: <FolderIcon /> },
+  { labelKey: 'navigation.logs', path: '/logs', icon: <AssignmentIcon /> },
+  { labelKey: 'navigation.ping', path: '/ping-services', icon: <WifiIcon /> },
+  { labelKey: 'navigation.addProject', path: '/projects/new', icon: <AddCircleIcon /> },
+  { labelKey: 'navigation.telegram', path: '/telegram', icon: <TelegramIcon /> },
+  { labelKey: 'navigation.settings', path: '/settings', icon: <SettingsIcon /> },
+  { labelKey: 'navigation.faq', path: '/faq', icon: <HelpIcon /> }
 ];
 
 export const AppLayout = (): JSX.Element => {
@@ -58,12 +63,13 @@ export const AppLayout = (): JSX.Element => {
   const { mode, toggleMode } = useThemeMode();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { t, language, setLanguage } = useTranslation();
 
   const activePath = useMemo(() => {
     if (location.pathname === '/') {
       return '/';
     }
-    const item = navigationItems.find((nav) => location.pathname.startsWith(nav.path));
+    const item = baseNavigationItems.find((nav) => location.pathname.startsWith(nav.path));
     return item?.path ?? '/';
   }, [location.pathname]);
 
@@ -75,17 +81,18 @@ export const AppLayout = (): JSX.Element => {
       <Toolbar sx={{ justifyContent: isDrawerExpanded ? 'flex-start' : 'center' }}>
         {isDrawerExpanded ? (
           <Typography variant="h6" component="div" sx={{ fontWeight: 600 }}>
-            Logger
+            {t('common.projectName')}
           </Typography>
         ) : (
           <Typography variant="h6" component="div" sx={{ fontWeight: 700 }}>
-            L
+            SL
           </Typography>
         )}
       </Toolbar>
       <Divider />
       <List>
-        {navigationItems.map((item) => {
+        {baseNavigationItems.map((item) => {
+          const label = t(item.labelKey);
           const button = (
             <ListItemButton
               key={item.path}
@@ -108,14 +115,14 @@ export const AppLayout = (): JSX.Element => {
               >
                 {item.icon}
               </ListItemIcon>
-              {isDrawerExpanded && <ListItemText primary={item.label} />}
+              {isDrawerExpanded && <ListItemText primary={label} />}
             </ListItemButton>
           );
           if (isDrawerExpanded) {
             return button;
           }
           return (
-            <Tooltip key={item.path} title={item.label} placement="right">
+            <Tooltip key={item.path} title={label} placement="right">
               <Box component="span" sx={{ display: 'block' }}>
                 {button}
               </Box>
@@ -125,15 +132,10 @@ export const AppLayout = (): JSX.Element => {
       </List>
       <Box sx={{ flexGrow: 1 }} />
       <Divider />
-      {isDrawerExpanded && (LOGGER_VERSION || LOGGER_PAGE_URL) && (
+      {isDrawerExpanded && (
         <Box sx={{ p: 2 }}>
           <Stack spacing={1}>
-            {LOGGER_VERSION && (
-              <Typography variant="caption" color="text.secondary">
-                Версия {LOGGER_VERSION}
-              </Typography>
-            )}
-            {LOGGER_PAGE_URL && (
+            {LOGGER_PAGE_URL ? (
               <MuiLink
                 href={LOGGER_PAGE_URL}
                 target="_blank"
@@ -143,8 +145,17 @@ export const AppLayout = (): JSX.Element => {
                 color="inherit"
                 sx={{ wordBreak: 'break-all' }}
               >
-                {LOGGER_PAGE_URL}
+                {t('common.projectName')}
               </MuiLink>
+            ) : (
+              <Typography variant="caption" color="text.secondary">
+                {t('common.projectName')}
+              </Typography>
+            )}
+            {LOGGER_VERSION && (
+              <Typography variant="caption" color="text.secondary">
+                {t('navigation.versionLabel', { version: LOGGER_VERSION })}
+              </Typography>
             )}
           </Stack>
         </Box>
@@ -166,10 +177,10 @@ export const AppLayout = (): JSX.Element => {
             <MenuIcon />
           </IconButton>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1, fontWeight: 600 }}>
-            Панель управления Logger
+            {t('navigation.appBarTitle')}
           </Typography>
           <Stack direction="row" spacing={1} alignItems="center">
-            <Tooltip title={isCollapsed ? 'Развернуть меню' : 'Свернуть меню'}>
+            <Tooltip title={isCollapsed ? t('navigation.expand') : t('navigation.collapse')}>
               <span>
                 <IconButton
                   color="inherit"
@@ -180,12 +191,40 @@ export const AppLayout = (): JSX.Element => {
                 </IconButton>
               </span>
             </Tooltip>
-            <Tooltip title={mode === 'light' ? 'Включить тёмную тему' : 'Включить светлую тему'}>
+            <Tooltip title={mode === 'light' ? t('navigation.toggleThemeDark') : t('navigation.toggleThemeLight')}>
               <IconButton color="inherit" onClick={toggleMode}>
                 {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
               </IconButton>
             </Tooltip>
-            <Tooltip title="Выйти">
+            <Tooltip title={t('navigation.language')}>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={language}
+                onChange={(_, value) => {
+                  if (value) {
+                    setLanguage(value);
+                  }
+                }}
+                aria-label={t('navigation.language')}
+                sx={{
+                  bgcolor: 'rgba(255,255,255,0.16)',
+                  borderRadius: 2,
+                  '& .MuiToggleButton-root': {
+                    color: 'inherit',
+                    border: 'none',
+                    px: 1.5,
+                    '&.Mui-selected': {
+                      bgcolor: 'rgba(255,255,255,0.24)'
+                    }
+                  }
+                }}
+              >
+                <ToggleButton value="en">EN</ToggleButton>
+                <ToggleButton value="ru">RU</ToggleButton>
+              </ToggleButtonGroup>
+            </Tooltip>
+            <Tooltip title={t('navigation.logout')}>
               <IconButton color="inherit" onClick={logout}>
                 <LogoutIcon />
               </IconButton>
