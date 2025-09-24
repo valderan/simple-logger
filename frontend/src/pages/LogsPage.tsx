@@ -29,7 +29,6 @@ import { useTranslation } from '../hooks/useTranslation';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import { copyToClipboard } from '../utils/clipboard';
 
 const defaultFilter: LogFilter = { uuid: '', projectUuid: undefined, logId: undefined };
@@ -129,12 +128,18 @@ export const LogsPage = (): JSX.Element => {
             <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
               {formatDateTime(params.row.timestamp)}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {params.row.level}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ fontFamily: 'monospace' }}>
-              {params.row._id}
-            </Typography>
+            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Typography variant="caption" color="text.secondary">
+                {params.row.level}
+              </Typography>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontFamily: 'monospace' }}
+              >
+                {params.row._id}
+              </Typography>
+            </Stack>
           </Stack>
         )
       },
@@ -180,7 +185,7 @@ export const LogsPage = (): JSX.Element => {
         renderCell: (params) => {
           const isDeleting = isDeleteLogPending && deletingLogId === params.row._id;
           return (
-            <Stack spacing={1} alignItems="flex-start">
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
               <Tooltip title={t('logs.copyLog')}>
                 <Button
                   size="small"
@@ -197,11 +202,11 @@ export const LogsPage = (): JSX.Element => {
                     size="small"
                     variant="outlined"
                     color="error"
-                    startIcon={<DeleteOutlineIcon fontSize="small" />}
                     disabled={isDeleting}
+                    aria-label={t('logs.deleteLog')}
                     onClick={() => mutateDeleteLog({ projectUuid: params.row.projectUuid, logId: params.row._id })}
                   >
-                    {isDeleting ? t('common.deleteInProgress') : t('common.delete')}
+                    {isDeleting ? t('common.deleteInProgress') : 'х'}
                   </Button>
                 </span>
               </Tooltip>
