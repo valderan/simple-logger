@@ -80,21 +80,6 @@ export const ProjectsPage = (): JSX.Element => {
         )
       },
       {
-        field: 'tags',
-        headerName: 'Теги',
-        flex: 1,
-        renderCell: (params) => (
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            {params.row.defaultTags.map((tag) => (
-              <Chip key={tag} label={tag} size="small" sx={{ mb: 0.5 }} />
-            ))}
-            {params.row.customTags.map((tag) => (
-              <Chip key={tag} label={tag} color="primary" size="small" sx={{ mb: 0.5 }} />
-            ))}
-          </Stack>
-        )
-      },
-      {
         field: 'telegram',
         headerName: 'Telegram',
         width: 160,
@@ -126,11 +111,12 @@ export const ProjectsPage = (): JSX.Element => {
       {
         field: 'actions',
         headerName: 'Действия',
-        width: 320,
+        flex: 1,
+        minWidth: 320,
         sortable: false,
         filterable: false,
         renderCell: (params) => (
-          <Stack direction="row" spacing={1} flexWrap="wrap">
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ width: '100%' }}>
             <Button size="small" variant="outlined" onClick={() => navigate(`/projects/${params.row.uuid}/edit`)}>
               Изменить
             </Button>
@@ -190,6 +176,8 @@ export const ProjectsPage = (): JSX.Element => {
                 rows={filteredProjects}
                 columns={columns}
                 getRowId={(row) => row.uuid}
+                getRowHeight={() => 'auto'}
+                getEstimatedRowHeight={() => 160}
                 pageSizeOptions={[5, 10, 25]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 disableRowSelectionOnClick
@@ -197,6 +185,17 @@ export const ProjectsPage = (): JSX.Element => {
                   noRowsLabel: 'Нет проектов',
                   columnMenuLabel: 'Меню',
                   footerTotalVisibleRows: (visibleCount, totalCount) => `${visibleCount.toLocaleString()} из ${totalCount.toLocaleString()}`
+                }}
+                sx={{
+                  '& .MuiDataGrid-row': {
+                    maxHeight: 'none !important'
+                  },
+                  '& .MuiDataGrid-cell': {
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    whiteSpace: 'normal',
+                    py: 1.5
+                  }
                 }}
               />
             </Box>

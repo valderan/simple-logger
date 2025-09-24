@@ -135,17 +135,20 @@ export const SettingsPage = (): JSX.Element => {
             {systemLogsQuery.data && (
               <Box sx={{ maxHeight: 320, overflow: 'auto', bgcolor: 'grey.50', borderRadius: 2, p: 2 }}>
                 <Stack spacing={1.5}>
-                  {systemLogsQuery.data.logs.slice(0, 20).map((log) => (
-                    <Box key={log._id} sx={{ borderBottom: '1px solid', borderColor: 'grey.200', pb: 1 }}>
-                      <Typography variant="caption" color="text.secondary">
-                        {formatDateTime(log.timestamp)} · {log.level}
-                      </Typography>
-                      <Typography variant="body2">{log.message}</Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        IP: {log.metadata.ip ?? '—'} · Сервис: {log.metadata.service ?? '—'}
-                      </Typography>
-                    </Box>
-                  ))}
+                  {systemLogsQuery.data.logs.slice(0, 20).map((log) => {
+                    const metadata = log.metadata ?? {};
+                    return (
+                      <Box key={log._id} sx={{ borderBottom: '1px solid', borderColor: 'grey.200', pb: 1 }}>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDateTime(log.timestamp)} · {log.level}
+                        </Typography>
+                        <Typography variant="body2">{log.message}</Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          IP: {metadata.ip ?? '—'} · Сервис: {metadata.service ?? '—'}
+                        </Typography>
+                      </Box>
+                    );
+                  })}
                 </Stack>
               </Box>
             )}

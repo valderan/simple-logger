@@ -114,13 +114,16 @@ export const LogsPage = (): JSX.Element => {
         field: 'metadata',
         headerName: 'Метаданные',
         flex: 1,
-        renderCell: (params) => (
-          <Stack spacing={0.5}>
-            <Typography variant="body2">IP: {params.row.metadata.ip ?? '—'}</Typography>
-            <Typography variant="body2">Сервис: {params.row.metadata.service ?? '—'}</Typography>
-            <Typography variant="body2">Пользователь: {params.row.metadata.user ?? '—'}</Typography>
-          </Stack>
-        )
+        renderCell: (params) => {
+          const metadata = params.row.metadata ?? {};
+          return (
+            <Stack spacing={0.5}>
+              <Typography variant="body2">IP: {metadata.ip ?? '—'}</Typography>
+              <Typography variant="body2">Сервис: {metadata.service ?? '—'}</Typography>
+              <Typography variant="body2">Пользователь: {metadata.user ?? '—'}</Typography>
+            </Stack>
+          );
+        }
       }
     ],
     []
@@ -162,9 +165,9 @@ export const LogsPage = (): JSX.Element => {
           row.level,
           row.message.replace(/\n/g, ' '),
           row.tags.join(','),
-          row.metadata.ip ?? '',
-          row.metadata.service ?? '',
-          row.metadata.user ?? ''
+          row.metadata?.ip ?? '',
+          row.metadata?.service ?? '',
+          row.metadata?.user ?? ''
         ].join(';')
       )
     ].join('\n');

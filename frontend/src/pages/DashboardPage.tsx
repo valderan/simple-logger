@@ -179,34 +179,36 @@ export const DashboardPage = (): JSX.Element => {
                 <Alert severity="success">Критических инцидентов не зафиксировано.</Alert>
               ) : (
                 <List>
-                  {latestIncidents.map((log) => (
-                    <ListItem key={log._id} divider alignItems="flex-start">
-                      <ListItemText
-                        primary={
-                          <Stack direction="row" spacing={1} alignItems="center">
-                            <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-                              {log.level}
-                            </Typography>
-                            <Chip label={log.projectUuid} size="small" />
-                            <Typography variant="caption" color="text.secondary">
-                              {formatRelative(log.timestamp)}
-                            </Typography>
-                          </Stack>
-                        }
-                        secondary={
-                          <>
-                            <Typography variant="body2" sx={{ mb: 1 }}>
-                              {log.message}
-                            </Typography>
-                            <Typography variant="caption" color="text.secondary">
-                              IP: {log.metadata.ip ?? '—'} · Сервис: {log.metadata.service ?? '—'} · Пользователь:{' '}
-                              {log.metadata.user ?? '—'}
-                            </Typography>
-                          </>
-                        }
-                      />
-                    </ListItem>
-                  ))}
+                  {latestIncidents.map((log) => {
+                    const metadata = log.metadata ?? {};
+                    return (
+                      <ListItem key={log._id} divider alignItems="flex-start">
+                        <ListItemText
+                          primary={
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+                                {log.level}
+                              </Typography>
+                              <Chip label={log.projectUuid} size="small" />
+                              <Typography variant="caption" color="text.secondary">
+                                {formatRelative(log.timestamp)}
+                              </Typography>
+                            </Stack>
+                          }
+                          secondary={
+                            <>
+                              <Typography variant="body2" sx={{ mb: 1 }}>
+                                {log.message}
+                              </Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                IP: {metadata.ip ?? '—'} · Сервис: {metadata.service ?? '—'} · Пользователь: {metadata.user ?? '—'}
+                              </Typography>
+                            </>
+                          }
+                        />
+                      </ListItem>
+                    );
+                  })}
                 </List>
               )}
             </CardContent>
