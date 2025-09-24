@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -9,9 +9,11 @@ import {
   Chip,
   Stack,
   TextField,
+  Tooltip,
   Typography
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
 import { deleteProject, fetchProjects } from '../api';
 import { Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
@@ -19,6 +21,8 @@ import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime } from '../utils/formatters';
 import { ProjectDeleteDialog } from '../components/projects/ProjectDeleteDialog';
 import { parseApiError } from '../utils/apiError';
+
+const SYSTEM_PROJECT_NAME = 'Logger Core';
 
 export const ProjectsPage = (): JSX.Element => {
   const navigate = useNavigate();
@@ -51,6 +55,31 @@ export const ProjectsPage = (): JSX.Element => {
       [project.name, project.description, project.uuid].some((field) => field?.toLowerCase().includes(term))
     );
   }, [projects, search]);
+
+  const handleCopyUuid = useCallback(async (uuid: string) => {
+    try {
+      if ('clipboard' in navigator && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(uuid);
+        return;
+      }
+    } catch (error) {
+      console.error('Не удалось скопировать UUID через Clipboard API', error);
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.value = uuid;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'absolute';
+    textarea.style.left = '-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+    } catch (error) {
+      console.error('Не удалось скопировать UUID', error);
+    }
+    document.body.removeChild(textarea);
+  }, []);
 
   const columns = useMemo<GridColDef<Project>[]>(
     () => [
@@ -112,36 +141,60 @@ export const ProjectsPage = (): JSX.Element => {
         field: 'actions',
         headerName: 'Действия',
         flex: 1,
-        minWidth: 320,
+        minWidth: 360,
         sortable: false,
         filterable: false,
         renderCell: (params) => (
           <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ width: '100%' }}>
-            <Button size="small" variant="outlined" onClick={() => navigate(`/projects/${params.row.uuid}/edit`)}>
-              Изменить
-            </Button>
-            <Button
-              size="small"
-              variant="outlined"
-              color="error"
-              onClick={() => {
-                setDeleteError(null);
-                setDeleteTarget(params.row);
-              }}
-            >
-              Удалить
-            </Button>
+            <Tooltip title="Скопировать UUID">
+              <span>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => handleCopyUuid(params.row.uuid)}
+                  startIcon={<ContentCopyIcon fontSize="small" />}
+                >
+                  UUID
+                </Button>
+              </span>
+            </Tooltip>
             <Button size="small" variant="outlined" onClick={() => navigate(`/logs?uuid=${params.row.uuid}`)}>
               Логи
             </Button>
-            <Button size="small" variant="outlined" onClick={() => navigate(`/ping-services?uuid=${params.row.uuid}`)}>
-              Ping
-            </Button>
+            {params.row.name !== SYSTEM_PROJECT_NAME && (
+              <>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => navigate(`/projects/${params.row.uuid}/edit`)}
+                >
+                  Изменить
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="error"
+                  onClick={() => {
+                    setDeleteError(null);
+                    setDeleteTarget(params.row);
+                  }}
+                >
+                  Удалить
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={() => navigate(`/ping-services?uuid=${params.row.uuid}`)}
+                >
+                  Ping
+                </Button>
+              </>
+            )}
           </Stack>
         )
       }
     ],
-    [navigate]
+    [handleCopyUuid, navigate]
   );
 
   if (isLoading) {

@@ -2,6 +2,12 @@ export const API_URL = (import.meta.env.VITE_API_URL as string | undefined) && i
   ? (import.meta.env.VITE_API_URL as string)
   : '';
 
-export const APP_VERSION = (typeof __APP_VERSION__ !== 'undefined' ? (__APP_VERSION__ as string) : '0.0.0');
+export const LOGGER_VERSION = (import.meta.env.LOGGER_VERSION as string | undefined) &&
+  import.meta.env.LOGGER_VERSION !== ''
+  ? (import.meta.env.LOGGER_VERSION as string)
+  : undefined;
 
-declare const __APP_VERSION__: string;
+export const LOGGER_PAGE_URL = (import.meta.env.LOGGER_PAGE_URL as string | undefined) &&
+  import.meta.env.LOGGER_PAGE_URL !== ''
+  ? (import.meta.env.LOGGER_PAGE_URL as string)
+  : undefined;

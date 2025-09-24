@@ -8,9 +8,8 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     define: {
-      __APP_VERSION__: JSON.stringify(process.env.npm_package_version ?? '0.0.0'),
       'import.meta.env.VITE_API_URL': JSON.stringify(apiUrl)
     },
-    envPrefix: ['VITE_', 'API_', 'APP_']
+    envPrefix: ['VITE_', 'API_', 'APP_', 'LOGGER_']
   };
 });

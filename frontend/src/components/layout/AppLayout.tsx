@@ -5,6 +5,7 @@ import {
   Divider,
   Drawer,
   IconButton,
+  Link as MuiLink,
   List,
   ListItemButton,
   ListItemIcon,
@@ -30,7 +31,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRightOutlined';
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useThemeMode } from '../../hooks/useThemeMode';
-import { APP_VERSION } from '../../config';
+import { LOGGER_PAGE_URL, LOGGER_VERSION } from '../../config';
 
 const drawerWidth = 260;
 const collapsedDrawerWidth = 80;
@@ -57,7 +58,6 @@ export const AppLayout = (): JSX.Element => {
   const { mode, toggleMode } = useThemeMode();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isHovered, setIsHovered] = useState(false);
 
   const activePath = useMemo(() => {
     if (location.pathname === '/') {
@@ -67,7 +67,7 @@ export const AppLayout = (): JSX.Element => {
     return item?.path ?? '/';
   }, [location.pathname]);
 
-  const isDrawerExpanded = !isCollapsed || isHovered;
+  const isDrawerExpanded = !isCollapsed;
   const currentDrawerWidth = isDrawerExpanded ? drawerWidth : collapsedDrawerWidth;
 
   const drawer = (
@@ -125,11 +125,28 @@ export const AppLayout = (): JSX.Element => {
       </List>
       <Box sx={{ flexGrow: 1 }} />
       <Divider />
-      {isDrawerExpanded && (
+      {isDrawerExpanded && (LOGGER_VERSION || LOGGER_PAGE_URL) && (
         <Box sx={{ p: 2 }}>
-          <Typography variant="caption" color="text.secondary">
-            Версия {APP_VERSION}
-          </Typography>
+          <Stack spacing={1}>
+            {LOGGER_VERSION && (
+              <Typography variant="caption" color="text.secondary">
+                Версия {LOGGER_VERSION}
+              </Typography>
+            )}
+            {LOGGER_PAGE_URL && (
+              <MuiLink
+                href={LOGGER_PAGE_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                variant="caption"
+                underline="hover"
+                color="inherit"
+                sx={{ wordBreak: 'break-all' }}
+              >
+                {LOGGER_PAGE_URL}
+              </MuiLink>
+            )}
+          </Stack>
         </Box>
       )}
     </Box>
@@ -200,16 +217,6 @@ export const AppLayout = (): JSX.Element => {
           variant="permanent"
           sx={{ display: { xs: 'none', sm: 'block' } }}
           PaperProps={{
-            onMouseEnter: () => {
-              if (isCollapsed) {
-                setIsHovered(true);
-              }
-            },
-            onMouseLeave: () => {
-              if (isCollapsed) {
-                setIsHovered(false);
-              }
-            },
             sx: {
               boxSizing: 'border-box',
               width: currentDrawerWidth,
