@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   CardContent,
+  Collapse,
   FormControl,
   InputLabel,
   MenuItem,
@@ -23,6 +24,8 @@ import { LogEntry, LogFilter, Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime } from '../utils/formatters';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 const defaultFilter: LogFilter = { uuid: '' };
 
@@ -31,6 +34,7 @@ export const LogsPage = (): JSX.Element => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterState, setFilterState] = useState<LogFilter>(defaultFilter);
   const [activeFilter, setActiveFilter] = useState<LogFilter | null>(null);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   const {
     data: projects,
@@ -53,6 +57,15 @@ export const LogsPage = (): JSX.Element => {
       endDate: searchParams.get('endDate') || undefined
     };
     setFilterState(newFilter);
+    const hasAdvancedFilters = Boolean(
+      newFilter.text ||
+        newFilter.user ||
+        newFilter.ip ||
+        newFilter.service ||
+        newFilter.startDate ||
+        newFilter.endDate
+    );
+    setFiltersExpanded((prev) => (hasAdvancedFilters ? true : prev));
     setActiveFilter(newFilter.uuid ? newFilter : null);
   }, [projects, searchParams]);
 
@@ -197,78 +210,114 @@ export const LogsPage = (): JSX.Element => {
       <Card>
         <CardContent>
           <Stack spacing={3}>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <FormControl fullWidth>
-                  <InputLabel id="project-select">Проект</InputLabel>
-                  <Select
-                    labelId="project-select"
-                    label="Проект"
-                    value={filterState.uuid}
-                    onChange={handleSelectChange('uuid')}
-                  >
-                    {(projects ?? []).map((project: Project) => (
-                      <MenuItem key={project.uuid} value={project.uuid}>
-                        {project.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+            <Stack spacing={2}>
+              <Grid container spacing={2}>
+                <Grid size={{ xs: 12, md: 4 }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="project-select">Проект</InputLabel>
+                    <Select
+                      labelId="project-select"
+                      label="Проект"
+                      value={filterState.uuid}
+                      onChange={handleSelectChange('uuid')}
+                    >
+                      {(projects ?? []).map((project: Project) => (
+                        <MenuItem key={project.uuid} value={project.uuid}>
+                          {project.name}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, md: 3 }}>
+                  <FormControl fullWidth>
+                    <InputLabel id="level-select">Уровень</InputLabel>
+                    <Select
+                      labelId="level-select"
+                      label="Уровень"
+                      value={filterState.level ?? ''}
+                      onChange={handleSelectChange('level')}
+                    >
+                      <MenuItem value="">Все</MenuItem>
+                      <MenuItem value="DEBUG">DEBUG</MenuItem>
+                      <MenuItem value="INFO">INFO</MenuItem>
+                      <MenuItem value="WARNING">WARNING</MenuItem>
+                      <MenuItem value="ERROR">ERROR</MenuItem>
+                      <MenuItem value="CRITICAL">CRITICAL</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid size={{ xs: 12, md: 5 }}>
+                  <TextField label="Тег" fullWidth value={filterState.tag ?? ''} onChange={handleFilterChange('tag')} />
+                </Grid>
               </Grid>
-              <Grid size={{ xs: 12, md: 2 }}>
-                <FormControl fullWidth>
-                  <InputLabel id="level-select">Уровень</InputLabel>
-                  <Select
-                    labelId="level-select"
-                    label="Уровень"
-                    value={filterState.level ?? ''}
-                    onChange={handleSelectChange('level')}
-                  >
-                    <MenuItem value="">Все</MenuItem>
-                    <MenuItem value="DEBUG">DEBUG</MenuItem>
-                    <MenuItem value="INFO">INFO</MenuItem>
-                    <MenuItem value="WARNING">WARNING</MenuItem>
-                    <MenuItem value="ERROR">ERROR</MenuItem>
-                    <MenuItem value="CRITICAL">CRITICAL</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField label="Текст" fullWidth value={filterState.text ?? ''} onChange={handleFilterChange('text')} />
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField label="Тег" fullWidth value={filterState.tag ?? ''} onChange={handleFilterChange('tag')} />
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField label="Пользователь" fullWidth value={filterState.user ?? ''} onChange={handleFilterChange('user')} />
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField label="IP" fullWidth value={filterState.ip ?? ''} onChange={handleFilterChange('ip')} />
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField label="Сервис" fullWidth value={filterState.service ?? ''} onChange={handleFilterChange('service')} />
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  label="Начало"
-                  type="datetime-local"
-                  fullWidth
-                  value={filterState.startDate ?? ''}
-                  onChange={handleFilterChange('startDate')}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  label="Окончание"
-                  type="datetime-local"
-                  fullWidth
-                  value={filterState.endDate ?? ''}
-                  onChange={handleFilterChange('endDate')}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-            </Grid>
+              <Collapse in={filtersExpanded} unmountOnExit>
+                <Grid container spacing={2} sx={{ mt: 0 }}>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label="Текст"
+                      fullWidth
+                      value={filterState.text ?? ''}
+                      onChange={handleFilterChange('text')}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label="Пользователь"
+                      fullWidth
+                      value={filterState.user ?? ''}
+                      onChange={handleFilterChange('user')}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label="IP"
+                      fullWidth
+                      value={filterState.ip ?? ''}
+                      onChange={handleFilterChange('ip')}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label="Сервис"
+                      fullWidth
+                      value={filterState.service ?? ''}
+                      onChange={handleFilterChange('service')}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label="Начало"
+                      type="datetime-local"
+                      fullWidth
+                      value={filterState.startDate ?? ''}
+                      onChange={handleFilterChange('startDate')}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                  <Grid size={{ xs: 12, md: 6 }}>
+                    <TextField
+                      label="Окончание"
+                      type="datetime-local"
+                      fullWidth
+                      value={filterState.endDate ?? ''}
+                      onChange={handleFilterChange('endDate')}
+                      InputLabelProps={{ shrink: true }}
+                    />
+                  </Grid>
+                </Grid>
+              </Collapse>
+              <Box sx={{ alignSelf: { xs: 'stretch', sm: 'flex-start' } }}>
+                <Button
+                  variant="text"
+                  size="small"
+                  onClick={() => setFiltersExpanded((prev) => !prev)}
+                  endIcon={filtersExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                >
+                  {filtersExpanded ? 'Скрыть дополнительные фильтры' : 'Показать дополнительные фильтры'}
+                </Button>
+              </Box>
+            </Stack>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
               <Button variant="contained" onClick={applyFilter} disabled={!filterState.uuid}>
                 Применить фильтры
