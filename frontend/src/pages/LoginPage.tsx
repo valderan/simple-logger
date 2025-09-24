@@ -77,7 +77,6 @@ export const LoginPage = (): JSX.Element => {
   };
 
   const showVersionInfo = Boolean(LOGGER_VERSION && LOGGER_PAGE_URL);
-  const logoSrc = mode === 'light' ? '/logo_light.png' : '/logo_dark.png';
 
   return (
     <Container
@@ -85,58 +84,47 @@ export const LoginPage = (): JSX.Element => {
       sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: '100vh', py: 6 }}
     >
       <Stack spacing={4} sx={{ width: '100%' }}>
-        <Stack direction="row" spacing={1.5} justifyContent="flex-end" alignItems="center">
-          <Tooltip title={t('auth.languageToggle')}>
-            <ToggleButtonGroup
-              size="small"
-              exclusive
-              value={language}
-              onChange={(_, value) => {
-                if (value) {
-                  setLanguage(value);
-                }
-              }}
-              aria-label={t('auth.languageToggle')}
-              sx={{
-                borderRadius: 2,
-                '& .MuiToggleButton-root': {
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  px: 1.5,
-                  border: (theme) => `1px solid ${theme.palette.divider}`,
-                  '&.Mui-selected': {
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText'
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <Stack direction="row" spacing={1.5} alignItems="center">
+            <Tooltip title={mode === 'light' ? t('auth.themeDark') : t('auth.themeLight')}>
+              <IconButton
+                onClick={toggleMode}
+                color="primary"
+                aria-label={mode === 'light' ? t('auth.themeDark') : t('auth.themeLight')}
+              >
+                {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
+              </IconButton>
+            </Tooltip>
+            <Tooltip title={t('auth.languageToggle')}>
+              <ToggleButtonGroup
+                size="small"
+                exclusive
+                value={language}
+                onChange={(_, value) => {
+                  if (value) {
+                    setLanguage(value);
                   }
-                }
-              }}
-            >
-              <ToggleButton value="en">EN</ToggleButton>
-              <ToggleButton value="ru">RU</ToggleButton>
-            </ToggleButtonGroup>
-          </Tooltip>
-          <Tooltip title={mode === 'light' ? t('auth.themeDark') : t('auth.themeLight')}>
-            <IconButton
-              onClick={toggleMode}
-              color="primary"
-              aria-label={mode === 'light' ? t('auth.themeDark') : t('auth.themeLight')}
-            >
-              {mode === 'light' ? <DarkModeIcon /> : <LightModeIcon />}
-            </IconButton>
-          </Tooltip>
-        </Stack>
-        <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-          <Box
-            component="img"
-            src={logoSrc}
-            alt={t('auth.logoAlt')}
-            sx={{
-              width: { xs: 180, sm: 220 },
-              maxWidth: '100%',
-              height: 'auto',
-              objectFit: 'contain'
-            }}
-          />
+                }}
+                aria-label={t('auth.languageToggle')}
+                sx={{
+                  borderRadius: 2,
+                  '& .MuiToggleButton-root': {
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 1.5,
+                    border: (theme) => `1px solid ${theme.palette.divider}`,
+                    '&.Mui-selected': {
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText'
+                    }
+                  }
+                }}
+              >
+                <ToggleButton value="en">EN</ToggleButton>
+                <ToggleButton value="ru">RU</ToggleButton>
+              </ToggleButtonGroup>
+            </Tooltip>
+          </Stack>
         </Box>
         <Paper elevation={6} sx={{ p: { xs: 4, sm: 5 }, width: '100%', borderRadius: 4 }}>
           <Typography variant="h4" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
@@ -177,19 +165,19 @@ export const LoginPage = (): JSX.Element => {
             </Stack>
           </Box>
         </Paper>
+        {showVersionInfo && (
+          <Box sx={{ textAlign: 'center' }}>
+            <Stack spacing={0.5} alignItems="center">
+              <MuiLink href={LOGGER_PAGE_URL} target="_blank" rel="noopener noreferrer" underline="hover">
+                {LOGGER_PAGE_URL}
+              </MuiLink>
+              <Typography variant="caption" color="text.secondary">
+                {t('navigation.versionLabel', { version: LOGGER_VERSION })}
+              </Typography>
+            </Stack>
+          </Box>
+        )}
       </Stack>
-      {showVersionInfo && (
-        <Box sx={{ mt: 4, textAlign: 'center' }}>
-          <Stack spacing={0.5} alignItems="center">
-            <MuiLink href={LOGGER_PAGE_URL} target="_blank" rel="noopener noreferrer" underline="hover">
-              {LOGGER_PAGE_URL}
-            </MuiLink>
-            <Typography variant="caption" color="text.secondary">
-              {t('navigation.versionLabel', { version: LOGGER_VERSION })}
-            </Typography>
-          </Stack>
-        </Box>
-      )}
     </Container>
   );
 };
