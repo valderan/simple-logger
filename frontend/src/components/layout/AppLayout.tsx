@@ -135,34 +135,45 @@ export const AppLayout = (): JSX.Element => {
       <Divider />
       {isDrawerExpanded && (
         <Box sx={{ p: 2 }}>
-          <Stack spacing={1.5} alignItems="flex-start">
-            <Box
-              component="img"
-              src={logoSrc}
-              alt={t('common.projectName')}
-              sx={{
-                width: '100%',
-                maxWidth: 160,
-                height: 'auto',
-                objectFit: 'contain'
-              }}
-            />
+          <Stack spacing={1.5} alignItems="center" textAlign="center">
             {LOGGER_PAGE_URL ? (
               <MuiLink
                 href={LOGGER_PAGE_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                variant="caption"
                 underline="hover"
                 color="inherit"
-                sx={{ wordBreak: 'break-all' }}
+                aria-label={t('common.projectName')}
+                sx={{ display: 'inline-flex' }}
               >
-                {t('common.projectName')}
+                <Box
+                  component="img"
+                  src={logoSrc}
+                  alt={t('common.projectName')}
+                  sx={{
+                    width: '100%',
+                    maxWidth: 160,
+                    height: 'auto',
+                    objectFit: 'contain',
+                    display: 'block',
+                    mx: 'auto'
+                  }}
+                />
               </MuiLink>
             ) : (
-              <Typography variant="caption" color="text.secondary">
-                {t('common.projectName')}
-              </Typography>
+              <Box
+                component="img"
+                src={logoSrc}
+                alt={t('common.projectName')}
+                sx={{
+                  width: '100%',
+                  maxWidth: 160,
+                  height: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                  mx: 'auto'
+                }}
+              />
             )}
             {LOGGER_VERSION && (
               <Typography variant="caption" color="text.secondary">
