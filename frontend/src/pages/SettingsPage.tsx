@@ -8,7 +8,9 @@ import {
   CardContent,
   Stack,
   TextField,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import { addWhitelistEntry, fetchProjects, fetchWhitelist, filterLogs, removeWhitelistEntry } from '../api';
@@ -45,6 +47,8 @@ export const SettingsPage = (): JSX.Element => {
   });
 
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   const whitelistColumns = useMemo<GridColDef<WhitelistEntry>[]>(
     () => [
@@ -58,22 +62,34 @@ export const SettingsPage = (): JSX.Element => {
       {
         field: 'createdAt',
         headerName: t('settings.addedAt'),
-        width: 180,
+        minWidth: 180,
         renderCell: (params) => formatDateTime(params.row.createdAt)
       },
       {
         field: 'actions',
         headerName: t('settings.actions'),
-        width: 160,
+        minWidth: isSmDown ? 140 : 160,
         sortable: false,
         renderCell: (params) => (
-          <Button color="error" size="small" onClick={() => removeMutation.mutate(params.row.ip)}>
+          <Button
+            color="error"
+            size="small"
+            onClick={() => removeMutation.mutate(params.row.ip)}
+            fullWidth={isSmDown}
+          >
             {t('settings.remove')}
           </Button>
         )
       }
     ],
-    [removeMutation, t]
+    [isSmDown, removeMutation, t]
+  );
+
+  const columnVisibilityModel = useMemo(
+    () => ({
+      createdAt: !isSmDown
+    }),
+    [isSmDown]
   );
 
   if (whitelistQuery.isLoading || projectsQuery.isLoading) {
@@ -101,30 +117,53 @@ export const SettingsPage = (): JSX.Element => {
         <CardContent>
           <Stack spacing={3}>
             <Typography variant="h6">{t('settings.whitelistTitle')}</Typography>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
-              <TextField label={t('settings.ipLabel')} value={ipInput.ip} onChange={(event) => setIpInput((prev) => ({ ...prev, ip: event.target.value }))} />
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+              <TextField
+                label={t('settings.ipLabel')}
+                value={ipInput.ip}
+                onChange={(event) => setIpInput((prev) => ({ ...prev, ip: event.target.value }))}
+                fullWidth
+              />
               <TextField
                 label={t('settings.descriptionLabel')}
                 value={ipInput.description}
                 onChange={(event) => setIpInput((prev) => ({ ...prev, description: event.target.value }))}
+                fullWidth
               />
               <Button
                 variant="contained"
                 onClick={() => addMutation.mutate()}
                 disabled={addMutation.isPending || !ipInput.ip}
+                fullWidth={isSmDown}
               >
                 {addMutation.isPending ? t('common.savingWhitelist') : t('settings.add')}
               </Button>
             </Stack>
-            <Box sx={{ height: 360, width: '100%' }}>
+            <Box sx={{ height: isSmDown ? 'auto' : 360, width: '100%' }}>
               <DataGrid
                 rows={whitelistQuery.data ?? []}
                 columns={whitelistColumns}
                 getRowId={(row) => row.ip}
+                columnVisibilityModel={columnVisibilityModel}
+                autoHeight={isSmDown}
                 pageSizeOptions={[5, 10, 25]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 disableRowSelectionOnClick
                 localeText={{ noRowsLabel: t('settings.whitelistEmpty') }}
+                sx={{
+                  '& .MuiDataGrid-cell': {
+                    alignItems: 'flex-start',
+                    whiteSpace: 'normal',
+                    py: 1.25,
+                    fontSize: { xs: '0.875rem', sm: '0.95rem' }
+                  },
+                  '& .MuiDataGrid-columnHeaderTitle': {
+                    whiteSpace: 'normal',
+                    lineHeight: 1.2,
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  }
+                }}
+                density={isSmDown ? 'comfortable' : 'standard'}
               />
             </Box>
           </Stack>

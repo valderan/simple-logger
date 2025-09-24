@@ -23,7 +23,9 @@ import {
   Switch,
   TextField,
   Tooltip,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import { DataGrid, GridColDef, GridEventListener } from '@mui/x-data-grid';
@@ -50,6 +52,9 @@ export const LogsPage = (): JSX.Element => {
   const [detailsModeEnabled, setDetailsModeEnabled] = useState(false);
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMdDown = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
 
   const {
     data: projects,
@@ -138,7 +143,8 @@ export const LogsPage = (): JSX.Element => {
       {
         field: 'timestamp',
         headerName: t('logs.timestampHeader'),
-        width: 220,
+        minWidth: 200,
+        flex: isMdDown ? 1.1 : 0.8,
         renderCell: (params) => (
           <Stack spacing={0.5} sx={{ width: '100%' }}>
             <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
@@ -221,7 +227,8 @@ export const LogsPage = (): JSX.Element => {
       {
         field: 'actions',
         headerName: t('logs.actionsHeader'),
-        width: 220,
+        minWidth: isSmDown ? 200 : 220,
+        flex: isSmDown ? 1.05 : 0.9,
         sortable: false,
         filterable: false,
         align: 'center',
@@ -230,13 +237,21 @@ export const LogsPage = (): JSX.Element => {
           const isDeleting = isDeleteLogPending && deletingLogId === params.row._id;
           return (
             <Box sx={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+              <Stack
+                direction={{ xs: 'column', sm: 'row' }}
+                spacing={1}
+                alignItems={{ xs: 'stretch', sm: 'center' }}
+                flexWrap="wrap"
+                useFlexGap
+                sx={{ width: '100%' }}
+              >
                 <Tooltip title={t('logs.copyLog')}>
                   <Button
                     size="small"
                     variant="outlined"
                     onClick={() => handleCopyLog(params.row)}
                     startIcon={<ContentCopyIcon fontSize="small" />}
+                    fullWidth={isSmDown}
                   >
                     {t('common.copy')}
                   </Button>
@@ -250,6 +265,7 @@ export const LogsPage = (): JSX.Element => {
                       disabled={isDeleting}
                       aria-label={t('logs.deleteLog')}
                       onClick={() => mutateDeleteLog({ projectUuid: params.row.projectUuid, logId: params.row._id })}
+                      fullWidth={isSmDown}
                     >
                       {isDeleting ? t('common.deleteInProgress') : 'х'}
                     </Button>
@@ -261,7 +277,14 @@ export const LogsPage = (): JSX.Element => {
         }
       }
     ],
-    [deletingLogId, handleCopyLog, isDeleteLogPending, mutateDeleteLog, t]
+    [deletingLogId, handleCopyLog, isDeleteLogPending, isMdDown, isSmDown, mutateDeleteLog, t]
+  );
+
+  const columnVisibilityModel = useMemo(
+    () => ({
+      metadata: !isSmDown
+    }),
+    [isSmDown]
   );
 
   const handleDetailsModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -542,13 +565,14 @@ export const LogsPage = (): JSX.Element => {
                   variant="contained"
                   onClick={applyFilter}
                   disabled={!(filterState.uuid || filterState.projectUuid?.trim())}
+                  fullWidth={isSmDown}
                 >
                   {t('logs.apply')}
                 </Button>
-                <Button variant="outlined" onClick={handleClearFilters}>
+                <Button variant="outlined" onClick={handleClearFilters} fullWidth={isSmDown}>
                   {t('logs.clear')}
                 </Button>
-                <Button variant="outlined" onClick={exportLogs} disabled={!displayLogs.length}>
+                <Button variant="outlined" onClick={exportLogs} disabled={!displayLogs.length} fullWidth={isSmDown}>
                   {t('logs.export')}
                 </Button>
                 <Button
@@ -556,6 +580,7 @@ export const LogsPage = (): JSX.Element => {
                   variant="outlined"
                   onClick={() => bulkDeleteMutation.mutate()}
                   disabled={bulkDeleteMutation.isPending || !filterState.uuid}
+                  fullWidth={isSmDown}
                 >
                   {bulkDeleteMutation.isPending ? t('logs.deleting') : t('logs.deleteByFilter')}
                 </Button>
@@ -575,12 +600,14 @@ export const LogsPage = (): JSX.Element => {
                     project: logsQuery.data.project.name
                   })}
                 </Alert>
-                <Box sx={{ height: 520, width: '100%' }}>
+                <Box sx={{ height: isSmDown ? 'auto' : 520, width: '100%' }}>
                   <DataGrid
                     rows={displayLogs}
                     columns={columns}
                     getRowId={(row) => row._id}
-                    rowHeight={96}
+                    columnVisibilityModel={columnVisibilityModel}
+                    autoHeight={isSmDown}
+                    getRowHeight={() => 'auto'}
                     pageSizeOptions={[10, 25, 50]}
                     initialState={{ pagination: { paginationModel: { pageSize: 25, page: 0 } } }}
                     disableRowSelectionOnClick
@@ -589,11 +616,17 @@ export const LogsPage = (): JSX.Element => {
                     sx={{
                       '& .MuiDataGrid-cell': {
                         alignItems: 'flex-start',
-                        py: 1.5
+                        py: 1.5,
+                        fontSize: { xs: '0.875rem', sm: '0.95rem' }
                       },
                       '& .MuiDataGrid-cellContent': {
                         whiteSpace: 'normal',
                         lineHeight: 1.4
+                      },
+                      '& .MuiDataGrid-columnHeaderTitle': {
+                        whiteSpace: 'normal',
+                        lineHeight: 1.2,
+                        fontSize: { xs: '0.8rem', sm: '0.875rem' }
                       },
                       '& .MuiDataGrid-row:hover': {
                         cursor: detailsModeEnabled ? 'pointer' : 'default'
@@ -602,6 +635,7 @@ export const LogsPage = (): JSX.Element => {
                         cursor: 'default'
                       }
                     }}
+                    density={isSmDown ? 'comfortable' : 'standard'}
                   />
                 </Box>
               </>

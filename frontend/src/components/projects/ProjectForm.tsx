@@ -152,8 +152,8 @@ export const ProjectForm = ({
 
         <Stack spacing={2}>
           <Typography variant="h6">{t('projectForm.tagsTitle')}</Typography>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ md: 'center' }}>
-            <FormControl sx={{ minWidth: 220 }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+            <FormControl sx={{ minWidth: { xs: '100%', md: 220 } }}>
               <InputLabel id="access-level-label">{t('projectForm.accessLevel')}</InputLabel>
               <Select
                 labelId="access-level-label"
@@ -180,7 +180,7 @@ export const ProjectForm = ({
           </Stack>
           <Stack spacing={1}>
             <Typography variant="subtitle1">{t('projectForm.customTags')}</Typography>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
               <TextField
                 label={t('projectForm.newTag')}
                 value={customTagInput}
@@ -191,8 +191,9 @@ export const ProjectForm = ({
                     addCustomTag();
                   }
                 }}
+                fullWidth
               />
-              <Button variant="outlined" onClick={addCustomTag}>
+              <Button variant="outlined" onClick={addCustomTag} sx={{ width: { xs: '100%', md: 'auto' } }}>
                 {t('projectForm.addTag')}
               </Button>
             </Stack>
@@ -210,7 +211,7 @@ export const ProjectForm = ({
         </Stack>
 
         <Stack spacing={2}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -228,7 +229,7 @@ export const ProjectForm = ({
             <TextField
               label={t('projectForm.antiSpam')}
               type="number"
-              sx={{ width: 220 }}
+              sx={{ width: { xs: '100%', sm: 220 } }}
               value={formState.telegramNotify.antiSpamInterval}
               onChange={(event) =>
                 setFormState((prev) => ({
@@ -244,11 +245,12 @@ export const ProjectForm = ({
               <Typography variant="subtitle1">
                 {t('projectForm.recipientsCount', { count: formState.telegramNotify.recipients.length })}
               </Typography>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
                 <TextField
                   label={t('projectForm.chatId')}
                   value={recipientInput.chatId}
                   onChange={(event) => setRecipientInput((prev) => ({ ...prev, chatId: event.target.value }))}
+                  fullWidth
                 />
                 <TextField
                   label={t('projectForm.telegramTagsLabel')}
@@ -256,8 +258,9 @@ export const ProjectForm = ({
                   helperText={t('projectForm.telegramTagsHelper')}
                   value={recipientInput.tags}
                   onChange={(event) => setRecipientInput((prev) => ({ ...prev, tags: event.target.value }))}
+                  fullWidth
                 />
-                <Button variant="outlined" onClick={addRecipient}>
+                <Button variant="outlined" onClick={addRecipient} sx={{ width: { xs: '100%', md: 'auto' } }}>
                   {t('projectForm.addRecipient')}
                 </Button>
               </Stack>
@@ -268,7 +271,12 @@ export const ProjectForm = ({
                   </Typography>
                 )}
                 {formState.telegramNotify.recipients.map((recipient) => (
-                  <Stack key={recipient.chatId} direction="row" spacing={2} alignItems="center">
+                  <Stack
+                    key={recipient.chatId}
+                    direction={{ xs: 'column', sm: 'row' }}
+                    spacing={1.5}
+                    alignItems={{ xs: 'flex-start', sm: 'center' }}
+                  >
                     <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                       {recipient.chatId}
                     </Typography>
@@ -277,7 +285,7 @@ export const ProjectForm = ({
                         ? t('projectForm.recipientTags', { tags: recipient.tags.join(', ') })
                         : t('projectForm.recipientAllTags')}
                     </Typography>
-                    <IconButton onClick={() => removeRecipient(recipient.chatId)}>
+                    <IconButton onClick={() => removeRecipient(recipient.chatId)} sx={{ alignSelf: { xs: 'flex-end', sm: 'center' } }}>
                       <DeleteIcon />
                     </IconButton>
                   </Stack>
@@ -290,9 +298,15 @@ export const ProjectForm = ({
         {validationError && <Alert severity="error">{validationError}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
 
-        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} flexWrap="wrap">
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} flexWrap="wrap" alignItems={{ xs: 'stretch', md: 'center' }}>
           {secondaryActions}
-          <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
+          <Button
+            type="submit"
+            variant="contained"
+            size="large"
+            disabled={isSubmitting}
+            sx={{ width: { xs: '100%', md: 'auto' } }}
+          >
             {isSubmitting ? t('projectForm.submitting') : submitLabel}
           </Button>
         </Stack>

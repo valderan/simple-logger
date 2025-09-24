@@ -10,7 +10,9 @@ import {
   Stack,
   TextField,
   Tooltip,
-  Typography
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
@@ -28,6 +30,9 @@ const SYSTEM_PROJECT_NAME = 'Logger Core';
 export const ProjectsPage = (): JSX.Element => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const theme = useTheme();
+  const isMdDown = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<Project | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -105,7 +110,7 @@ export const ProjectsPage = (): JSX.Element => {
         headerName: t('projects.columns.uuid'),
         flex: 1,
         renderCell: (params) => (
-          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+          <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
             {params.row.uuid}
           </Typography>
         )
@@ -113,7 +118,8 @@ export const ProjectsPage = (): JSX.Element => {
       {
         field: 'telegram',
         headerName: t('projects.columns.telegram'),
-        width: 160,
+        minWidth: 160,
+        flex: isMdDown ? 1 : 0.7,
         renderCell: (params) =>
           params.row.telegramNotify.enabled ? (
             <Stack spacing={1}>
@@ -129,25 +135,33 @@ export const ProjectsPage = (): JSX.Element => {
       {
         field: 'accessLevel',
         headerName: t('projects.columns.access'),
-        width: 150,
+        minWidth: 140,
+        flex: isMdDown ? 0.8 : 0.5,
         valueGetter: (value) => value,
         renderCell: (params) => <Chip label={params.row.accessLevel} size="small" color="info" />
       },
       {
         field: 'createdAt',
         headerName: t('projects.columns.createdAt'),
-        width: 180,
+        minWidth: 180,
+        flex: isMdDown ? 0.9 : 0.6,
         renderCell: (params) => <Typography variant="body2">{formatDateTime(params.row.createdAt)}</Typography>
       },
       {
         field: 'actions',
         headerName: t('projects.columns.actions'),
-        flex: 1,
-        minWidth: 360,
+        flex: 1.2,
+        minWidth: isSmDown ? 240 : 360,
         sortable: false,
         filterable: false,
         renderCell: (params) => (
-          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ width: '100%' }}>
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{ width: '100%' }}
+          >
             <Tooltip title={t('projects.copyUuid')}>
               <span>
                 <Button
@@ -155,12 +169,18 @@ export const ProjectsPage = (): JSX.Element => {
                   variant="outlined"
                   onClick={() => handleCopyUuid(params.row.uuid)}
                   startIcon={<ContentCopyIcon fontSize="small" />}
+                  fullWidth={isSmDown}
                 >
                   {t('common.uuid')}
                 </Button>
               </span>
             </Tooltip>
-            <Button size="small" variant="outlined" onClick={() => navigate(`/logs?uuid=${params.row.uuid}`)}>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => navigate(`/logs?uuid=${params.row.uuid}`)}
+              fullWidth={isSmDown}
+            >
               {t('projects.logs')}
             </Button>
             {params.row.name !== SYSTEM_PROJECT_NAME && (
@@ -169,6 +189,7 @@ export const ProjectsPage = (): JSX.Element => {
                   size="small"
                   variant="outlined"
                   onClick={() => navigate(`/projects/${params.row.uuid}/edit`)}
+                  fullWidth={isSmDown}
                 >
                   {t('projects.edit')}
                 </Button>
@@ -180,6 +201,7 @@ export const ProjectsPage = (): JSX.Element => {
                     setDeleteError(null);
                     setDeleteTarget(params.row);
                   }}
+                  fullWidth={isSmDown}
                 >
                   {t('projects.delete')}
                 </Button>
@@ -187,6 +209,7 @@ export const ProjectsPage = (): JSX.Element => {
                   size="small"
                   variant="outlined"
                   onClick={() => navigate(`/ping-services?uuid=${params.row.uuid}`)}
+                  fullWidth={isSmDown}
                 >
                   {t('projects.ping')}
                 </Button>
@@ -196,7 +219,14 @@ export const ProjectsPage = (): JSX.Element => {
         )
       }
     ],
-    [handleCopyUuid, navigate, t]
+    [handleCopyUuid, isMdDown, isSmDown, navigate, t]
+  );
+
+  const columnVisibilityModel = useMemo(
+    () => ({
+      createdAt: !isSmDown
+    }),
+    [isSmDown]
   );
 
   if (isLoading) {
@@ -215,22 +245,28 @@ export const ProjectsPage = (): JSX.Element => {
       <Card>
         <CardContent>
           <Stack spacing={2}>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems="center">
+            <Stack
+              direction={{ xs: 'column', md: 'row' }}
+              spacing={2}
+              alignItems={{ xs: 'stretch', md: 'center' }}
+            >
               <TextField
                 label={t('projects.searchPlaceholder')}
                 fullWidth
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
               />
-              <Button variant="contained" onClick={() => navigate('/projects/new')}>
+              <Button variant="contained" onClick={() => navigate('/projects/new')} fullWidth={isSmDown}>
                 {t('projects.addProject')}
               </Button>
             </Stack>
-            <Box sx={{ height: 520, width: '100%' }}>
+            <Box sx={{ height: isSmDown ? 'auto' : 520, width: '100%' }}>
               <DataGrid
                 rows={filteredProjects}
                 columns={columns}
                 getRowId={(row) => row.uuid}
+                columnVisibilityModel={columnVisibilityModel}
+                autoHeight={isSmDown}
                 getRowHeight={() => 'auto'}
                 getEstimatedRowHeight={() => 160}
                 pageSizeOptions={[5, 10, 25]}
@@ -253,9 +289,16 @@ export const ProjectsPage = (): JSX.Element => {
                     display: 'flex',
                     alignItems: 'flex-start',
                     whiteSpace: 'normal',
-                    py: 1.5
+                    py: 1.5,
+                    fontSize: { xs: '0.875rem', sm: '0.95rem' }
+                  },
+                  '& .MuiDataGrid-columnHeaderTitle': {
+                    whiteSpace: 'normal',
+                    lineHeight: 1.2,
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
                   }
                 }}
+                density={isSmDown ? 'comfortable' : 'standard'}
               />
             </Box>
           </Stack>
