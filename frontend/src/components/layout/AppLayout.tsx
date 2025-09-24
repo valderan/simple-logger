@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   AppBar,
   Box,
@@ -17,6 +17,7 @@ import {
   ToggleButton,
   ToggleButtonGroup
 } from '@mui/material';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import DashboardIcon from '@mui/icons-material/SpaceDashboardOutlined';
 import FolderIcon from '@mui/icons-material/FolderOutlined';
 import AssignmentIcon from '@mui/icons-material/AssignmentOutlined';
@@ -31,6 +32,8 @@ import LightModeIcon from '@mui/icons-material/LightModeOutlined';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRightOutlined';
 import HelpIcon from '@mui/icons-material/HelpOutline';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUpOutlined';
 import { Link as RouterLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useThemeMode } from '../../hooks/useThemeMode';
@@ -65,6 +68,7 @@ export const AppLayout = (): JSX.Element => {
   const { logout } = useAuth();
   const { mode, toggleMode } = useThemeMode();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileControlsOpen, setMobileControlsOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
     if (typeof window === 'undefined') {
       return false;
@@ -77,6 +81,15 @@ export const AppLayout = (): JSX.Element => {
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
   const mobileDrawerAnchor = isSmallScreen ? 'top' : 'left';
   const handleMobileClose = () => setMobileOpen(false);
+  const handleToggleMobileControls = useCallback(() => {
+    setMobileControlsOpen((prev) => !prev);
+  }, []);
+  const handleMobileControlsClose = useCallback(() => {
+    setMobileControlsOpen(false);
+  }, []);
+  const handleMobileControlsOpen = useCallback(() => {
+    setMobileControlsOpen(true);
+  }, []);
 
   const handleToggleCollapsed = useCallback(() => {
     setIsCollapsed((prev) => {
@@ -342,19 +355,30 @@ export const AppLayout = (): JSX.Element => {
     </Box>
   );
 
+  useEffect(() => {
+    if (!isSmallScreen && mobileControlsOpen) {
+      setMobileControlsOpen(false);
+    }
+  }, [isSmallScreen, mobileControlsOpen]);
+
   return (
     <Box sx={{ display: 'flex' }}>
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
-        <Toolbar sx={{ position: 'relative' }}>
+        <Toolbar
+          sx={{
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: { xs: 'space-between', sm: 'flex-start' },
+            gap: { xs: 1, sm: 0 }
+          }}
+        >
           <IconButton
             color="inherit"
             aria-label={t('navigation.openMenu')}
             onClick={() => setMobileOpen(true)}
             sx={{
-              display: { xs: 'flex', sm: 'none' },
-              position: { xs: 'absolute', sm: 'static' },
-              left: { xs: '50%', sm: 'auto' },
-              transform: { xs: 'translateX(-50%)', sm: 'none' }
+              display: { xs: 'flex', sm: 'none' }
             }}
           >
             <MenuIcon />
@@ -366,9 +390,57 @@ export const AppLayout = (): JSX.Element => {
           >
             {t('navigation.appBarTitle')}
           </Typography>
+          <Box sx={{ display: { xs: 'flex', sm: 'none' }, alignItems: 'center', ml: 'auto' }}>
+            <IconButton
+              color="inherit"
+              aria-label={mobileControlsOpen ? t('navigation.hideControls') : t('navigation.showControls')}
+              onClick={handleToggleMobileControls}
+            >
+              {mobileControlsOpen ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
+            </IconButton>
+          </Box>
           {desktopControls}
         </Toolbar>
       </AppBar>
+      {isSmallScreen && (
+        <SwipeableDrawer
+          anchor="top"
+          open={mobileControlsOpen}
+          onOpen={handleMobileControlsOpen}
+          onClose={handleMobileControlsClose}
+          swipeAreaWidth={48}
+          disableDiscovery
+          SwipeAreaProps={{
+            style: {
+              top: 56
+            }
+          }}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            '& .MuiDrawer-paper': {
+              mt: '56px',
+              height: 'auto',
+              maxHeight: 'calc(100vh - 56px)',
+              borderBottomLeftRadius: 20,
+              borderBottomRightRadius: 20,
+              backgroundImage: 'none'
+            }
+          }}
+        >
+          <Box sx={{ p: 2, pt: 1 }}>
+            <Stack spacing={2} alignItems="center">
+              <IconButton
+                color="inherit"
+                onClick={handleToggleMobileControls}
+                aria-label={t('navigation.closeControls')}
+              >
+                <KeyboardArrowUpIcon />
+              </IconButton>
+              {mobileControls}
+            </Stack>
+          </Box>
+        </SwipeableDrawer>
+      )}
       <Box
         component="nav"
         sx={{

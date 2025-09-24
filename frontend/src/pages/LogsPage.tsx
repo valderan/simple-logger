@@ -150,7 +150,7 @@ export const LogsPage = (): JSX.Element => {
       {
         field: 'timestamp',
         headerName: t('logs.timestampHeader'),
-        minWidth: 200,
+        minWidth: isSmDown ? 160 : 200,
         flex: isMdDown ? 1.1 : 0.8,
         renderCell: (params) => (
           <Stack spacing={0.5} sx={{ width: '100%' }}>
@@ -234,7 +234,7 @@ export const LogsPage = (): JSX.Element => {
       {
         field: 'actions',
         headerName: t('logs.actionsHeader'),
-        minWidth: isSmDown ? 200 : 220,
+        minWidth: isSmDown ? 180 : 220,
         flex: isSmDown ? 1.05 : 0.9,
         sortable: false,
         filterable: false,
@@ -612,7 +612,13 @@ export const LogsPage = (): JSX.Element => {
                     project: logsQuery.data.project.name
                   })}
                 </Alert>
-                <Box sx={{ height: isSmDown ? 'auto' : 520, width: '100%' }}>
+                <Box
+                  sx={{
+                    width: '100%',
+                    height: isSmDown ? 'auto' : 520,
+                    overflowX: 'auto'
+                  }}
+                >
                   <DataGrid
                     rows={displayLogs}
                     columns={columns}
@@ -626,6 +632,7 @@ export const LogsPage = (): JSX.Element => {
                     onCellClick={handleCellClick}
                     localeText={{ noRowsLabel: t('logs.noLogs') }}
                     sx={{
+                      minWidth: isSmDown ? 560 : undefined,
                       '& .MuiDataGrid-cell': {
                         alignItems: 'flex-start',
                         py: 1.5,
@@ -645,6 +652,11 @@ export const LogsPage = (): JSX.Element => {
                       },
                       '& .MuiDataGrid-cell[data-field="actions"]': {
                         cursor: 'default'
+                      },
+                      '& .MuiDataGrid-footerContainer': {
+                        flexWrap: 'wrap',
+                        gap: 1,
+                        justifyContent: { xs: 'center', sm: 'space-between' }
                       }
                     }}
                     density={isSmDown ? 'comfortable' : 'standard'}

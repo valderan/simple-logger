@@ -112,13 +112,13 @@ export const PingServicesPage = (): JSX.Element => {
       {
         field: 'interval',
         headerName: t('ping.intervalHeader'),
-        minWidth: 140,
+        minWidth: isSmDown ? 120 : 140,
         flex: isMdDown ? 0.7 : 0.5
       },
       {
         field: 'lastStatus',
         headerName: t('ping.statusHeader'),
-        minWidth: 160,
+        minWidth: isSmDown ? 140 : 160,
         flex: isMdDown ? 0.9 : 0.6,
         renderCell: (params) => {
           const status = params.row.lastStatus ?? 'unknown';
@@ -131,13 +131,17 @@ export const PingServicesPage = (): JSX.Element => {
                 : status === 'down'
                   ? t('ping.status.down')
                   : t('ping.status.unknown');
-          return <Alert severity={color}>{label}</Alert>;
+          return (
+            <Alert severity={color} sx={{ width: '100%', px: 1.5, py: 1 }}>
+              {label}
+            </Alert>
+          );
         }
       },
       {
         field: 'lastCheckedAt',
         headerName: t('ping.lastCheckHeader'),
-        minWidth: 200,
+        minWidth: isSmDown ? 180 : 200,
         flex: isMdDown ? 1 : 0.7,
         renderCell: (params) => (
           <Stack>
@@ -167,7 +171,7 @@ export const PingServicesPage = (): JSX.Element => {
         )
       }
     ],
-    [isMdDown, t]
+    [isMdDown, isSmDown, t]
   );
 
   const columnVisibilityModel = useMemo(
@@ -229,7 +233,13 @@ export const PingServicesPage = (): JSX.Element => {
                 {t('ping.addService')}
               </Button>
             </Stack>
-            <Box sx={{ height: isSmDown ? 'auto' : 500, width: '100%' }}>
+            <Box
+              sx={{
+                width: '100%',
+                height: isSmDown ? 'auto' : 500,
+                overflowX: 'auto'
+              }}
+            >
               <DataGrid
                 rows={services ?? []}
                 columns={columns}
@@ -241,6 +251,7 @@ export const PingServicesPage = (): JSX.Element => {
                 disableRowSelectionOnClick
                 localeText={{ noRowsLabel: t('ping.noServices') }}
                 sx={{
+                  minWidth: isSmDown ? 560 : undefined,
                   '& .MuiDataGrid-cell': {
                     alignItems: 'flex-start',
                     whiteSpace: 'normal',
@@ -251,6 +262,11 @@ export const PingServicesPage = (): JSX.Element => {
                     whiteSpace: 'normal',
                     lineHeight: 1.2,
                     fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  },
+                  '& .MuiDataGrid-footerContainer': {
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    justifyContent: { xs: 'center', sm: 'space-between' }
                   }
                 }}
                 density={isSmDown ? 'comfortable' : 'standard'}
