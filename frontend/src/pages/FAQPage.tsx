@@ -1,4 +1,4 @@
-import { Alert, Box, Card, CardContent, Stack, Typography } from '@mui/material';
+import { Box, Card, CardContent, Stack, Typography } from '@mui/material';
 import { useTranslation } from '../hooks/useTranslation';
 
 const pythonIngestLogExample = String.raw`"""Send a structured log message to the collector."""
@@ -155,8 +155,6 @@ const addProjectKeys = [
   'debugMode'
 ] as const;
 
-const environmentKeys = ['apiUrl', 'loggerPageUrl', 'loggerVersion', 'botApiKey', 'jwtSecret', 'mongoUri'] as const;
-
 const apiExamples = [
   { titleKey: 'faq.apiExamples.ingestLogPython', code: pythonIngestLogExample },
   { titleKey: 'faq.apiExamples.ingestLogTypeScript', code: typescriptIngestLogExample },
@@ -242,24 +240,6 @@ export const FAQPage = (): JSX.Element => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent>
-          <Stack spacing={2}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-              {t('faq.environment.title')}
-            </Typography>
-            <Typography color="text.secondary">{t('faq.environment.description')}</Typography>
-            <Stack spacing={1}>
-              {environmentKeys.map((key) => (
-                <Typography key={key} variant="body1">
-                  {t(`faq.environment.${key}`)}
-                </Typography>
-              ))}
-            </Stack>
-            <Alert severity="info">{t('faq.helpSection.faq')}</Alert>
-          </Stack>
-        </CardContent>
-      </Card>
     </Stack>
   );
 };

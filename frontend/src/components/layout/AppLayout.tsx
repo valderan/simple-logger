@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   AppBar,
   Box,
@@ -39,6 +39,7 @@ import { useTranslation } from '../../hooks/useTranslation';
 
 const drawerWidth = 260;
 const collapsedDrawerWidth = 80;
+const MENU_COLLAPSED_STORAGE_KEY = 'logger:menuCollapsed';
 
 type NavigationItem = {
   labelKey: string;
@@ -62,8 +63,26 @@ export const AppLayout = (): JSX.Element => {
   const { logout } = useAuth();
   const { mode, toggleMode } = useThemeMode();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState<boolean>(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.localStorage.getItem(MENU_COLLAPSED_STORAGE_KEY) === 'true';
+  });
   const { t, language, setLanguage } = useTranslation();
+
+  const handleToggleCollapsed = useCallback(() => {
+    setIsCollapsed((prev) => {
+      const next = !prev;
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(MENU_COLLAPSED_STORAGE_KEY, next ? 'true' : 'false');
+      }
+
+      return next;
+    });
+  }, []);
 
   const activePath = useMemo(() => {
     if (location.pathname === '/') {
@@ -226,7 +245,7 @@ export const AppLayout = (): JSX.Element => {
               <span>
                 <IconButton
                   color="inherit"
-                  onClick={() => setIsCollapsed((prev) => !prev)}
+                  onClick={handleToggleCollapsed}
                   sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
                 >
                   {isCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />}

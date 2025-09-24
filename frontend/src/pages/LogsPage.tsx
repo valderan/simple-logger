@@ -42,6 +42,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { copyToClipboard } from '../utils/clipboard';
 
 const defaultFilter: LogFilter = { uuid: '', projectUuid: undefined, logId: undefined };
+const DETAILS_MODE_STORAGE_KEY = 'logger:logsDetailsMode';
 
 export const LogsPage = (): JSX.Element => {
   const queryClient = useQueryClient();
@@ -49,7 +50,13 @@ export const LogsPage = (): JSX.Element => {
   const [filterState, setFilterState] = useState<LogFilter>(defaultFilter);
   const [activeFilter, setActiveFilter] = useState<LogFilter | null>(null);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [detailsModeEnabled, setDetailsModeEnabled] = useState(false);
+  const [detailsModeEnabled, setDetailsModeEnabled] = useState<boolean>(() => {
+    if (typeof window === 'undefined') {
+      return false;
+    }
+
+    return window.localStorage.getItem(DETAILS_MODE_STORAGE_KEY) === 'true';
+  });
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const { t } = useTranslation();
   const theme = useTheme();
@@ -288,7 +295,12 @@ export const LogsPage = (): JSX.Element => {
   );
 
   const handleDetailsModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setDetailsModeEnabled(event.target.checked);
+    const isEnabled = event.target.checked;
+    setDetailsModeEnabled(isEnabled);
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(DETAILS_MODE_STORAGE_KEY, isEnabled ? 'true' : 'false');
+    }
   };
 
   const handleCellClick = useCallback<GridEventListener<'cellClick'>>(

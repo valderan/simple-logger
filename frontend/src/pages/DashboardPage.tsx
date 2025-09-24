@@ -29,6 +29,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime, formatRelative } from '../utils/formatters';
 import { LogEntry, Project } from '../api/types';
 import { useTranslation } from '../hooks/useTranslation';
+import { API_URL } from '../config';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -117,13 +118,15 @@ export const DashboardPage = (): JSX.Element => {
   const totalPingServices = pingQueries.reduce((acc, query) => acc + (query.data?.length ?? 0), 0);
   const projectsWithAlerts = projects?.filter((project) => project.telegramNotify.enabled).length ?? 0;
 
+  const apiBaseUrl = API_URL?.trim() ? API_URL : '';
+
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
         {t('dashboard.title')}
       </Typography>
       <Grid container spacing={3}>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
@@ -138,7 +141,7 @@ export const DashboardPage = (): JSX.Element => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
@@ -153,7 +156,7 @@ export const DashboardPage = (): JSX.Element => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid size={{ xs: 12, md: 4 }}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Card>
             <CardContent>
               <Typography variant="subtitle2" color="text.secondary">
@@ -164,6 +167,24 @@ export const DashboardPage = (): JSX.Element => {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {t('dashboard.telegramEnabledDescription')}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Grid>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Card>
+            <CardContent>
+              <Typography variant="subtitle2" color="text.secondary">
+                {t('dashboard.apiUrlLabel')}
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{ fontWeight: 600, fontFamily: 'monospace', wordBreak: 'break-all' }}
+              >
+                {apiBaseUrl || t('dashboard.apiUrlNotConfigured')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('dashboard.apiUrlDescription')}
               </Typography>
             </CardContent>
           </Card>

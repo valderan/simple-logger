@@ -85,7 +85,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       toggleThemeLight: 'Switch to light theme',
       toggleThemeDark: 'Switch to dark theme',
       logout: 'Sign out',
-      appBarTitle: 'Logger control panel',
+      appBarTitle: 'Control panel',
       versionLabel: 'Version {{version}}'
     },
     dashboard: {
@@ -97,6 +97,9 @@ export const translations: Record<Locale, TranslationRecord> = {
       telegramEnabled: 'Telegram alerts',
       telegramEnabledDescription: 'Projects with active notifications',
       logDistribution: 'Log distribution by level',
+      apiUrlLabel: 'API base URL',
+      apiUrlDescription: 'The client is interacting with this API endpoint.',
+      apiUrlNotConfigured: 'Not configured',
       incidents: 'Latest incidents',
       noIncidents: 'No critical incidents detected.',
       incidentMeta: 'IP: {{ip}} · Service: {{service}} · User: {{user}}',
@@ -452,7 +455,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       toggleThemeLight: 'Включить светлую тему',
       toggleThemeDark: 'Включить тёмную тему',
       logout: 'Выйти',
-      appBarTitle: 'Панель управления Logger',
+      appBarTitle: 'Панель управления',
       versionLabel: 'Версия {{version}}'
     },
     dashboard: {
@@ -464,6 +467,9 @@ export const translations: Record<Locale, TranslationRecord> = {
       telegramEnabled: 'Telegram-уведомления',
       telegramEnabledDescription: 'Проектов с активными оповещениями',
       logDistribution: 'Распределение логов по уровням',
+      apiUrlLabel: 'Базовый адрес API',
+      apiUrlDescription: 'Клиент работает с этим API.',
+      apiUrlNotConfigured: 'Не задан',
       incidents: 'Последние инциденты',
       noIncidents: 'Критических инцидентов не зафиксировано.',
       incidentMeta: 'IP: {{ip}} · Сервис: {{service}} · Пользователь: {{user}}',
