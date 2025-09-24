@@ -105,6 +105,8 @@ export interface LogFilter {
   service?: string;
   startDate?: string;
   endDate?: string;
+  projectUuid?: string;
+  logId?: string;
 }
 
 export interface WhitelistPayload {

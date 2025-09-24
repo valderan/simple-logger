@@ -51,9 +51,22 @@ export const fetchProjectLogs = async (uuid: string) => {
   return data;
 };
 
+const LOG_FILTER_PARAM_KEYS: (keyof LogFilter)[] = [
+  'uuid',
+  'level',
+  'text',
+  'tag',
+  'user',
+  'ip',
+  'service',
+  'startDate',
+  'endDate'
+];
+
 export const filterLogs = async (filter: LogFilter) => {
   const searchParams = new URLSearchParams();
-  Object.entries(filter).forEach(([key, value]) => {
+  LOG_FILTER_PARAM_KEYS.forEach((key) => {
+    const value = filter[key];
     if (value) {
       searchParams.append(key, value);
     }
@@ -62,9 +75,21 @@ export const filterLogs = async (filter: LogFilter) => {
   return data;
 };
 
+const DELETE_FILTER_PARAM_KEYS: (keyof Omit<LogFilter, 'uuid'>)[] = [
+  'level',
+  'text',
+  'tag',
+  'user',
+  'ip',
+  'service',
+  'startDate',
+  'endDate'
+];
+
 export const deleteLogs = async (uuid: string, filter: Omit<LogFilter, 'uuid'>) => {
   const searchParams = new URLSearchParams();
-  Object.entries(filter).forEach(([key, value]) => {
+  DELETE_FILTER_PARAM_KEYS.forEach((key) => {
+    const value = filter[key];
     if (value) {
       searchParams.append(key, value);
     }
