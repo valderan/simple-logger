@@ -25,6 +25,21 @@
 | `client/` | React + TypeScript интерфейс на Vite, сборка в виде статического SPA и образ Nginx для публикации. |
 | `docs/` | Документация на русском и английском языках, структура БД и руководство по клиенту. |
 | `docs/examples/` | Готовые скрипты для интеграции с API на Bash, Go, Python и TypeScript. |
+| `ts-library/` | TypeScript библиотека для работы с API и логированием, готовая к публикации в npm. |
+
+## TypeScript библиотека
+
+В репозитории доступна клиентская библиотека `ts-library`, предоставляющая два класса:
+
+- `Logger` — многофункциональный логгер с поддержкой очередей, шаблонов и нескольких транспортов.
+- `ApiClient` — типизированный клиент для всех маршрутов Simple Logger API.
+
+Документация и примеры использования:
+
+- [Logger (ru)](docs/ts-library-doc/Logger-ru.md) / [Logger (en)](docs/ts-library-doc/Logger-en.md)
+- [ApiClient (ru)](docs/ts-library-doc/ApiClient-ru.md) / [ApiClient (en)](docs/ts-library-doc/ApiClient-en.md)
+
+Собрать пакет можно командами `npm install`, `npm run build`, `npm test` в директории `ts-library`.
 
 ## Как запустить API
 
