@@ -1,6 +1,6 @@
 {
   "name": "@simple-logger/ts-library",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Клиентская библиотека для работы с Simple Logger API и ведения журналов на стороне клиента.",
   "type": "module",
   "main": "dist/index.cjs",
