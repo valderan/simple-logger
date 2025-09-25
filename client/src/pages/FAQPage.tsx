@@ -141,7 +141,7 @@ curl -sS -X POST "\${BASE_URL}/logs" \
         }
       }' | jq`;
 
-const helpSectionKeys = ['dashboard', 'projects', 'addProject', 'logs', 'ping', 'telegram', 'settings', 'faq'] as const;
+const helpSectionKeys = ['dashboard', 'projects', 'addProject', 'logs', 'ping', 'telegram', 'settings', 'rateLimit', 'faq'] as const;
 const addProjectKeys = [
   'name',
   'description',

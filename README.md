@@ -43,14 +43,14 @@
 | `docs/examples/` | Готовые скрипты для интеграции с API на Bash, Go, Python и TypeScript. |
 | `ts-library/` | TypeScript библиотека для работы с API и логированием, готовая к публикации в npm. |
 
-## TypeScript библиотека
+## Кратко о библиотеке ts-library
 
-В репозитории доступна клиентская библиотека `ts-library`, предоставляющая два класса:
+В составе репозитория есть TypeScript-библиотека `ts-library`, которая закрывает два типовых сценария:
 
-- `Logger` — многофункциональный логгер с поддержкой очередей, шаблонов и нескольких транспортов.
-- `ApiClient` — типизированный клиент для всех маршрутов Simple Logger API.
+- `Logger` — клиентский логгер с очередью, шаблонами и ограничением скорости отправки.
+- `ApiClient` — типизированная обёртка над REST API Simple Logger.
 
-Документация и примеры использования:
+Документация и примеры:
 
 - [Logger (ru)](docs/ts-library-doc/Logger-ru.md) / [Logger (en)](docs/ts-library-doc/Logger-en.md)
 - [ApiClient (ru)](docs/ts-library-doc/ApiClient-ru.md) / [ApiClient (en)](docs/ts-library-doc/ApiClient-en.md)

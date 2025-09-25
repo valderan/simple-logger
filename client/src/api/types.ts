@@ -61,6 +61,13 @@ export interface PingService {
   updatedAt?: string;
 }
 
+export interface UpdatePingServicePayload {
+  name?: string;
+  url?: string;
+  interval?: number;
+  telegramTags?: string[];
+}
+
 export interface WhitelistEntry {
   _id: string;
   ip: string;
@@ -93,6 +100,22 @@ export interface CreatePingServicePayload {
   url: string;
   interval: number;
   telegramTags: string[];
+}
+
+export interface RateLimitSettings {
+  rateLimitPerMinute: number;
+}
+
+export interface TelegramStatus {
+  tokenProvided: boolean;
+  botStarted: boolean;
+}
+
+export interface SystemLogPayload {
+  message: string;
+  level?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
 }
 
 export interface LogFilter {

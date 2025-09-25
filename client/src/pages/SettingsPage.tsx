@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
@@ -6,6 +6,10 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Stack,
   TextField,
   Typography,
@@ -13,7 +17,16 @@ import {
   useTheme
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
-import { addWhitelistEntry, fetchProjects, fetchWhitelist, filterLogs, removeWhitelistEntry } from '../api';
+import {
+  addWhitelistEntry,
+  fetchProjects,
+  fetchRateLimitSettings,
+  fetchWhitelist,
+  filterLogs,
+  logSystemEvent,
+  removeWhitelistEntry,
+  updateRateLimitSettings
+} from '../api';
 import { WhitelistEntry } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -23,13 +36,28 @@ import { useTranslation } from '../hooks/useTranslation';
 export const SettingsPage = (): JSX.Element => {
   const queryClient = useQueryClient();
   const [ipInput, setIpInput] = useState({ ip: '', description: '' });
+  const [rateLimitInput, setRateLimitInput] = useState('');
+  const [rateLimitDialogOpen, setRateLimitDialogOpen] = useState(false);
+  const [rateLimitDialogAction, setRateLimitDialogAction] = useState<'update' | 'reset'>('update');
+  const [pendingRateLimit, setPendingRateLimit] = useState<number | null>(null);
+  const [rateLimitFeedback, setRateLimitFeedback] = useState<{
+    severity: 'success' | 'error' | 'info' | 'warning';
+    message: string;
+  } | null>(null);
   const whitelistQuery = useQuery({ queryKey: ['whitelist'], queryFn: fetchWhitelist });
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: fetchProjects });
+  const rateLimitQuery = useQuery({ queryKey: ['rate-limit'], queryFn: fetchRateLimitSettings });
   const systemLogsQuery = useQuery({
     queryKey: ['logs', 'system'],
     queryFn: () => filterLogs({ uuid: 'logger-system' }),
     staleTime: 60_000
   });
+
+  useEffect(() => {
+    if (rateLimitQuery.data) {
+      setRateLimitInput(String(rateLimitQuery.data.rateLimitPerMinute));
+    }
+  }, [rateLimitQuery.data]);
 
   const addMutation = useMutation({
     mutationFn: () => addWhitelistEntry(ipInput),
@@ -43,6 +71,32 @@ export const SettingsPage = (): JSX.Element => {
     mutationFn: (ip: string) => removeWhitelistEntry(ip),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['whitelist'] });
+    }
+  });
+
+  const updateRateLimitMutation = useMutation({
+    mutationFn: (value: number) => updateRateLimitSettings({ rateLimitPerMinute: value }),
+    onSuccess: async (data) => {
+      setRateLimitFeedback({ severity: 'success', message: t('settings.rateLimitUpdated') });
+      setRateLimitDialogOpen(false);
+      setPendingRateLimit(null);
+      setRateLimitInput(String(data.rateLimitPerMinute));
+      queryClient.invalidateQueries({ queryKey: ['rate-limit'] });
+      try {
+        await logSystemEvent({
+          level: 'WARNING',
+          tags: ['SECURITY', 'SETTINGS', 'RATE_LIMIT'],
+          message: `Rate limit changed to ${data.rateLimitPerMinute} requests per minute`,
+          metadata: { rateLimitPerMinute: data.rateLimitPerMinute }
+        });
+      } catch (error) {
+        console.error('Failed to log rate limit change', error);
+      }
+    },
+    onError: () => {
+      setRateLimitFeedback({ severity: 'error', message: t('settings.rateLimitUpdateError') });
+      setRateLimitDialogOpen(false);
+      setPendingRateLimit(null);
     }
   });
 
@@ -92,27 +146,88 @@ export const SettingsPage = (): JSX.Element => {
     [isSmDown]
   );
 
-  if (whitelistQuery.isLoading || projectsQuery.isLoading) {
+  if (whitelistQuery.isLoading || projectsQuery.isLoading || rateLimitQuery.isLoading) {
     return <LoadingState />;
   }
 
-  if (whitelistQuery.isError || projectsQuery.isError) {
+  if (whitelistQuery.isError || projectsQuery.isError || rateLimitQuery.isError) {
     return (
       <ErrorState
         message={t('settings.loadError')}
         onRetry={() => {
           whitelistQuery.refetch();
           projectsQuery.refetch();
+          rateLimitQuery.refetch();
         }}
       />
     );
   }
+
+  const currentRateLimit = rateLimitQuery.data?.rateLimitPerMinute ?? 120;
+  const parsedRateLimit = Number(rateLimitInput);
+  const rateLimitInvalid = !rateLimitInput || Number.isNaN(parsedRateLimit) || parsedRateLimit <= 0;
+
+  const openRateLimitDialog = (action: 'update' | 'reset', value: number) => {
+    if (Number.isNaN(value) || value <= 0) {
+      return;
+    }
+    const normalized = Math.round(value);
+    setRateLimitDialogAction(action);
+    setPendingRateLimit(normalized);
+    setRateLimitDialogOpen(true);
+  };
 
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
         {t('settings.title')}
       </Typography>
+      <Card>
+        <CardContent>
+          <Stack spacing={3}>
+            <Stack spacing={1}>
+              <Typography variant="h6">{t('settings.rateLimitTitle')}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('settings.rateLimitDescription', { value: currentRateLimit })}
+              </Typography>
+            </Stack>
+            {rateLimitFeedback && (
+              <Alert severity={rateLimitFeedback.severity} onClose={() => setRateLimitFeedback(null)}>
+                {rateLimitFeedback.message}
+              </Alert>
+            )}
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+              <TextField
+                label={t('settings.rateLimitLabel')}
+                type="number"
+                value={rateLimitInput}
+                onChange={(event) => setRateLimitInput(event.target.value)}
+                helperText={t('settings.rateLimitHelper')}
+                inputProps={{ min: 1, step: 1 }}
+                fullWidth
+              />
+              <Button
+                variant="contained"
+                onClick={() => openRateLimitDialog('update', parsedRateLimit)}
+                disabled={updateRateLimitMutation.isPending || rateLimitInvalid}
+                fullWidth={isSmDown}
+              >
+                {updateRateLimitMutation.isPending ? t('settings.saving') : t('settings.saveRateLimit')}
+              </Button>
+              <Button
+                variant="outlined"
+                color="warning"
+                onClick={() => openRateLimitDialog('reset', 120)}
+                disabled={updateRateLimitMutation.isPending || currentRateLimit === 120}
+                fullWidth={isSmDown}
+              >
+                {t('settings.resetRateLimit')}
+              </Button>
+            </Stack>
+            <Alert severity="warning">{t('settings.rateLimitWarning')}</Alert>
+          </Stack>
+        </CardContent>
+      </Card>
       <Card>
         <CardContent>
           <Stack spacing={3}>
@@ -181,6 +296,54 @@ export const SettingsPage = (): JSX.Element => {
           </Stack>
         </CardContent>
       </Card>
+      <Dialog
+        open={rateLimitDialogOpen}
+        onClose={() => {
+          if (!updateRateLimitMutation.isPending) {
+            setRateLimitDialogOpen(false);
+            setPendingRateLimit(null);
+          }
+        }}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>{t('settings.rateLimitDialogTitle')}</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2">
+            {rateLimitDialogAction === 'reset'
+              ? t('settings.rateLimitResetConfirm', { value: 120 })
+              : t('settings.rateLimitConfirm', { value: pendingRateLimit ?? '' })}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
+            {t('settings.rateLimitDialogWarning')}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              if (!updateRateLimitMutation.isPending) {
+                setRateLimitDialogOpen(false);
+                setPendingRateLimit(null);
+              }
+            }}
+            disabled={updateRateLimitMutation.isPending}
+          >
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            color="warning"
+            onClick={() => {
+              if (pendingRateLimit !== null) {
+                updateRateLimitMutation.mutate(pendingRateLimit);
+              }
+            }}
+            disabled={updateRateLimitMutation.isPending || pendingRateLimit === null}
+          >
+            {updateRateLimitMutation.isPending ? t('settings.saving') : t('settings.confirmRateLimit')}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Card>
         <CardContent>
           <Stack spacing={2}>

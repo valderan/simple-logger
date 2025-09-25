@@ -183,38 +183,36 @@ export const ProjectsPage = (): JSX.Element => {
             >
               {t('projects.logs')}
             </Button>
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => navigate(`/projects/${params.row.uuid}/edit`)}
+              fullWidth={isSmDown}
+            >
+              {t('projects.edit')}
+            </Button>
             {params.row.name !== SYSTEM_PROJECT_NAME && (
-              <>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => navigate(`/projects/${params.row.uuid}/edit`)}
-                  fullWidth={isSmDown}
-                >
-                  {t('projects.edit')}
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="error"
-                  onClick={() => {
-                    setDeleteError(null);
-                    setDeleteTarget(params.row);
-                  }}
-                  fullWidth={isSmDown}
-                >
-                  {t('projects.delete')}
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  onClick={() => navigate(`/ping-services?uuid=${params.row.uuid}`)}
-                  fullWidth={isSmDown}
-                >
-                  {t('projects.ping')}
-                </Button>
-              </>
+              <Button
+                size="small"
+                variant="outlined"
+                color="error"
+                onClick={() => {
+                  setDeleteError(null);
+                  setDeleteTarget(params.row);
+                }}
+                fullWidth={isSmDown}
+              >
+                {t('projects.delete')}
+              </Button>
             )}
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={() => navigate(`/ping-services?uuid=${params.row.uuid}`)}
+              fullWidth={isSmDown}
+            >
+              {t('projects.ping')}
+            </Button>
           </Stack>
         )
       }

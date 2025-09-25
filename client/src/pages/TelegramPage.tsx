@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -10,7 +11,7 @@ import {
   Typography
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { fetchProjects } from '../api';
+import { fetchProjects, fetchTelegramStatus } from '../api';
 import { Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -23,11 +24,17 @@ export const TelegramPage = (): JSX.Element => {
     isError,
     refetch
   } = useQuery({ queryKey: ['projects'], queryFn: fetchProjects });
+  const {
+    data: status,
+    isLoading: statusLoading,
+    isError: statusError,
+    refetch: refetchStatus
+  } = useQuery({ queryKey: ['telegram-status'], queryFn: fetchTelegramStatus });
   const { t } = useTranslation();
 
   const enabledProjects = useMemo(() => (projects ?? []).filter((project) => project.telegramNotify.enabled), [projects]);
 
-  if (isLoading) {
+  if (isLoading || statusLoading) {
     return <LoadingState />;
   }
 
@@ -35,12 +42,34 @@ export const TelegramPage = (): JSX.Element => {
     return <ErrorState message={t('telegram.loadError')} onRetry={() => refetch()} />;
   }
 
+  const renderStatusAlert = () => {
+    if (status?.botStarted) {
+      return <Alert severity="success">{t('telegram.connected')}</Alert>;
+    }
+    if (status?.tokenProvided) {
+      return <Alert severity="warning">{t('telegram.tokenProvidedNoBot')}</Alert>;
+    }
+    return <Alert severity="info">{t('telegram.info')}</Alert>;
+  };
+
   return (
     <Stack spacing={3}>
       <Typography variant="h4" sx={{ fontWeight: 700 }}>
         {t('telegram.title')}
       </Typography>
-      <Alert severity="info">{t('telegram.info')}</Alert>
+      {renderStatusAlert()}
+      {statusError && (
+        <Alert
+          severity="warning"
+          action={
+            <Button color="inherit" size="small" onClick={() => refetchStatus()}>
+              {t('common.retry')}
+            </Button>
+          }
+        >
+          {t('telegram.statusLoadError')}
+        </Alert>
+      )}
       <Grid container spacing={3}>
         {(projects ?? []).map((project: Project) => (
           <Grid size={{ xs: 12, md: 6 }} key={project.uuid}>
