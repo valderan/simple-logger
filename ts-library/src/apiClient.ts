@@ -21,6 +21,7 @@ import type {
   ProjectLogEntry,
   ProjectLogResponse,
   RateLimitSettings,
+  TelegramStatus,
   WhitelistEntry,
   WhitelistPayload
 } from './types.js';
@@ -266,6 +267,13 @@ export class ApiClient {
       method: 'PUT',
       body: JSON.stringify(payload)
     });
+  }
+
+  /**
+   * Проверяет статус Telegram-бота.
+   */
+  async getTelegramStatus(): Promise<TelegramStatus> {
+    return this.request<TelegramStatus>('/api/settings/telegram-status');
   }
 
   /**

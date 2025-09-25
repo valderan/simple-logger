@@ -347,6 +347,14 @@ export interface RateLimitSettings {
 }
 
 /**
+ * Статус Telegram-бота, возвращаемый API настроек.
+ */
+export interface TelegramStatus {
+  tokenProvided: boolean;
+  botStarted: boolean;
+}
+
+/**
  * Состояние здорового сервиса.
  */
 export interface HealthResponse {

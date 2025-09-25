@@ -227,6 +227,23 @@ Content-Type: application/json
 
 The response repeats the new limit value.
 
+### 6.6 GET `/telegram-status`
+Check whether the Telegram bot is configured and polling.
+
+```http
+GET /api/settings/telegram-status
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "tokenProvided": true,
+  "botStarted": true
+}
+```
+
 ## 7. System endpoints
 
 - `GET /health` – service readiness probe (without the `/api` prefix).

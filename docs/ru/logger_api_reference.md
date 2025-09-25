@@ -227,6 +227,23 @@ Content-Type: application/json
 
 Успешный ответ повторяет новое значение лимита.
 
+### 6.6 GET `/telegram-status`
+Проверяет, настроен ли Telegram-бот и запущен ли polling.
+
+```http
+GET /api/settings/telegram-status
+Authorization: Bearer <token>
+```
+
+**Ответ `200 OK`**
+
+```json
+{
+  "tokenProvided": true,
+  "botStarted": true
+}
+```
+
 ## 7. Системные эндпоинты
 
 - `GET /health` — проверка готовности сервиса (без префикса `/api`).

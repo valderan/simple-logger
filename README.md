@@ -25,6 +25,14 @@
 - Белый список IP и rate limiting для защиты API.
 - Веб-клиент с тёмной/светлой темой, поиском и детальным просмотром событий.
 
+## Проверка статуса Telegram-бота
+
+Администраторы могут запросить `GET /api/settings/telegram-status`, чтобы мгновенно понять, настроен ли токен `BOT_API_KEY` и запущен ли бот в режиме polling. Метод доступен из `ApiClient` как `getTelegramStatus()`.
+
+- Подробности в API: [docs/ru/api.md](docs/ru/api.md#настройки-безопасности-settings) · [docs/en/api.md](docs/en/api.md#security-settings-settings)
+- Раздел в справочнике: [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md#66-get-telegram-status) · [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md#66-get-telegram-status)
+- Описание клиента: [docs/ts-library-doc/ApiClient-ru.md](docs/ts-library-doc/ApiClient-ru.md#настройки-api) · [docs/ts-library-doc/ApiClient-en.md](docs/ts-library-doc/ApiClient-en.md#api-settings)
+
 ## Компоненты проекта
 
 | Каталог | Описание |

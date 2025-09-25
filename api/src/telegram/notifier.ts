@@ -81,6 +81,15 @@ export class TelegramNotifier {
   }
 
   /**
+   * Возвращает информацию о текущем состоянии Telegram-бота.
+   */
+  getStatus(): { tokenProvided: boolean; botStarted: boolean } {
+    const tokenProvided = Boolean(this.token);
+    const botStarted = Boolean(this.bot?.isPolling?.());
+    return { tokenProvided, botStarted };
+  }
+
+  /**
    * Отправляет уведомление для всех получателей проекта, учитывая анти-спам интервал.
    */
   async notify(project: ProjectDocument, message: string, tag: string): Promise<void> {
