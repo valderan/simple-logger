@@ -1,0 +1,871 @@
+openapi: 3.1.0
+info:
+  title: Simple Logger API
+  version: 1.0.0
+  description: |
+    REST API specification for the Simple Logger centralized logging service.
+    All administrative endpoints require an administrator session token
+    that must be passed via the `Authorization: Bearer <token>` header.
+servers:
+  - url: http://localhost:3000
+    description: Local API server
+security:
+  - BearerAuth: []
+tags:
+  - name: Health
+    description: Service health checks
+  - name: Authentication
+    description: Administrator authentication
+  - name: Projects
+    description: Project management and configuration
+  - name: Logs
+    description: Log ingestion and management
+  - name: PingServices
+    description: Monitoring of external ping services
+  - name: Settings
+    description: System settings and the IP allowlist
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: API health check
+      description: Returns the service status and can be used for monitoring.
+      security: []
+      responses:
+        '200':
+          description: The service is healthy.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /api/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Administrator login
+      description: Issues an administrator session token based on username/password.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        '200':
+          description: Login succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '423':
+          description: The IP is temporarily locked due to repeated failed login attempts.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects:
+    post:
+      tags: [Projects]
+      summary: Create a project
+      description: Creates a new logging project.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        '201':
+          description: Project created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: Invalid project parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    get:
+      tags: [Projects]
+      summary: List projects
+      description: Returns projects sorted by creation date (newest first).
+      responses:
+        '200':
+          description: Projects returned successfully.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+  /api/projects/{uuid}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+    get:
+      tags: [Projects]
+      summary: Get a project
+      description: Returns a project by its UUID.
+      responses:
+        '200':
+          description: The project was found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags: [Projects]
+      summary: Update a project
+      description: Updates project settings. The UUID cannot be changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectInput'
+      responses:
+        '200':
+          description: Project updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          description: Invalid payload or an attempt to change the UUID.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Projects]
+      summary: Delete a project
+      description: Deletes the project along with related logs and ping services. The `logger-system` project cannot be removed.
+      responses:
+        '200':
+          description: Project deleted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Project deleted
+                  deletedLogs:
+                    type: integer
+                    minimum: 0
+                  deletedPingServices:
+                    type: integer
+                    minimum: 0
+        '400':
+          description: Attempt to delete the system project is not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects/{uuid}/logs:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+      - $ref: '#/components/parameters/LogLevelQueryParam'
+      - $ref: '#/components/parameters/LogTextQueryParam'
+      - $ref: '#/components/parameters/LogTagQueryParam'
+      - $ref: '#/components/parameters/LogUserQueryParam'
+      - $ref: '#/components/parameters/LogIpQueryParam'
+      - $ref: '#/components/parameters/LogServiceQueryParam'
+      - $ref: '#/components/parameters/LogStartDateQueryParam'
+      - $ref: '#/components/parameters/LogEndDateQueryParam'
+      - $ref: '#/components/parameters/LogIdQueryParam'
+    get:
+      tags: [Projects, Logs]
+      summary: Project logs
+      description: Returns up to 5000 logs for the selected project filtered by the query parameters.
+      responses:
+        '200':
+          description: Project log list.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectLogResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects/{uuid}/ping-services:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+    get:
+      tags: [Projects, PingServices]
+      summary: List ping services
+      description: Returns the project's ping services.
+      responses:
+        '200':
+          description: Ping services retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PingService'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    post:
+      tags: [Projects, PingServices]
+      summary: Add a ping service
+      description: Registers a new ping service and performs the initial check.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PingServiceInput'
+      responses:
+        '201':
+          description: Ping service created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingService'
+        '400':
+          description: Invalid ping service parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects/{uuid}/ping-services/check:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+    post:
+      tags: [Projects, PingServices]
+      summary: Trigger ping checks
+      description: Immediately checks all ping services for the project and returns fresh data.
+      responses:
+        '200':
+          description: Check results.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PingService'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+  /api/logs:
+    get:
+      tags: [Logs]
+      summary: Filter logs
+      description: Returns project logs matching the provided filters.
+      parameters:
+        - $ref: '#/components/parameters/LogProjectUuidQueryParam'
+        - $ref: '#/components/parameters/LogLevelQueryParam'
+        - $ref: '#/components/parameters/LogTextQueryParam'
+        - $ref: '#/components/parameters/LogTagQueryParam'
+        - $ref: '#/components/parameters/LogUserQueryParam'
+        - $ref: '#/components/parameters/LogIpQueryParam'
+        - $ref: '#/components/parameters/LogServiceQueryParam'
+        - $ref: '#/components/parameters/LogStartDateQueryParam'
+        - $ref: '#/components/parameters/LogEndDateQueryParam'
+        - $ref: '#/components/parameters/LogIdQueryParam'
+      responses:
+        '200':
+          description: Filtered logs.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectLogResponse'
+        '400':
+          description: Project UUID is missing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      tags: [Logs]
+      summary: Ingest a log
+      description: Accepts and stores a log from a client.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogIngestRequest'
+      responses:
+        '201':
+          description: Log stored.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogEntry'
+        '400':
+          description: The request body does not match the schema.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/logs/{uuid}:
+    delete:
+      tags: [Logs]
+      summary: Delete project logs
+      description: Deletes logs for the project that match the filter.
+      parameters:
+        - $ref: '#/components/parameters/ProjectUuidPathParam'
+        - $ref: '#/components/parameters/LogLevelQueryParam'
+        - $ref: '#/components/parameters/LogTextQueryParam'
+        - $ref: '#/components/parameters/LogTagQueryParam'
+        - $ref: '#/components/parameters/LogUserQueryParam'
+        - $ref: '#/components/parameters/LogIpQueryParam'
+        - $ref: '#/components/parameters/LogServiceQueryParam'
+        - $ref: '#/components/parameters/LogStartDateQueryParam'
+        - $ref: '#/components/parameters/LogEndDateQueryParam'
+        - $ref: '#/components/parameters/LogIdQueryParam'
+      responses:
+        '200':
+          description: Number of deleted logs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted:
+                    type: integer
+                    minimum: 0
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/settings/whitelist:
+    get:
+      tags: [Settings]
+      summary: List allowlisted IPs
+      description: Returns all IP allowlist entries.
+      responses:
+        '200':
+          description: Current allowlist.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WhitelistEntry'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    post:
+      tags: [Settings]
+      summary: Add an IP to the allowlist
+      description: Creates or updates an allowlist entry.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WhitelistPayload'
+      responses:
+        '201':
+          description: Allowlist entry saved.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WhitelistEntry'
+        '400':
+          description: Invalid entry parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+  /api/settings/whitelist/{ip}:
+    parameters:
+      - name: ip
+        in: path
+        required: true
+        description: IP address to remove from the allowlist.
+        schema:
+          type: string
+          example: 192.168.0.10
+    delete:
+      tags: [Settings]
+      summary: Remove an IP from the allowlist
+      description: Deletes an entry by IP address.
+      responses:
+        '200':
+          description: IP removed from the allowlist.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Entry not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: token
+      description: Administrator session token.
+  responses:
+    UnauthorizedResponse:
+      description: Missing or invalid administrator token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ForbiddenResponse:
+      description: Access denied by the IP allowlist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  parameters:
+    ProjectUuidPathParam:
+      name: uuid
+      in: path
+      required: true
+      description: Project UUID.
+      schema:
+        type: string
+        format: uuid
+    LogProjectUuidQueryParam:
+      name: uuid
+      in: query
+      required: true
+      description: UUID of the project targeted by the request.
+      schema:
+        type: string
+        format: uuid
+    LogLevelQueryParam:
+      name: level
+      in: query
+      required: false
+      description: Log level filter.
+      schema:
+        type: string
+        example: ERROR
+    LogTextQueryParam:
+      name: text
+      in: query
+      required: false
+      description: Case-insensitive search inside the log message.
+      schema:
+        type: string
+    LogTagQueryParam:
+      name: tag
+      in: query
+      required: false
+      description: Tag filter.
+      schema:
+        type: string
+    LogUserQueryParam:
+      name: user
+      in: query
+      required: false
+      description: Filter by user identifier.
+      schema:
+        type: string
+    LogIpQueryParam:
+      name: ip
+      in: query
+      required: false
+      description: Filter by IP address.
+      schema:
+        type: string
+    LogServiceQueryParam:
+      name: service
+      in: query
+      required: false
+      description: Filter by service name.
+      schema:
+        type: string
+    LogStartDateQueryParam:
+      name: startDate
+      in: query
+      required: false
+      description: Start of the time range (ISO 8601).
+      schema:
+        type: string
+        format: date-time
+    LogEndDateQueryParam:
+      name: endDate
+      in: query
+      required: false
+      description: End of the time range (ISO 8601).
+      schema:
+        type: string
+        format: date-time
+    LogIdQueryParam:
+      name: logId
+      in: query
+      required: false
+      description: Exact log identifier (Mongo ObjectId).
+      schema:
+        type: string
+        pattern: '^[0-9a-fA-F]{24}$'
+  schemas:
+    AuthRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+          example: admin
+        password:
+          type: string
+          example: secret
+    AuthResponse:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: Session token used in the Authorization header.
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+    TelegramRecipient:
+      type: object
+      required: [chatId]
+      properties:
+        chatId:
+          type: string
+          description: Telegram user identifier.
+          example: '123456789'
+        tags:
+          type: array
+          description: Tags that should trigger notifications.
+          items:
+            type: string
+          default: []
+    TelegramSettings:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+          default: false
+        recipients:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelegramRecipient'
+        antiSpamInterval:
+          type: integer
+          description: Interval between notifications in minutes.
+          default: 15
+          minimum: 1
+    ProjectInput:
+      type: object
+      required:
+        - name
+        - logFormat
+        - defaultTags
+        - customTags
+        - accessLevel
+        - telegramNotify
+        - debugMode
+      properties:
+        name:
+          type: string
+          minLength: 3
+          example: Orders Service
+        description:
+          type: string
+        logFormat:
+          type: object
+          additionalProperties: true
+          description: Schema of the incoming log used for rendering.
+        defaultTags:
+          type: array
+          items:
+            type: string
+          default: [DEBUG, INFO, WARNING, ERROR, CRITICAL]
+        customTags:
+          type: array
+          items:
+            type: string
+          default: []
+        accessLevel:
+          type: string
+          enum: [global, whitelist, docker]
+          default: global
+        telegramNotify:
+          $ref: '#/components/schemas/TelegramSettings'
+        debugMode:
+          type: boolean
+          default: false
+    Project:
+      allOf:
+        - $ref: '#/components/schemas/ProjectInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+              description: MongoDB identifier of the record.
+              example: 664fa0ce4a2f0f0012a12345
+            uuid:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    LogMetadata:
+      type: object
+      properties:
+        ip:
+          type: string
+        service:
+          type: string
+        user:
+          type: string
+        extra:
+          type: object
+          additionalProperties: true
+    LogBody:
+      type: object
+      required: [level, message]
+      properties:
+        level:
+          type: string
+          example: ERROR
+        message:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+          default: []
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          $ref: '#/components/schemas/LogMetadata'
+    LogEntry:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 6650f1c79b9af0001b0d1234
+        projectUuid:
+          type: string
+          format: uuid
+        level:
+          type: string
+        message:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        timestamp:
+          type: string
+          format: date-time
+        metadata:
+          $ref: '#/components/schemas/LogMetadata'
+    LogIngestRequest:
+      type: object
+      required: [uuid, log]
+      properties:
+        uuid:
+          type: string
+          format: uuid
+        log:
+          $ref: '#/components/schemas/LogBody'
+    ProjectLogResponse:
+      type: object
+      required: [project, logs]
+      properties:
+        project:
+          $ref: '#/components/schemas/Project'
+        logs:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogEntry'
+    PingServiceInput:
+      type: object
+      required: [name, url]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          example: Billing health-check
+        url:
+          type: string
+          format: uri
+          example: https://billing.example.com/health
+        interval:
+          type: integer
+          minimum: 5
+          maximum: 3600
+          default: 60
+        telegramTags:
+          type: array
+          items:
+            type: string
+          default: []
+    PingService:
+      allOf:
+        - $ref: '#/components/schemas/PingServiceInput'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: 6650f47f9d3ab00015a81234
+            projectUuid:
+              type: string
+              format: uuid
+            lastStatus:
+              type: string
+              enum: [ok, degraded, down]
+            lastCheckedAt:
+              type: string
+              format: date-time
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    WhitelistPayload:
+      type: object
+      required: [ip]
+      properties:
+        ip:
+          type: string
+          example: 192.168.0.10
+        description:
+          type: string
+    WhitelistEntry:
+      allOf:
+        - $ref: '#/components/schemas/WhitelistPayload'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: 6650f669d4b5c00017da1234
+            createdAt:
+              type: string
+              format: date-time
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+          example: Authorization required
+        details:
+          description: Additional error details (may be omitted).
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            details:
+              description: Validation details grouped by field.
+              example:
+                fieldErrors:
+                  name: ['String must contain at least 3 character(s)']
