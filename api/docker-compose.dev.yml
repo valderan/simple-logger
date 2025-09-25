@@ -19,7 +19,7 @@ services:
       - mongo
     networks:
       - logger-network
-    command: tail -f /dev/null # от зависания
+    command: tail -f /dev/null
 
   swagger:
     image: swaggerapi/swagger-ui:latest
@@ -29,7 +29,8 @@ services:
     environment:
       SWAGGER_JSON: /openapi.yaml
     volumes:
-      - ./swaggerapi/openapi.yaml:/openapi.yaml:ro
+      - ./swaggerapi/openapi.yaml:/openapi.yaml:ro        # Russian version API
+      # - ./swaggerapi/openapi_en.yaml:/openapi.yaml:ro   # English version API
     depends_on:
       - app
     networks:
@@ -43,7 +44,6 @@ services:
     ports:
       - "27017:27017"
     volumes:
-      # Меняем именованный том на bind mount
       - ./mongodata:/data/logger
     networks:
       - logger-network
