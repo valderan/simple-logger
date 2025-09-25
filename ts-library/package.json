@@ -1,0 +1,55 @@
+{
+  "name": "@simple-logger/ts-library",
+  "version": "1.0.0",
+  "description": "Клиентская библиотека для работы с Simple Logger API и ведения журналов на стороне клиента.",
+  "type": "module",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "clean": "rimraf dist",
+    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "test": "vitest run",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "logger",
+    "api-client",
+    "simple-logger",
+    "typescript"
+  ],
+  "author": "Simple Logger Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/simple-logger/ts-library.git"
+  },
+  "bugs": {
+    "url": "https://github.com/simple-logger/ts-library/issues"
+  },
+  "homepage": "https://github.com/simple-logger/ts-library#readme",
+  "dependencies": {
+    "cross-fetch": "^3.1.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.56.0",
+    "rimraf": "^5.0.5",
+    "tsup": "^7.2.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.4.0"
+  }
+}

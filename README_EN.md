@@ -22,6 +22,21 @@
 | `client/` | React + TypeScript UI powered by Vite, shipped as a static SPA and an Nginx image. |
 | `docs/` | Documentation in Russian and English, database schema, and client guide. |
 | `docs/examples/` | Ready-made integration scripts for Bash, Go, Python, and TypeScript. |
+| `ts-library/` | TypeScript SDK for the API and logger, ready for npm publishing. |
+
+## TypeScript SDK
+
+The repository ships with the `ts-library` package exposing two main classes:
+
+- `Logger` — a multi-transport client-side logger with queueing, templates, and rate limiting.
+- `ApiClient` — a typed wrapper around every Simple Logger API endpoint.
+
+Documentation and usage guides:
+
+- [Logger (ru)](docs/ts-library-doc/Logger-ru.md) / [Logger (en)](docs/ts-library-doc/Logger-en.md)
+- [ApiClient (ru)](docs/ts-library-doc/ApiClient-ru.md) / [ApiClient (en)](docs/ts-library-doc/ApiClient-en.md)
+
+To build the package run `npm install`, `npm run build`, and `npm test` inside the `ts-library` folder.
 
 ## Running the API
 
