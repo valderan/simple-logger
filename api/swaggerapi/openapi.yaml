@@ -610,6 +610,22 @@ paths:
           $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
+  /api/settings/telegram-status:
+    get:
+      tags: [Settings]
+      summary: Проверка статуса Telegram-бота
+      description: Возвращает информацию о том, передан ли ключ `BOT_API_KEY` и активен ли бот.
+      responses:
+        '200':
+          description: Текущее состояние интеграции с Telegram.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramStatus'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
 components:
   securitySchemes:
     BearerAuth:
@@ -762,6 +778,18 @@ components:
           description: Интервал между уведомлениями в минутах.
           default: 15
           minimum: 1
+    TelegramStatus:
+      type: object
+      required: [tokenProvided, botStarted]
+      properties:
+        tokenProvided:
+          type: boolean
+          description: Установлена ли переменная окружения `BOT_API_KEY`.
+          example: true
+        botStarted:
+          type: boolean
+          description: Удалось ли запустить бота и начать polling.
+          example: true
     ProjectInput:
       type: object
       required:

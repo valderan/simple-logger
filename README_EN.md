@@ -22,6 +22,14 @@ The platform ingests structured logs, tracks service uptime, and forwards alerts
 - IP whitelist and rate limiting to protect the API.
 - Web client with dark/light themes, search, and detailed log views.
 
+## Telegram bot status check
+
+Administrators can call `GET /api/settings/telegram-status` to instantly verify that the `BOT_API_KEY` token is configured and the bot is polling. The same functionality is exposed in `ApiClient` through `getTelegramStatus()`.
+
+- API overview: [docs/en/api.md](docs/en/api.md#security-settings-settings) · [docs/ru/api.md](docs/ru/api.md#настройки-безопасности-settings)
+- Reference guide: [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md#66-get-telegram-status) · [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md#66-get-telegram-status)
+- SDK docs: [docs/ts-library-doc/ApiClient-en.md](docs/ts-library-doc/ApiClient-en.md#api-settings) · [docs/ts-library-doc/ApiClient-ru.md](docs/ts-library-doc/ApiClient-ru.md#настройки-api)
+
 ## Project components
 
 | Path | Description |

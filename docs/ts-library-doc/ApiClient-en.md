@@ -73,6 +73,12 @@ all protected endpoints.
 - `upsertWhitelistEntry(payload)` — `POST /api/settings/whitelist`.
 - `deleteWhitelist(ip)` — `DELETE /api/settings/whitelist/{ip}`.
 
+### API settings
+
+- `getRateLimitSettings()` — `GET /api/settings/rate-limit`, returns `{ rateLimitPerMinute }`.
+- `updateRateLimitSettings(payload)` — `PUT /api/settings/rate-limit`.
+- `getTelegramStatus()` — `GET /api/settings/telegram-status`, returns `{ tokenProvided, botStarted }`.
+
 ## Error handling
 
 When the API responds with a non-success status, `ApiClient` throws an `ApiError` instance with

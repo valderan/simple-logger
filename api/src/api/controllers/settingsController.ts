@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { z } from 'zod';
 import { WhitelistModel } from '../models/Whitelist';
 import { getRateLimitValue, updateRateLimitValue } from '../services/systemSettings';
+import { defaultNotifier } from '../../telegram/notifier';
 
 const whitelistSchema = z.object({
   ip: z.string().min(3),
@@ -63,4 +64,12 @@ export async function updateRateLimit(req: Request, res: Response): Promise<Resp
 
   const updated = await updateRateLimitValue(parsed.data.rateLimitPerMinute);
   return res.json({ rateLimitPerMinute: updated.rateLimitPerMinute });
+}
+
+/**
+ * Возвращает статус Telegram-бота.
+ */
+export function getTelegramStatus(_req: Request, res: Response): Response {
+  const status = defaultNotifier.getStatus();
+  return res.json(status);
 }

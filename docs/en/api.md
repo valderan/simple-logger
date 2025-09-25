@@ -135,6 +135,7 @@ Authorization: Bearer <token>
 | `DELETE` | `/whitelist/:ip` | Remove an IP address. |
 | `GET` | `/rate-limit` | Inspect the current requests-per-minute cap. |
 | `PUT` | `/rate-limit` | Change the requests-per-minute cap. |
+| `GET` | `/telegram-status` | Verify that the Telegram bot is configured and polling. |
 
 Sample request:
 
@@ -150,6 +151,15 @@ Content-Type: application/json
 ```
 
 To tweak the rate limiter send `PUT /api/settings/rate-limit` with a JSON payload like `{ "rateLimitPerMinute": 200 }`.
+
+To confirm that the Telegram bot is online, call `GET /api/settings/telegram-status`. A `200 OK` response returns `tokenProvided` and `botStarted` flags that reflect the presence of `BOT_API_KEY` and the polling state:
+
+```json
+{
+  "tokenProvided": true,
+  "botStarted": true
+}
+```
 
 ## Swagger and OpenAPI
 

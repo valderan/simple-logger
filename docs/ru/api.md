@@ -135,6 +135,7 @@ Authorization: Bearer <token>
 | `DELETE` | `/whitelist/:ip` | Удалить IP. |
 | `GET` | `/rate-limit` | Узнать текущее ограничение запросов в минуту. |
 | `PUT` | `/rate-limit` | Изменить значение ограничения запросов в минуту. |
+| `GET` | `/telegram-status` | Проверить, настроен ли Telegram-бот и запущен ли polling. |
 
 Запрос на добавление IP:
 
@@ -150,6 +151,15 @@ Content-Type: application/json
 ```
 
 Для изменения лимита скорости используйте запрос `PUT /api/settings/rate-limit` с телом вида `{ "rateLimitPerMinute": 200 }`.
+
+Чтобы убедиться, что Telegram-бот активен, выполните `GET /api/settings/telegram-status`. Ответ `200 OK` содержит поля `tokenProvided` и `botStarted`, которые показывают наличие ключа `BOT_API_KEY` и успешный запуск polling:
+
+```json
+{
+  "tokenProvided": true,
+  "botStarted": true
+}
+```
 
 ## Swagger и OpenAPI
 

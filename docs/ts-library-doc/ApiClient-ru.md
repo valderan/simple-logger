@@ -77,6 +77,12 @@ await client.login({ username: 'admin', password: 'secret' });
 - `upsertWhitelistEntry(payload)` — `POST /api/settings/whitelist`.
 - `deleteWhitelist(ip)` — `DELETE /api/settings/whitelist/{ip}`.
 
+### Настройки API
+
+- `getRateLimitSettings()` — `GET /api/settings/rate-limit`, возвращает `{ rateLimitPerMinute }`.
+- `updateRateLimitSettings(payload)` — `PUT /api/settings/rate-limit`.
+- `getTelegramStatus()` — `GET /api/settings/telegram-status`, отвечает `{ tokenProvided, botStarted }`.
+
 ## Обработка ошибок
 
 Если API возвращает статус `>= 400`, клиент выбрасывает `ApiError` с полями:
