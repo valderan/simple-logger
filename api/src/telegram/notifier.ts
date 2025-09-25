@@ -5,6 +5,8 @@ import { writeSystemLog } from '../api/utils/systemLogger';
 
 type Language = 'ru' | 'en';
 
+type BotUrlSource = 'env' | 'telegram' | 'inactive' | 'unknown';
+
 const TRANSLATIONS: Record<Language, Record<string, string>> = {
   ru: {
     addSuccess: 'Вы подписаны на проект {{name}} ({{uuid}}).',
@@ -68,16 +70,23 @@ export class TelegramNotifier {
   private readonly userLanguages = new Map<number, Language>();
   private readonly invalidState = new Map<number, InvalidState>();
   private readonly notifiedBlock = new Set<number>();
+  private botUrlInfo: { url: string | null; source: BotUrlSource } = { url: null, source: 'unknown' };
+  private botUrlPromise?: Promise<void>;
 
   constructor(private readonly token?: string) {
-    if (token) {
-      this.bot = new TelegramBot(token, { polling: true });
-      this.setupBot();
-      void this.logAction('telegram_bot_started', {
-        message: TRANSLATIONS.ru.botStarted,
-        tokenProvided: Boolean(token)
-      });
+    this.applyBotUrlFromEnv(process.env.BOT_URL);
+
+    if (!token) {
+      return;
     }
+
+    this.bot = new TelegramBot(token, { polling: true });
+    this.setupBot();
+    void this.logAction('telegram_bot_started', {
+      message: TRANSLATIONS.ru.botStarted,
+      tokenProvided: Boolean(token),
+      userId: null
+    });
   }
 
   /**
@@ -111,7 +120,8 @@ export class TelegramNotifier {
       await this.logAction('telegram_notification_sent', {
         projectUuid: project.uuid,
         chatId: recipient.chatId,
-        tag
+        tag,
+        userId: recipient.chatId
       });
       this.lastSent.set(key, now);
     }
@@ -126,13 +136,25 @@ export class TelegramNotifier {
 
     this.bot.on('message', (msg) => {
       this.handleMessage(msg).catch((error) => {
-        void this.logAction('telegram_message_error', { error: (error as Error).message });
+        const chatId = msg.chat?.id?.toString();
+        const userId = msg.from?.id;
+        void this.logAction('telegram_message_error', {
+          error: (error as Error).message,
+          chatId,
+          userId: userId ?? chatId ?? null
+        });
       });
     });
 
     this.bot.on('callback_query', (query) => {
       this.handleCallback(query).catch((error) => {
-        void this.logAction('telegram_callback_error', { error: (error as Error).message });
+        const chatId = query.message?.chat?.id?.toString();
+        const userId = query.from?.id;
+        void this.logAction('telegram_callback_error', {
+          error: (error as Error).message,
+          chatId,
+          userId: userId ?? chatId ?? null
+        });
       });
     });
   }
@@ -418,7 +440,7 @@ export class TelegramNotifier {
       await this.bot.setMyCommands(enCommands, { language_code: 'en' });
       await this.bot.setMyCommands(enCommands);
     } catch (error) {
-      await this.logAction('telegram_commands_error', { error: (error as Error).message });
+      await this.logAction('telegram_commands_error', { error: (error as Error).message, userId: null });
     }
   }
 
@@ -429,9 +451,77 @@ export class TelegramNotifier {
     });
   }
 
+  private applyBotUrlFromEnv(botUrl?: string): void {
+    if (!botUrl) {
+      return;
+    }
+
+    if (this.isValidBotUrl(botUrl)) {
+      this.botUrlInfo = { url: botUrl, source: 'env' };
+      return;
+    }
+
+    void this.logAction('telegram_bot_url_invalid', { botUrl, userId: null });
+  }
+
+  private isValidBotUrl(botUrl: string): boolean {
+    try {
+      const parsed = new URL(botUrl);
+      return parsed.protocol === 'https:' && parsed.hostname === 't.me' && Boolean(parsed.pathname.replace('/', ''));
+    } catch {
+      return false;
+    }
+  }
+
+  private async resolveBotUrl(): Promise<void> {
+    if (this.botUrlInfo.source === 'env') {
+      return;
+    }
+
+    if (!this.bot) {
+      this.botUrlInfo = { url: null, source: 'inactive' };
+      return;
+    }
+
+    if (!this.botUrlPromise) {
+      this.botUrlPromise = this.fetchBotUrlFromTelegram();
+    }
+
+    await this.botUrlPromise;
+  }
+
+  private async fetchBotUrlFromTelegram(): Promise<void> {
+    if (!this.bot) {
+      this.botUrlInfo = { url: null, source: 'inactive' };
+      return;
+    }
+
+    try {
+      const me = await this.bot.getMe();
+      if (me.username) {
+        this.botUrlInfo = { url: `https://t.me/${me.username}`, source: 'telegram' };
+        return;
+      }
+      this.botUrlInfo = { url: null, source: 'unknown' };
+    } catch (error) {
+      this.botUrlInfo = { url: null, source: 'unknown' };
+      await this.logAction('telegram_bot_url_fetch_error', { error: (error as Error).message, userId: null });
+    }
+  }
+
+  async getBotUrlInfo(): Promise<{ url: string | null; source: BotUrlSource; botActive: boolean }> {
+    await this.resolveBotUrl();
+    return { ...this.botUrlInfo, botActive: Boolean(this.bot) };
+  }
+
   private async logAction(message: string, metadata: Record<string, unknown>): Promise<void> {
     try {
-      await writeSystemLog(message, { tags: ['TELEGRAM'], metadata });
+      const enriched: Record<string, unknown> = { ...metadata };
+      if (!Object.prototype.hasOwnProperty.call(enriched, 'userId')) {
+        const chatId = enriched.chatId;
+        enriched.userId = chatId ?? null;
+      }
+      await writeSystemLog(message, { tags: ['TELEGRAM'], metadata: enriched });
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to write telegram system log', error);

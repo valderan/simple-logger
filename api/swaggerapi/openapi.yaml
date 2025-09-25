@@ -626,6 +626,24 @@ paths:
           $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
+  /api/settings/telegram-url:
+    get:
+      tags: [Settings]
+      summary: Получение публичного URL Telegram-бота
+      description: >-
+        Возвращает ссылку на Telegram-бота, если она задана в `BOT_URL` или получена из Telegram Bot API.
+        В ответе также указывается источник данных и активен ли бот.
+      responses:
+        '200':
+          description: Публичная ссылка или причина её отсутствия.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramBotUrlInfo'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
 components:
   securitySchemes:
     BearerAuth:
@@ -789,6 +807,24 @@ components:
         botStarted:
           type: boolean
           description: Удалось ли запустить бота и начать polling.
+          example: true
+    TelegramBotUrlInfo:
+      type: object
+      required: [url, source, botActive]
+      properties:
+        url:
+          type: string
+          nullable: true
+          description: Публичная ссылка вида `https://t.me/<botname>` или `null`, если получить её не удалось.
+          example: https://t.me/devinfotestbot
+        source:
+          type: string
+          description: Источник данных о ссылке.
+          enum: [env, telegram, inactive, unknown]
+          example: env
+        botActive:
+          type: boolean
+          description: Запущен ли бот и доступен ли Telegram API.
           example: true
     ProjectInput:
       type: object

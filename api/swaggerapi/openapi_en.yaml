@@ -626,7 +626,25 @@ paths:
           $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
-components:
+  /api/settings/telegram-url:
+    get:
+      tags: [Settings]
+      summary: Get the public Telegram bot URL
+      description: >-
+        Returns the public invite link for the Telegram bot either from the `BOT_URL` environment variable
+        or by querying the Telegram Bot API. The response also indicates the data source and whether the bot is active.
+      responses:
+        '200':
+          description: Public link or a message that it is unavailable.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TelegramBotUrlInfo'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+  components:
   securitySchemes:
     BearerAuth:
       type: http
@@ -789,6 +807,24 @@ components:
         botStarted:
           type: boolean
           description: Indicates if the bot successfully started polling.
+          example: true
+    TelegramBotUrlInfo:
+      type: object
+      required: [url, source, botActive]
+      properties:
+        url:
+          type: string
+          nullable: true
+          description: Public link like `https://t.me/<botname>` or `null` when it cannot be determined.
+          example: https://t.me/devinfotestbot
+        source:
+          type: string
+          description: Where the URL was obtained from.
+          enum: [env, telegram, inactive, unknown]
+          example: telegram
+        botActive:
+          type: boolean
+          description: Indicates whether the bot is currently running and can access Telegram.
           example: true
     ProjectInput:
       type: object

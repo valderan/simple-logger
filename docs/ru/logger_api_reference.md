@@ -244,6 +244,26 @@ Authorization: Bearer <token>
 }
 ```
 
+### 6.7 GET `/telegram-url`
+Возвращает публичную ссылку на Telegram-бота и источник данных.
+
+```http
+GET /api/settings/telegram-url
+Authorization: Bearer <token>
+```
+
+**Ответ `200 OK`**
+
+```json
+{
+  "url": "https://t.me/devinfotestbot",
+  "source": "env",
+  "botActive": true
+}
+```
+
+Поле `url` может быть `null`, если ссылка не определена. Значение `source` принимает одно из `env`, `telegram`, `inactive`, `unknown` и указывает, получена ли ссылка из переменной окружения, через Telegram Bot API, или недоступна из-за неактивного/неизвестного состояния. Флаг `botActive` показывает, запущен ли бот и удалось ли связаться с API Telegram.
+
 ## 7. Системные эндпоинты
 
 - `GET /health` — проверка готовности сервиса (без префикса `/api`).

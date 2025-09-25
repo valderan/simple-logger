@@ -355,6 +355,15 @@ export interface TelegramStatus {
 }
 
 /**
+ * Информация о публичной ссылке Telegram-бота.
+ */
+export interface TelegramBotUrlInfo {
+  url: string | null;
+  source: 'env' | 'telegram' | 'inactive' | 'unknown';
+  botActive: boolean;
+}
+
+/**
  * Состояние здорового сервиса.
  */
 export interface HealthResponse {

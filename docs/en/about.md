@@ -55,7 +55,7 @@ Main collections:
 - Bot connection through `BOT_API_KEY`.
 - Managing recipients and tags for notifications.
 - Anti-spam settings with minimum interval between alerts.
-- Direct in-chat control: `ADD:<UUID>`/`DELETE:<UUID>` commands, `/subscriptions` and `/info` menus, language switching via `/language`, and an hour-long lock after ten invalid UUID attempts. Every interaction is stored in `logger-system` for auditing.【F:api/src/telegram/notifier.ts†L72-L337】【F:api/src/telegram/notifier.ts†L354-L430】
+- Direct in-chat control: `ADD:<UUID>`/`DELETE:<UUID>` commands, `/subscriptions` and `/info` menus, language switching via `/language`, and an hour-long lock after ten invalid UUID attempts. Every interaction is stored in `logger-system` for auditing.【F:api/src/telegram/notifier.ts†L76-L370】【F:api/src/telegram/notifier.ts†L385-L399】
 
 ## Personas
 

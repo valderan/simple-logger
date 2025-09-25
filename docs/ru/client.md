@@ -61,7 +61,7 @@ client/
 - `fetchProjects`, `createProject`, `updateProject`, `deleteProject` — CRUD для проектов.
 - `filterLogs`, `deleteLogs`, `ingestLog` — получение и очистка логов.
 - `createPingService`, `updatePingService`, `deletePingService`, `triggerPingCheck` — управление мониторингом и ручные проверки.
-- `fetchRateLimitSettings`, `updateRateLimitSettings`, `fetchTelegramStatus` — настройки безопасности и диагностика Telegram.
+- `fetchRateLimitSettings`, `updateRateLimitSettings`, `fetchTelegramStatus`, `fetchTelegramBotUrl` — настройки безопасности и диагностика Telegram.
 - `listWhitelist`, `addWhitelistIp`, `removeWhitelistIp` — настройки доступа.
 
 TanStack Query обеспечивает кеширование данных и автоматическое обновление интерфейса после мутаций.
@@ -92,7 +92,7 @@ docker compose up --build
 - Переводы интерфейса находятся в `localization/translations.ts`; активный язык выбирается автоматически по браузеру.
 - Состояние фильтров логов сохраняется в query-параметрах, что позволяет делиться ссылками.
 - Компоненты таблиц используют `@mui/x-data-grid` для виртуализации и кастомных действий в строках.
-- Страница Telegram показывает статус бота (подключён / нет токена) на основе `/api/settings/telegram-status`.
+- Страница Telegram показывает статус бота (подключён / нет токена) на основе `/api/settings/telegram-status` и ссылку из `/api/settings/telegram-url`, если она доступна.
 - Раздел Ping services автоматически обновляет время последней проверки в фоне каждые две минуты, не превышая лимиты API.
 - Изменение rate limit требует подтверждения и логируется в проект `logger-system` как предупреждение.
 

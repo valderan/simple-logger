@@ -21,6 +21,7 @@ import type {
   ProjectLogEntry,
   ProjectLogResponse,
   RateLimitSettings,
+  TelegramBotUrlInfo,
   TelegramStatus,
   WhitelistEntry,
   WhitelistPayload
@@ -274,6 +275,13 @@ export class ApiClient {
    */
   async getTelegramStatus(): Promise<TelegramStatus> {
     return this.request<TelegramStatus>('/api/settings/telegram-status');
+  }
+
+  /**
+   * Возвращает ссылку на Telegram-бота, если она доступна.
+   */
+  async getTelegramBotUrl(): Promise<TelegramBotUrlInfo> {
+    return this.request<TelegramBotUrlInfo>('/api/settings/telegram-url');
   }
 
   /**

@@ -33,6 +33,8 @@
 - Раздел в справочнике: [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md#66-get-telegram-status) · [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md#66-get-telegram-status)
 - Описание клиента: [docs/ts-library-doc/ApiClient-ru.md](docs/ts-library-doc/ApiClient-ru.md#настройки-api) · [docs/ts-library-doc/ApiClient-en.md](docs/ts-library-doc/ApiClient-en.md#api-settings)
 
+Чтобы поделиться ссылкой на бота, используйте `GET /api/settings/telegram-url` или метод `getTelegramBotUrl()` в SDK. Сервис отдаёт адрес из `BOT_URL`, либо при активном боте запрашивает username напрямую у Telegram. Подробности — в [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md#67-get-telegram-url) и [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md#67-get-telegram-url).
+
 ## Компоненты проекта
 
 | Каталог | Описание |
@@ -54,6 +56,8 @@
 
 - [Logger (ru)](docs/ts-library-doc/Logger-ru.md) / [Logger (en)](docs/ts-library-doc/Logger-en.md)
 - [ApiClient (ru)](docs/ts-library-doc/ApiClient-ru.md) / [ApiClient (en)](docs/ts-library-doc/ApiClient-en.md)
+
+Новый метод `getTelegramBotUrl()` дополняет `ApiClient`, возвращая ссылку на бота вместе с источником (`env`, `telegram`, `inactive`, `unknown`) и флагом активности. Он помогает показывать в интерфейсе актуальное приглашение, даже если переменная окружения отсутствует.
 
 Собрать пакет можно командами `npm install`, `npm run build`, `npm test` в директории `ts-library`.
 

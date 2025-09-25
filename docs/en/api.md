@@ -136,6 +136,7 @@ Authorization: Bearer <token>
 | `GET` | `/rate-limit` | Inspect the current requests-per-minute cap. |
 | `PUT` | `/rate-limit` | Change the requests-per-minute cap. |
 | `GET` | `/telegram-status` | Verify that the Telegram bot is configured and polling. |
+| `GET` | `/telegram-url` | Retrieve the public Telegram bot link together with its source. |
 
 Sample request:
 
@@ -160,6 +161,18 @@ To confirm that the Telegram bot is online, call `GET /api/settings/telegram-sta
   "botStarted": true
 }
 ```
+
+Fetch the public bot link with `GET /api/settings/telegram-url`. When the `BOT_URL` environment variable stores a valid `https://t.me/<botname>` link it is returned verbatim. Otherwise, if the bot is running, the service requests the username from Telegram Bot API and builds the URL automatically. The response indicates the data source and whether the bot is active:
+
+```json
+{
+  "url": "https://t.me/devinfotestbot",
+  "source": "telegram",
+  "botActive": true
+}
+```
+
+If the link cannot be determined (for example the bot is offline or lacks a username) the `url` field becomes `null` and `source` switches to `inactive` or `unknown`.
 
 ## Swagger and OpenAPI
 

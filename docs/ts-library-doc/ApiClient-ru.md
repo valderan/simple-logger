@@ -82,6 +82,7 @@ await client.login({ username: 'admin', password: 'secret' });
 - `getRateLimitSettings()` — `GET /api/settings/rate-limit`, возвращает `{ rateLimitPerMinute }`.
 - `updateRateLimitSettings(payload)` — `PUT /api/settings/rate-limit`.
 - `getTelegramStatus()` — `GET /api/settings/telegram-status`, отвечает `{ tokenProvided, botStarted }`.
+- `getTelegramBotUrl()` — `GET /api/settings/telegram-url`, возвращает `{ url, source, botActive }`.
 
 ## Обработка ошибок
 
