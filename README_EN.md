@@ -14,6 +14,18 @@ The platform ingests structured logs, tracks service uptime, and forwards alerts
 - API security and settings: [docs/en/api_security.md](docs/en/api_security.md) · [docs/ru/api_security.md](docs/ru/api_security.md), [docs/api_security_improvements.md](docs/api_security_improvements.md)
 - Client and SDK: [docs/en/client.md](docs/en/client.md) · [docs/ru/client.md](docs/ru/client.md), [docs/ts-library-doc/Logger-en.md](docs/ts-library-doc/Logger-en.md) · [docs/ts-library-doc/Logger-ru.md](docs/ts-library-doc/Logger-ru.md)
 
+## Library documentation
+
+The `ts-library` package bundles a lightweight TypeScript helper for shipping structured logs and automating project management through the REST API. It exposes two core modules:
+
+- **Logger** – queues events locally and forwards them to the backend with optional throttling.
+- **ApiClient** – typed wrapper around every Simple Logger REST endpoint.
+
+Read the full guides in the repository:
+
+- Russian docs: [docs/ts-library-doc/Logger-ru.md](docs/ts-library-doc/Logger-ru.md), [docs/ts-library-doc/ApiClient-ru.md](docs/ts-library-doc/ApiClient-ru.md)
+- English docs: [docs/ts-library-doc/Logger-en.md](docs/ts-library-doc/Logger-en.md), [docs/ts-library-doc/ApiClient-en.md](docs/ts-library-doc/ApiClient-en.md)
+
 ## Features
 
 - Ingest, store, and filter logs by project UUID.

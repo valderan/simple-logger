@@ -196,7 +196,7 @@ export const SettingsPage = (): JSX.Element => {
                 {rateLimitFeedback.message}
               </Alert>
             )}
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
               <TextField
                 label={t('settings.rateLimitLabel')}
                 type="number"
@@ -274,10 +274,13 @@ export const SettingsPage = (): JSX.Element => {
                 sx={{
                   minWidth: isSmDown ? 520 : undefined,
                   '& .MuiDataGrid-cell': {
-                    alignItems: 'flex-start',
-                    whiteSpace: 'normal',
+                    alignItems: 'center',
                     py: 1.25,
                     fontSize: { xs: '0.875rem', sm: '0.95rem' }
+                  },
+                  '& .MuiDataGrid-cellContent': {
+                    whiteSpace: 'normal',
+                    width: '100%'
                   },
                   '& .MuiDataGrid-columnHeaderTitle': {
                     whiteSpace: 'normal',
@@ -354,12 +357,38 @@ export const SettingsPage = (): JSX.Element => {
             {systemLogsQuery.isLoading && <LoadingState label={t('common.loadingSystemLogs')} />}
             {systemLogsQuery.isError && <Alert severity="error">{t('settings.loadSystemError')}</Alert>}
             {systemLogsQuery.data && (
-              <Box sx={{ maxHeight: 320, overflow: 'auto', bgcolor: 'grey.50', borderRadius: 2, p: 2 }}>
+              <Box
+                sx={(theme) => ({
+                  maxHeight: 320,
+                  overflow: 'auto',
+                  bgcolor:
+                    theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.grey[50],
+                  color:
+                    theme.palette.mode === 'dark'
+                      ? theme.palette.getContrastText(theme.palette.grey[900])
+                      : 'inherit',
+                  borderRadius: 2,
+                  p: 2,
+                  border: '1px solid',
+                  borderColor:
+                    theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[200]
+                })}
+              >
                 <Stack spacing={1.5}>
                   {systemLogsQuery.data.logs.slice(0, 20).map((log) => {
                     const metadata = log.metadata ?? {};
                     return (
-                      <Box key={log._id} sx={{ borderBottom: '1px solid', borderColor: 'grey.200', pb: 1 }}>
+                      <Box
+                        key={log._id}
+                        sx={(theme) => ({
+                          borderBottom: '1px solid',
+                          borderColor:
+                            theme.palette.mode === 'dark'
+                              ? theme.palette.grey[800]
+                              : theme.palette.grey[200],
+                          pb: 1
+                        })}
+                      >
                         <Typography variant="caption" color="text.secondary">
                           {formatDateTime(log.timestamp)} · {log.level}
                         </Typography>

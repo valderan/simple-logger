@@ -9,6 +9,7 @@ import {
   PingService,
   RateLimitSettings,
   SystemLogPayload,
+  TelegramBotUrlInfo,
   TelegramStatus,
   UpdatePingServicePayload,
   WhitelistEntry,
@@ -176,5 +177,10 @@ export const updateRateLimitSettings = async (payload: RateLimitSettings) => {
 
 export const fetchTelegramStatus = async () => {
   const { data } = await apiClient.get<TelegramStatus>('/api/settings/telegram-status');
+  return data;
+};
+
+export const fetchTelegramBotUrl = async () => {
+  const { data } = await apiClient.get<TelegramBotUrlInfo>('/api/settings/telegram-url');
   return data;
 };

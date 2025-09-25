@@ -389,7 +389,7 @@ export const PingServicesPage = (): JSX.Element => {
                 disabled={!selectedUuid || isServicePending}
                 fullWidth={isSmDown}
               >
-                {isServicePending ? t('ping.triggering') : t('ping.triggerSingle')}
+                {isServicePending ? t('ping.triggering') : t('ping.checkAction')}
               </Button>
               <Button
                 size="small"
@@ -416,10 +416,11 @@ export const PingServicesPage = (): JSX.Element => {
                 onClick={() => setDeleteTarget(params.row)}
                 disabled={deleteServiceMutation.isPending && pendingDeleteId === params.row._id}
                 fullWidth={isSmDown}
+                aria-label={t('ping.deleteService')}
               >
                 {deleteServiceMutation.isPending && pendingDeleteId === params.row._id
                   ? t('ping.deleting')
-                  : t('ping.deleteService')}
+                  : 'X'}
               </Button>
             </Stack>
           );
@@ -556,10 +557,13 @@ export const PingServicesPage = (): JSX.Element => {
                 sx={{
                   minWidth: isSmDown ? 560 : undefined,
                   '& .MuiDataGrid-cell': {
-                    alignItems: 'flex-start',
-                    whiteSpace: 'normal',
+                    alignItems: 'center',
                     py: 1.25,
                     fontSize: { xs: '0.875rem', sm: '0.95rem' }
+                  },
+                  '& .MuiDataGrid-cellContent': {
+                    whiteSpace: 'normal',
+                    width: '100%'
                   },
                   '& .MuiDataGrid-columnHeaderTitle': {
                     whiteSpace: 'normal',
