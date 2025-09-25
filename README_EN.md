@@ -40,11 +40,11 @@ Administrators can call `GET /api/settings/telegram-status` to instantly verify 
 | `docs/examples/` | Ready-made integration scripts for Bash, Go, Python, and TypeScript. |
 | `ts-library/` | TypeScript SDK for the API and logger, ready for npm publishing. |
 
-## TypeScript SDK
+## TypeScript SDK at a glance
 
-The repository ships with the `ts-library` package exposing two main classes:
+The repository includes the `ts-library` package for two common scenarios:
 
-- `Logger` — a multi-transport client-side logger with queueing, templates, and rate limiting.
+- `Logger` — a client-side logger with queueing, templates, and rate limiting.
 - `ApiClient` — a typed wrapper around every Simple Logger API endpoint.
 
 Documentation and usage guides:
@@ -52,7 +52,7 @@ Documentation and usage guides:
 - [Logger (ru)](docs/ts-library-doc/Logger-ru.md) / [Logger (en)](docs/ts-library-doc/Logger-en.md)
 - [ApiClient (ru)](docs/ts-library-doc/ApiClient-ru.md) / [ApiClient (en)](docs/ts-library-doc/ApiClient-en.md)
 
-To build the package run `npm install`, `npm run build`, and `npm test` inside the `ts-library` folder.
+Build the package with `npm install`, `npm run build`, and `npm test` inside the `ts-library` folder.
 
 ## Running the API
 

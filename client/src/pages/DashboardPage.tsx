@@ -25,7 +25,7 @@ import {
   LinearScale,
   Tooltip
 } from 'chart.js';
-import { fetchPingServices, fetchProjectLogs, fetchProjects } from '../api';
+import { fetchPingServices, fetchProjectLogs, fetchProjects, fetchRateLimitSettings } from '../api';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime, formatRelative } from '../utils/formatters';
@@ -46,6 +46,7 @@ export const DashboardPage = (): JSX.Element => {
     isError: projectsError,
     refetch: refetchProjects
   } = useQuery({ queryKey: ['projects'], queryFn: fetchProjects });
+  const rateLimitQuery = useQuery({ queryKey: ['rate-limit'], queryFn: fetchRateLimitSettings });
 
   const logsQueries = useQueries({
     queries: (projects ?? []).map((project) => ({
@@ -106,8 +107,16 @@ export const DashboardPage = (): JSX.Element => {
     };
   }, [logsQueries, t]);
 
-  const isLoading = projectsLoading || logsQueries.some((query) => query.isLoading) || pingQueries.some((query) => query.isLoading);
-  const hasError = projectsError || logsQueries.some((query) => query.isError) || pingQueries.some((query) => query.isError);
+  const isLoading =
+    projectsLoading ||
+    rateLimitQuery.isLoading ||
+    logsQueries.some((query) => query.isLoading) ||
+    pingQueries.some((query) => query.isLoading);
+  const hasError =
+    projectsError ||
+    rateLimitQuery.isError ||
+    logsQueries.some((query) => query.isError) ||
+    pingQueries.some((query) => query.isError);
 
   if (isLoading) {
     return <LoadingState />;
@@ -122,6 +131,8 @@ export const DashboardPage = (): JSX.Element => {
 
   const apiBaseUrl = API_URL?.trim() ? API_URL : '';
 
+  const rateLimitPerMinute = rateLimitQuery.data?.rateLimitPerMinute;
+
   const summaryCards: {
     key: string;
     title: string;
@@ -129,6 +140,7 @@ export const DashboardPage = (): JSX.Element => {
     description: string;
     valueVariant: 'h3' | 'body1';
     valueStyles?: SxProps;
+    extra?: string;
   }[] = [
     {
       key: 'total-projects',
@@ -157,7 +169,10 @@ export const DashboardPage = (): JSX.Element => {
       value: apiBaseUrl || t('dashboard.apiUrlNotConfigured'),
       description: t('dashboard.apiUrlDescription'),
       valueVariant: 'body1',
-      valueStyles: { fontFamily: 'monospace', wordBreak: 'break-all' }
+      valueStyles: { fontFamily: 'monospace', wordBreak: 'break-all' },
+      extra: rateLimitPerMinute
+        ? t('dashboard.rateLimitInfo', { value: rateLimitPerMinute })
+        : t('dashboard.rateLimitUnknown')
     }
   ];
 
@@ -184,6 +199,11 @@ export const DashboardPage = (): JSX.Element => {
                 <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto' }}>
                   {card.description}
                 </Typography>
+                {card.extra && (
+                  <Typography variant="caption" color="text.secondary">
+                    {card.extra}
+                  </Typography>
+                )}
               </CardContent>
             </Card>
           </Grid>

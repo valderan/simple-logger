@@ -7,6 +7,10 @@ import {
   Project,
   ProjectLogResponse,
   PingService,
+  RateLimitSettings,
+  SystemLogPayload,
+  TelegramStatus,
+  UpdatePingServicePayload,
   WhitelistEntry,
   WhitelistPayload
 } from './types';
@@ -110,9 +114,40 @@ export const createPingService = async (uuid: string, payload: CreatePingService
   return data;
 };
 
+export const updatePingService = async (
+  uuid: string,
+  serviceId: string,
+  payload: UpdatePingServicePayload
+) => {
+  const { data } = await apiClient.put<PingService>(`/api/projects/${uuid}/ping-services/${serviceId}`, payload);
+  return data;
+};
+
+export const deletePingService = async (uuid: string, serviceId: string) => {
+  await apiClient.delete(`/api/projects/${uuid}/ping-services/${serviceId}`);
+};
+
 export const triggerPingCheck = async (uuid: string) => {
   const { data } = await apiClient.post<PingService[]>(`/api/projects/${uuid}/ping-services/check`, {});
   return data;
+};
+
+export const logSystemEvent = async ({
+  message,
+  level = 'INFO',
+  tags = ['ADMIN_ACTION'],
+  metadata
+}: SystemLogPayload) => {
+  await apiClient.post('/api/logs', {
+    uuid: 'logger-system',
+    log: {
+      level,
+      message,
+      tags,
+      metadata,
+      timestamp: new Date().toISOString()
+    }
+  });
 };
 
 export const fetchWhitelist = async () => {
@@ -127,4 +162,19 @@ export const addWhitelistEntry = async (payload: WhitelistPayload) => {
 
 export const removeWhitelistEntry = async (ip: string) => {
   await apiClient.delete(`/api/settings/whitelist/${ip}`);
+};
+
+export const fetchRateLimitSettings = async () => {
+  const { data } = await apiClient.get<RateLimitSettings>('/api/settings/rate-limit');
+  return data;
+};
+
+export const updateRateLimitSettings = async (payload: RateLimitSettings) => {
+  const { data } = await apiClient.put<RateLimitSettings>('/api/settings/rate-limit', payload);
+  return data;
+};
+
+export const fetchTelegramStatus = async () => {
+  const { data } = await apiClient.get<TelegramStatus>('/api/settings/telegram-status');
+  return data;
 };

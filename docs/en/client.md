@@ -46,10 +46,10 @@ Routes are defined in `src/App.tsx` and become available after authentication:
 
 1. **Dashboard** – overview of projects, active ping services, and the latest logs using charts and cards.
 2. **Projects** – project table with search, quick navigation to logs, and create/edit forms (`AddProjectPage`, `EditProjectPage`).
-3. **Ping services** – list of HTTP checks with the last probe status and a manual trigger button.
+3. **Ping services** – manage HTTP checks, edit or delete entries, trigger a single service or the whole project on demand, and observe background refresh every two minutes while the page stays active.
 4. **Logs** – powerful log filter with URL state sharing, detailed view, JSON copy, and bulk deletion.
 5. **Telegram** – manage bot recipients, enable/disable notifications, and configure tags.
-6. **Settings** – IP whitelist and security options with instant API updates.
+6. **Settings** – IP whitelist, the API rate limit editor with confirmation warnings, and security options with instant API updates.
 7. **FAQ** – static help page and documentation links.
 
 A separate **Login** page handles token retrieval (`/api/auth/login`) and stores credentials inside the `AuthProvider`.
@@ -60,7 +60,8 @@ All requests live in the `src/api` module. Each helper uses `axios` with the bas
 
 - `fetchProjects`, `createProject`, `updateProject`, `deleteProject` – project CRUD.
 - `filterLogs`, `deleteLogs`, `ingestLog` – log retrieval and cleanup.
-- `addPingService`, `listPingServices`, `triggerPingCheck` – uptime monitoring.
+- `createPingService`, `updatePingService`, `deletePingService`, `triggerPingCheck` – uptime monitoring with on-demand checks.
+- `fetchRateLimitSettings`, `updateRateLimitSettings`, `fetchTelegramStatus` – security controls and Telegram diagnostics.
 - `listWhitelist`, `addWhitelistIp`, `removeWhitelistIp` – access control.
 
 TanStack Query handles caching and updates UI state after mutations.
@@ -91,5 +92,8 @@ The container builds the static bundle and serves it through Nginx on port `80`.
 - Translation strings live in `localization/translations.ts`; the active language is detected from the browser.
 - Log filter state is stored in query parameters so you can share links.
 - Data grid components rely on `@mui/x-data-grid` for virtualization and custom row actions.
+- Telegram page displays the bot status (connected/token missing) based on `/api/settings/telegram-status`.
+- Ping services page refreshes check timestamps in the background every two minutes to keep the UI fresh without exceeding rate limits.
+- Rate limit changes require confirmation and log a warning to the `logger-system` project for auditability.
 
 Keep these principles in mind when extending the app: new pages should plug into `AppLayout`, call the API via existing hooks, and respect theming/localization.
