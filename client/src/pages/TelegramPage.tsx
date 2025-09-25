@@ -7,11 +7,12 @@ import {
   Card,
   CardContent,
   Chip,
+  Link,
   Stack,
   Typography
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
-import { fetchProjects, fetchTelegramStatus } from '../api';
+import { fetchProjects, fetchTelegramBotUrl, fetchTelegramStatus } from '../api';
 import { Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -30,6 +31,7 @@ export const TelegramPage = (): JSX.Element => {
     isError: statusError,
     refetch: refetchStatus
   } = useQuery({ queryKey: ['telegram-status'], queryFn: fetchTelegramStatus });
+  const { data: botUrlInfo } = useQuery({ queryKey: ['telegram-url'], queryFn: fetchTelegramBotUrl });
   const { t } = useTranslation();
 
   const enabledProjects = useMemo(() => (projects ?? []).filter((project) => project.telegramNotify.enabled), [projects]);
@@ -44,7 +46,22 @@ export const TelegramPage = (): JSX.Element => {
 
   const renderStatusAlert = () => {
     if (status?.botStarted) {
-      return <Alert severity="success">{t('telegram.connected')}</Alert>;
+      return (
+        <Alert severity="success">
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            spacing={1.5}
+            alignItems={{ xs: 'flex-start', sm: 'center' }}
+          >
+            <Typography component="span">{t('telegram.connected')}</Typography>
+            {botUrlInfo?.url && (
+              <Link href={botUrlInfo.url} target="_blank" rel="noopener noreferrer">
+                {t('telegram.openChat')}
+              </Link>
+            )}
+          </Stack>
+        </Alert>
+      );
     }
     if (status?.tokenProvided) {
       return <Alert severity="warning">{t('telegram.tokenProvidedNoBot')}</Alert>;
@@ -105,7 +122,26 @@ export const TelegramPage = (): JSX.Element => {
                         </Typography>
                       )}
                       {project.telegramNotify.recipients.map((recipient) => (
-                        <Box key={recipient.chatId} sx={{ p: 1.5, borderRadius: 2, bgcolor: 'grey.50' }}>
+                        <Box
+                          key={recipient.chatId}
+                          sx={(theme) => ({
+                            p: 1.5,
+                            borderRadius: 2,
+                            bgcolor:
+                              theme.palette.mode === 'dark'
+                                ? theme.palette.grey[900]
+                                : theme.palette.grey[50],
+                            border: '1px solid',
+                            borderColor:
+                              theme.palette.mode === 'dark'
+                                ? theme.palette.grey[800]
+                                : theme.palette.grey[200],
+                            color:
+                              theme.palette.mode === 'dark'
+                                ? theme.palette.getContrastText(theme.palette.grey[900])
+                                : 'inherit'
+                          })}
+                        >
                           <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
                             Chat ID: {recipient.chatId}
                           </Typography>

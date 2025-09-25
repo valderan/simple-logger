@@ -17,6 +17,18 @@
 - Безопасность и настройки API: [docs/ru/api_security.md](docs/ru/api_security.md) · [docs/en/api_security.md](docs/en/api_security.md), [docs/api_security_improvements.md](docs/api_security_improvements.md)
 - Клиент и SDK: [docs/ru/client.md](docs/ru/client.md) · [docs/en/client.md](docs/en/client.md), [docs/ts-library-doc/Logger-ru.md](docs/ts-library-doc/Logger-ru.md) · [docs/ts-library-doc/Logger-en.md](docs/ts-library-doc/Logger-en.md)
 
+## Документация библиотеки
+
+В каталоге `ts-library` находится TypeScript-библиотека, которая помогает отправлять структурированные логи и управлять проектами через REST API. В неё входят два основных модуля:
+
+- **Logger** — клиент для буферизации и отправки событий.
+- **ApiClient** — типизированный доступ ко всем REST-методам Simple Logger.
+
+Полные руководства доступны в репозитории:
+
+- Русская документация: [docs/ts-library-doc/Logger-ru.md](docs/ts-library-doc/Logger-ru.md), [docs/ts-library-doc/ApiClient-ru.md](docs/ts-library-doc/ApiClient-ru.md)
+- English documentation: [docs/ts-library-doc/Logger-en.md](docs/ts-library-doc/Logger-en.md), [docs/ts-library-doc/ApiClient-en.md](docs/ts-library-doc/ApiClient-en.md)
+
 ## Возможности
 
 - Приём, хранение и фильтрация логов по UUID проекта.

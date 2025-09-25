@@ -137,10 +137,12 @@ export const DashboardPage = (): JSX.Element => {
     key: string;
     title: string;
     value: string | number;
-    description: string;
+    description?: string;
     valueVariant: 'h3' | 'body1';
     valueStyles?: SxProps;
     extra?: string;
+    extraVariant?: 'caption' | 'body2';
+    extraStyles?: SxProps;
   }[] = [
     {
       key: 'total-projects',
@@ -167,12 +169,14 @@ export const DashboardPage = (): JSX.Element => {
       key: 'api-url',
       title: t('dashboard.apiUrlLabel'),
       value: apiBaseUrl || t('dashboard.apiUrlNotConfigured'),
-      description: t('dashboard.apiUrlDescription'),
+      description: undefined,
       valueVariant: 'body1',
       valueStyles: { fontFamily: 'monospace', wordBreak: 'break-all' },
       extra: rateLimitPerMinute
         ? t('dashboard.rateLimitInfo', { value: rateLimitPerMinute })
-        : t('dashboard.rateLimitUnknown')
+        : t('dashboard.rateLimitUnknown'),
+      extraVariant: 'body2',
+      extraStyles: rateLimitPerMinute ? { fontWeight: 600 } : undefined
     }
   ];
 
@@ -196,11 +200,17 @@ export const DashboardPage = (): JSX.Element => {
                   {card.value}
                 </Typography>
                 <Box sx={{ flexGrow: 1 }} />
-                <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto' }}>
-                  {card.description}
-                </Typography>
+                {card.description && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 'auto' }}>
+                    {card.description}
+                  </Typography>
+                )}
                 {card.extra && (
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography
+                    variant={card.extraVariant ?? 'caption'}
+                    color="text.secondary"
+                    sx={{ mt: card.description ? 0 : 'auto', ...card.extraStyles }}
+                  >
                     {card.extra}
                   </Typography>
                 )}

@@ -111,6 +111,12 @@ export interface TelegramStatus {
   botStarted: boolean;
 }
 
+export interface TelegramBotUrlInfo {
+  url: string | null;
+  source: 'env' | 'telegram' | 'inactive' | 'unknown';
+  botActive: boolean;
+}
+
 export interface SystemLogPayload {
   message: string;
   level?: string;
