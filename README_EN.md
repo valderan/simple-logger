@@ -1,4 +1,8 @@
-# Simple Logger — lightweight centralized logging service
+<p align="center">
+  <img src="./client/public/logo_light.png" alt="Simple Logger Logo" width="160" height=auto/>
+</p>
+
+# Lightweight centralized logging service
 
 **Simple Logger** helps small and mid-sized teams add observability without deploying heavyweight monitoring stacks. The server accepts JSON logs over HTTP, stores them in MongoDB, sends Telegram alerts, and exposes a friendly web UI for analysis. Instead of maintaining a complex platform you can run a single service and get the insights you need.
 
