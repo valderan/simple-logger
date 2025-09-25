@@ -14,13 +14,16 @@ export type {
   ProjectLogResponse,
   PingService,
   PingServiceInput,
+  PingServiceUpdateInput,
   AuthRequest,
   AuthResponse,
   LogIngestRequest,
   LogFilterParameters,
   DeleteLogsResponse,
   DeleteProjectResponse,
+  DeletePingServiceResponse,
   DeleteWhitelistResponse,
   WhitelistEntry,
-  WhitelistPayload
+  WhitelistPayload,
+  RateLimitSettings
 } from './types.js';

@@ -7,6 +7,7 @@ import type {
   AuthRequest,
   AuthResponse,
   DeleteLogsResponse,
+  DeletePingServiceResponse,
   DeleteProjectResponse,
   DeleteWhitelistResponse,
   HealthResponse,
@@ -14,10 +15,12 @@ import type {
   LogIngestRequest,
   PingService,
   PingServiceInput,
+  PingServiceUpdateInput,
   Project,
   ProjectInput,
   ProjectLogEntry,
   ProjectLogResponse,
+  RateLimitSettings,
   WhitelistEntry,
   WhitelistPayload
 } from './types.js';
@@ -175,6 +178,25 @@ export class ApiClient {
   }
 
   /**
+   * Обновляет ping-сервис проекта.
+   */
+  async updatePingService(uuid: string, serviceId: string, payload: PingServiceUpdateInput): Promise<PingService> {
+    return this.request<PingService>(`/api/projects/${uuid}/ping-services/${serviceId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  /**
+   * Удаляет ping-сервис проекта.
+   */
+  async deletePingService(uuid: string, serviceId: string): Promise<DeletePingServiceResponse> {
+    return this.request<DeletePingServiceResponse>(`/api/projects/${uuid}/ping-services/${serviceId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
    * Фильтрует логи по универсальным параметрам.
    */
   async filterLogs(filters: LogFilterParameters & { uuid: string }): Promise<ProjectLogResponse> {
@@ -226,6 +248,23 @@ export class ApiClient {
   async deleteWhitelist(ip: string): Promise<DeleteWhitelistResponse> {
     return this.request<DeleteWhitelistResponse>(`/api/settings/whitelist/${encodeURIComponent(ip)}`, {
       method: 'DELETE'
+    });
+  }
+
+  /**
+   * Возвращает текущие настройки rate limit API.
+   */
+  async getRateLimitSettings(): Promise<RateLimitSettings> {
+    return this.request<RateLimitSettings>('/api/settings/rate-limit');
+  }
+
+  /**
+   * Обновляет значение rate limit API.
+   */
+  async updateRateLimitSettings(payload: RateLimitSettings): Promise<RateLimitSettings> {
+    return this.request<RateLimitSettings>('/api/settings/rate-limit', {
+      method: 'PUT',
+      body: JSON.stringify(payload)
     });
   }
 
