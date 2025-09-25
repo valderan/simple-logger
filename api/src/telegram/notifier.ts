@@ -1,5 +1,63 @@
 import TelegramBot from 'node-telegram-bot-api';
-import { ProjectDocument } from '../api/models/Project';
+import { validate as uuidValidate } from 'uuid';
+import { ProjectDocument, ProjectModel } from '../api/models/Project';
+import { writeSystemLog } from '../api/utils/systemLogger';
+
+type Language = 'ru' | 'en';
+
+const TRANSLATIONS: Record<Language, Record<string, string>> = {
+  ru: {
+    addSuccess: 'Вы подписаны на проект {{name}} ({{uuid}}).',
+    addExists: 'Вы уже подписаны на проект {{name}} ({{uuid}}).',
+    addInvalid: 'Проект с указанным UUID не найден или формат неверный.',
+    deleteSuccess: 'Подписка на проект {{name}} ({{uuid}}) отменена.',
+    deleteMissing: 'Подписка на проект не найдена.',
+    invalidFormat: 'Некорректная команда. Используйте ADD:<UUID> или DELETE:<UUID>.',
+    blocked: 'Вы 10 раз отправили неверный UUID. Бот перестанет принимать ваши сообщения на 1 час.',
+    stillBlocked: 'Вы временно заблокированы. Попробуйте снова через час.',
+    subscriptionsEmpty: 'У вас нет активных подписок.',
+    subscriptionsHeader: 'Ваши подписки:',
+    subscriptionsAction: 'Отписаться от {{name}}',
+    info: 'Ваши идентификаторы:\nUSERID: {{userId}}\nCHATID: {{chatId}}',
+    languagePrompt: 'Выберите язык интерфейса:',
+    languageSetRu: 'Язык переключен на русский.',
+    languageSetEn: 'Язык переключен на английский.',
+    commandSubscriptions: 'Мои подписки',
+    commandInfo: 'Информация',
+    commandLanguage: 'Сменить язык',
+    unknownProject: 'Проект с UUID {{uuid}} не найден.',
+    unsubscribeConfirmation: 'Подписка отменена.',
+    botStarted: 'Телеграм-бот запущен и принимает сообщения.'
+  },
+  en: {
+    addSuccess: 'You are subscribed to project {{name}} ({{uuid}}).',
+    addExists: 'You are already subscribed to project {{name}} ({{uuid}}).',
+    addInvalid: 'Project not found or UUID format is invalid.',
+    deleteSuccess: 'Subscription for project {{name}} ({{uuid}}) was removed.',
+    deleteMissing: 'Subscription not found.',
+    invalidFormat: 'Invalid command. Use ADD:<UUID> or DELETE:<UUID>.',
+    blocked: 'You have entered an invalid UUID 10 times. The bot will ignore messages for 1 hour.',
+    stillBlocked: 'You are temporarily blocked. Try again later.',
+    subscriptionsEmpty: 'You have no active subscriptions.',
+    subscriptionsHeader: 'Your subscriptions:',
+    subscriptionsAction: 'Unsubscribe from {{name}}',
+    info: 'Your identifiers:\nUSERID: {{userId}}\nCHATID: {{chatId}}',
+    languagePrompt: 'Choose interface language:',
+    languageSetRu: 'Language switched to Russian.',
+    languageSetEn: 'Language switched to English.',
+    commandSubscriptions: 'Subscriptions',
+    commandInfo: 'Info',
+    commandLanguage: 'Change language',
+    unknownProject: 'Project with UUID {{uuid}} not found.',
+    unsubscribeConfirmation: 'Subscription removed.',
+    botStarted: 'Telegram bot started and listens for messages.'
+  }
+};
+
+interface InvalidState {
+  attempts: number;
+  blockedUntil?: number;
+}
 
 /**
  * Простой адаптер для отправки уведомлений в telegram.
@@ -7,10 +65,18 @@ import { ProjectDocument } from '../api/models/Project';
 export class TelegramNotifier {
   private bot?: TelegramBot;
   private lastSent = new Map<string, number>();
+  private readonly userLanguages = new Map<number, Language>();
+  private readonly invalidState = new Map<number, InvalidState>();
+  private readonly notifiedBlock = new Set<number>();
 
   constructor(private readonly token?: string) {
     if (token) {
-      this.bot = new TelegramBot(token, { polling: false });
+      this.bot = new TelegramBot(token, { polling: true });
+      this.setupBot();
+      void this.logAction('telegram_bot_started', {
+        message: TRANSLATIONS.ru.botStarted,
+        tokenProvided: Boolean(token)
+      });
     }
   }
 
@@ -33,7 +99,333 @@ export class TelegramNotifier {
         continue;
       }
       await this.bot.sendMessage(recipient.chatId, message);
+      await this.logAction('telegram_notification_sent', {
+        projectUuid: project.uuid,
+        chatId: recipient.chatId,
+        tag
+      });
       this.lastSent.set(key, now);
+    }
+  }
+
+  private setupBot(): void {
+    if (!this.bot) {
+      return;
+    }
+
+    void this.registerCommands();
+
+    this.bot.on('message', (msg) => {
+      this.handleMessage(msg).catch((error) => {
+        void this.logAction('telegram_message_error', { error: (error as Error).message });
+      });
+    });
+
+    this.bot.on('callback_query', (query) => {
+      this.handleCallback(query).catch((error) => {
+        void this.logAction('telegram_callback_error', { error: (error as Error).message });
+      });
+    });
+  }
+
+  private async handleMessage(message: TelegramBot.Message): Promise<void> {
+    if (!this.bot || !message.chat || !message.text) {
+      return;
+    }
+
+    const chatId = message.chat.id;
+    const chatIdStr = chatId.toString();
+    const userId = message.from?.id;
+    const language = this.resolveLanguage(chatId, message.from?.language_code);
+    const text = message.text.trim();
+
+    if (this.isBlocked(chatId)) {
+      if (!this.notifiedBlock.has(chatId)) {
+        await this.bot.sendMessage(chatId, TRANSLATIONS[language].stillBlocked);
+        this.notifiedBlock.add(chatId);
+      }
+      await this.logAction('telegram_message_blocked', { chatId: chatIdStr, userId, text });
+      return;
+    }
+
+    if (text.startsWith('/')) {
+      await this.handleCommand(chatId, userId, text, language);
+      return;
+    }
+
+    if (/^add:/i.test(text)) {
+      await this.processAttach(chatId, userId, text, language);
+      return;
+    }
+
+    if (/^delete:/i.test(text)) {
+      await this.processDetach(chatId, userId, text, language);
+      return;
+    }
+  }
+
+  private async handleCommand(chatId: number, userId: number | undefined, text: string, language: Language): Promise<void> {
+    const chatIdStr = chatId.toString();
+    const command = text.split('@')[0];
+    switch (command) {
+      case '/subscriptions':
+        await this.showSubscriptions(chatId, userId, language);
+        await this.logAction('telegram_command_subscriptions', { chatId: chatIdStr, userId });
+        break;
+      case '/info':
+        await this.bot?.sendMessage(chatId, this.interpolate(TRANSLATIONS[language].info, {
+          userId: userId ?? 'unknown',
+          chatId
+        }));
+        await this.logAction('telegram_command_info', { chatId: chatIdStr, userId });
+        break;
+      case '/language':
+        await this.askLanguage(chatId, language);
+        await this.logAction('telegram_command_language', { chatId: chatIdStr, userId });
+        break;
+      default:
+        break;
+    }
+  }
+
+  private async processAttach(chatId: number, userId: number | undefined, text: string, language: Language): Promise<void> {
+    const uuid = text.split(':')[1]?.trim();
+    if (!uuid || !uuidValidate(uuid)) {
+      await this.registerInvalidAttempt(chatId, userId, language, uuid ?? text);
+      return;
+    }
+
+    const project = await ProjectModel.findOne({ uuid });
+    if (!project) {
+      await this.registerInvalidAttempt(chatId, userId, language, uuid);
+      return;
+    }
+
+    const chatIdStr = chatId.toString();
+    const exists = project.telegramNotify.recipients.find((recipient) => recipient.chatId === chatIdStr);
+    if (exists) {
+      await this.bot?.sendMessage(chatId, this.interpolate(TRANSLATIONS[language].addExists, {
+        name: project.name,
+        uuid: project.uuid
+      }));
+      await this.logAction('telegram_subscription_exists', { chatId: chatIdStr, userId, projectUuid: project.uuid });
+      this.resetInvalid(chatId);
+      return;
+    }
+
+    project.telegramNotify.recipients.push({ chatId: chatIdStr, tags: [] });
+    await project.save();
+    await this.bot?.sendMessage(chatId, this.interpolate(TRANSLATIONS[language].addSuccess, {
+      name: project.name,
+      uuid: project.uuid
+    }));
+    await this.logAction('telegram_subscription_added', { chatId: chatIdStr, userId, projectUuid: project.uuid });
+    this.resetInvalid(chatId);
+  }
+
+  private async processDetach(chatId: number, userId: number | undefined, text: string, language: Language): Promise<void> {
+    const uuid = text.split(':')[1]?.trim();
+    if (!uuid || !uuidValidate(uuid)) {
+      await this.registerInvalidAttempt(chatId, userId, language, uuid ?? text);
+      return;
+    }
+
+    const project = await ProjectModel.findOne({ uuid });
+    if (!project) {
+      await this.registerInvalidAttempt(chatId, userId, language, uuid);
+      return;
+    }
+
+    const chatIdStr = chatId.toString();
+    const initialLength = project.telegramNotify.recipients.length;
+    project.telegramNotify.recipients = project.telegramNotify.recipients.filter((recipient) => recipient.chatId !== chatIdStr);
+
+    if (project.telegramNotify.recipients.length === initialLength) {
+      await this.bot?.sendMessage(chatId, TRANSLATIONS[language].deleteMissing);
+      await this.logAction('telegram_subscription_missing', { chatId: chatIdStr, userId, projectUuid: project.uuid });
+      this.resetInvalid(chatId);
+      return;
+    }
+
+    await project.save();
+    await this.bot?.sendMessage(chatId, this.interpolate(TRANSLATIONS[language].deleteSuccess, {
+      name: project.name,
+      uuid: project.uuid
+    }));
+    await this.logAction('telegram_subscription_removed', { chatId: chatIdStr, userId, projectUuid: project.uuid });
+    this.resetInvalid(chatId);
+  }
+
+  private async showSubscriptions(chatId: number, userId: number | undefined, language: Language): Promise<void> {
+    const chatIdStr = chatId.toString();
+    const projects = await ProjectModel.find({ 'telegramNotify.recipients.chatId': chatIdStr });
+    if (!projects.length) {
+      await this.bot?.sendMessage(chatId, TRANSLATIONS[language].subscriptionsEmpty);
+      return;
+    }
+
+    const lines = [TRANSLATIONS[language].subscriptionsHeader];
+    const keyboard = projects.map((project) => [{
+      text: this.interpolate(TRANSLATIONS[language].subscriptionsAction, { name: project.name }),
+      callback_data: `unsubscribe:${project.uuid}`
+    }]);
+
+    for (const project of projects) {
+      lines.push(`• ${project.name} (${project.uuid})`);
+    }
+
+    await this.bot?.sendMessage(chatId, lines.join('\n'), {
+      reply_markup: {
+        inline_keyboard: keyboard
+      }
+    });
+  }
+
+  private async askLanguage(chatId: number, language: Language): Promise<void> {
+    await this.bot?.sendMessage(chatId, TRANSLATIONS[language].languagePrompt, {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: 'Русский', callback_data: 'language:ru' },
+          { text: 'English', callback_data: 'language:en' }
+        ]]
+      }
+    });
+  }
+
+  private async handleCallback(query: TelegramBot.CallbackQuery): Promise<void> {
+    if (!this.bot || !query.message || !query.data) {
+      return;
+    }
+
+    const chatId = query.message.chat.id;
+    const chatIdStr = chatId.toString();
+    const userId = query.from.id;
+    const language = this.resolveLanguage(chatId, query.from.language_code);
+    const [action, value] = query.data.split(':');
+
+    if (action === 'unsubscribe' && value) {
+      const project = await ProjectModel.findOne({ uuid: value });
+      if (!project) {
+        await this.bot.answerCallbackQuery(query.id, { text: this.interpolate(TRANSLATIONS[language].unknownProject, { uuid: value }), show_alert: true });
+        await this.logAction('telegram_callback_unknown_project', { chatId: chatIdStr, userId, projectUuid: value });
+        return;
+      }
+      const initialLength = project.telegramNotify.recipients.length;
+      project.telegramNotify.recipients = project.telegramNotify.recipients.filter((recipient) => recipient.chatId !== chatIdStr);
+      if (project.telegramNotify.recipients.length !== initialLength) {
+        await project.save();
+        await this.logAction('telegram_subscription_removed', { chatId: chatIdStr, userId, projectUuid: value, via: 'callback' });
+        await this.bot.answerCallbackQuery(query.id, { text: TRANSLATIONS[language].unsubscribeConfirmation });
+        await this.bot.sendMessage(chatId, this.interpolate(TRANSLATIONS[language].deleteSuccess, {
+          name: project.name,
+          uuid: project.uuid
+        }));
+        return;
+      }
+      await this.bot.answerCallbackQuery(query.id, { text: TRANSLATIONS[language].deleteMissing, show_alert: true });
+      await this.bot.sendMessage(chatId, TRANSLATIONS[language].deleteMissing);
+      await this.logAction('telegram_subscription_missing', { chatId: chatIdStr, userId, projectUuid: value, via: 'callback' });
+      return;
+    }
+
+    if (action === 'language' && (value === 'ru' || value === 'en')) {
+      this.userLanguages.set(chatId, value);
+      this.notifiedBlock.delete(chatId);
+      await this.bot.answerCallbackQuery(query.id, { text: value === 'ru' ? TRANSLATIONS.ru.languageSetRu : TRANSLATIONS.en.languageSetEn });
+      await this.logAction('telegram_language_changed', { chatId: chatIdStr, userId, language: value });
+      await this.bot.sendMessage(chatId, value === 'ru' ? TRANSLATIONS.ru.languageSetRu : TRANSLATIONS.en.languageSetEn);
+      return;
+    }
+  }
+
+  private resolveLanguage(chatId: number, userLanguage?: string): Language {
+    const stored = this.userLanguages.get(chatId);
+    if (stored) {
+      return stored;
+    }
+    if (userLanguage?.startsWith('en')) {
+      this.userLanguages.set(chatId, 'en');
+      return 'en';
+    }
+    this.userLanguages.set(chatId, 'ru');
+    return 'ru';
+  }
+
+  private async registerInvalidAttempt(chatId: number, userId: number | undefined, language: Language, uuid: string): Promise<void> {
+    const chatIdStr = chatId.toString();
+    const state = this.invalidState.get(chatId) ?? { attempts: 0 };
+    state.attempts += 1;
+    this.invalidState.set(chatId, state);
+
+    if (state.attempts >= 10) {
+      state.blockedUntil = Date.now() + 60 * 60 * 1000;
+      this.notifiedBlock.delete(chatId);
+      await this.bot?.sendMessage(chatId, TRANSLATIONS[language].blocked);
+      await this.logAction('telegram_user_blocked', { chatId: chatIdStr, userId, invalidUuid: uuid });
+      return;
+    }
+
+    await this.bot?.sendMessage(chatId, TRANSLATIONS[language].addInvalid);
+    await this.logAction('telegram_invalid_uuid', { chatId: chatIdStr, userId, invalidUuid: uuid, attempt: state.attempts });
+  }
+
+  private resetInvalid(chatId: number): void {
+    this.invalidState.delete(chatId);
+    this.notifiedBlock.delete(chatId);
+  }
+
+  private isBlocked(chatId: number): boolean {
+    const state = this.invalidState.get(chatId);
+    if (!state?.blockedUntil) {
+      return false;
+    }
+    if (state.blockedUntil <= Date.now()) {
+      this.invalidState.delete(chatId);
+      this.notifiedBlock.delete(chatId);
+      return false;
+    }
+    return true;
+  }
+
+  private async registerCommands(): Promise<void> {
+    if (!this.bot) {
+      return;
+    }
+
+    const ruCommands: TelegramBot.BotCommand[] = [
+      { command: 'subscriptions', description: TRANSLATIONS.ru.commandSubscriptions },
+      { command: 'info', description: TRANSLATIONS.ru.commandInfo },
+      { command: 'language', description: TRANSLATIONS.ru.commandLanguage }
+    ];
+
+    const enCommands: TelegramBot.BotCommand[] = [
+      { command: 'subscriptions', description: TRANSLATIONS.en.commandSubscriptions },
+      { command: 'info', description: TRANSLATIONS.en.commandInfo },
+      { command: 'language', description: TRANSLATIONS.en.commandLanguage }
+    ];
+
+    try {
+      await this.bot.setMyCommands(ruCommands, { language_code: 'ru' });
+      await this.bot.setMyCommands(enCommands, { language_code: 'en' });
+      await this.bot.setMyCommands(enCommands);
+    } catch (error) {
+      await this.logAction('telegram_commands_error', { error: (error as Error).message });
+    }
+  }
+
+  private interpolate(template: string, values: Record<string, unknown>): string {
+    return template.replace(/{{(.*?)}}/g, (_, key: string) => {
+      const value = values[key.trim()];
+      return value !== undefined ? String(value) : '';
+    });
+  }
+
+  private async logAction(message: string, metadata: Record<string, unknown>): Promise<void> {
+    try {
+      await writeSystemLog(message, { tags: ['TELEGRAM'], metadata });
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to write telegram system log', error);
     }
   }
 }

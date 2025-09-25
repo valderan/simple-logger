@@ -6,6 +6,14 @@
 
 **Simple Logger** helps small and mid-sized teams add observability without deploying heavyweight monitoring stacks. The server accepts JSON logs over HTTP, stores them in MongoDB, sends Telegram alerts, and exposes a friendly web UI for analysis. Instead of maintaining a complex platform you can run a single service and get the insights you need.
 
+## Simple Logger documentation
+
+The platform ingests structured logs, tracks service uptime, and forwards alerts to Telegram. The repository ships with detailed guides that explain the architecture, API, security model, and client tooling:
+
+- Overview and architecture: [docs/en/about.md](docs/en/about.md) · [docs/ru/about.md](docs/ru/about.md), [docs/en/architecture.md](docs/en/architecture.md) · [docs/ru/architecture.md](docs/ru/architecture.md)
+- API security and settings: [docs/en/api_security.md](docs/en/api_security.md) · [docs/ru/api_security.md](docs/ru/api_security.md), [docs/api_security_improvements.md](docs/api_security_improvements.md)
+- Client and SDK: [docs/en/client.md](docs/en/client.md) · [docs/ru/client.md](docs/ru/client.md), [docs/ts-library-doc/Logger-en.md](docs/ts-library-doc/Logger-en.md) · [docs/ts-library-doc/Logger-ru.md](docs/ts-library-doc/Logger-ru.md)
+
 ## Features
 
 - Ingest, store, and filter logs by project UUID.
