@@ -550,6 +550,7 @@ export const PingServicesPage = (): JSX.Element => {
                 getRowId={(row) => row._id}
                 columnVisibilityModel={columnVisibilityModel}
                 autoHeight={isSmDown}
+                rowHeight={isSmDown ? 96 : 76}
                 pageSizeOptions={[5, 10, 25]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 disableRowSelectionOnClick
@@ -557,8 +558,9 @@ export const PingServicesPage = (): JSX.Element => {
                 sx={{
                   minWidth: isSmDown ? 560 : undefined,
                   '& .MuiDataGrid-cell': {
-                    alignItems: 'center',
-                    py: 1.25,
+                    alignItems: 'flex-start',
+                    display: 'flex',
+                    py: 1.5,
                     fontSize: { xs: '0.875rem', sm: '0.95rem' }
                   },
                   '& .MuiDataGrid-cellContent': {
