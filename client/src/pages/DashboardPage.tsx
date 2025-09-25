@@ -31,7 +31,7 @@ import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime, formatRelative } from '../utils/formatters';
 import { LogEntry, Project } from '../api/types';
 import { useTranslation } from '../hooks/useTranslation';
-import { API_URL } from '../config';
+import { getApiBaseUrl } from '../api/client';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
@@ -129,7 +129,7 @@ export const DashboardPage = (): JSX.Element => {
   const totalPingServices = pingQueries.reduce((acc, query) => acc + (query.data?.length ?? 0), 0);
   const projectsWithAlerts = projects?.filter((project) => project.telegramNotify.enabled).length ?? 0;
 
-  const apiBaseUrl = API_URL?.trim() ? API_URL : '';
+  const apiBaseUrl = getApiBaseUrl()?.trim() ?? '';
 
   const rateLimitPerMinute = rateLimitQuery.data?.rateLimitPerMinute;
 
