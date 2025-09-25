@@ -47,6 +47,8 @@ Content-Type: application/json
 | `GET` | `/:uuid/logs` | Логи конкретного проекта с фильтрами. |
 | `POST` | `/:uuid/ping-services` | Добавление ping-сервиса. |
 | `GET` | `/:uuid/ping-services` | Список ping-сервисов. |
+| `PUT` | `/:uuid/ping-services/:serviceId` | Обновление параметров ping-сервиса. |
+| `DELETE` | `/:uuid/ping-services/:serviceId` | Удаление ping-сервиса из проекта. |
 | `POST` | `/:uuid/ping-services/check` | Ручной запуск проверки. |
 
 Пример создания проекта:
@@ -131,6 +133,8 @@ Authorization: Bearer <token>
 | `GET` | `/whitelist` | Получить белый список IP. |
 | `POST` | `/whitelist` | Добавить IP. |
 | `DELETE` | `/whitelist/:ip` | Удалить IP. |
+| `GET` | `/rate-limit` | Узнать текущее ограничение запросов в минуту. |
+| `PUT` | `/rate-limit` | Изменить значение ограничения запросов в минуту. |
 
 Запрос на добавление IP:
 
@@ -144,6 +148,8 @@ Content-Type: application/json
   "description": "VPN"
 }
 ```
+
+Для изменения лимита скорости используйте запрос `PUT /api/settings/rate-limit` с телом вида `{ "rateLimitPerMinute": 200 }`.
 
 ## Swagger и OpenAPI
 

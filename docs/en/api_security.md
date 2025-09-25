@@ -55,14 +55,14 @@ The allowlist middleware currently does not emit system logs for rejected reques
 Base protections are configured in `app.ts`:
 
 - Security headers via `helmet`, CORS control through `cors`, and a JSON body size limit of 1 MB to block oversized payloads.【F:api/src/app.ts†L17-L23】
-- A global rate limiter (`express-rate-limit`) caps each IP at 120 requests per minute, acting as a simple anti-DoS measure.【F:api/src/api/middlewares/rateLimiter.ts†L6-L11】
+- A global rate limiter (`express-rate-limit`) defaults to 120 requests per minute per IP and can be adjusted through `PUT /api/settings/rate-limit`, providing a basic anti-DoS shield.【F:api/src/api/middlewares/rateLimiter.ts†L6-L11】
 - Admin sessions are kept in memory with a 60-minute TTL. Tokens appear only after a successful `ADMIN_USER`/`ADMIN_PASS` check and are purged automatically when expired.【F:api/src/api/utils/sessionStore.ts†L13-L50】
 - Payloads submitted to `/api/logs` are validated with `zod`, which prevents arbitrary structures from entering the database and simplifies troubleshooting.【F:api/src/api/controllers/logController.ts†L9-L76】
 - Telegram notifications apply anti-spam intervals and tag filtering to avoid message storms.【F:api/src/telegram/notifier.ts†L20-L37】
 
 ## Throughput and large log volumes
 
-The current rate limiter restricts the stream to 120 requests per minute per IP. Therefore the API **cannot** ingest 40 000 logs per minute (~667 per second) or 40 000 per second from a single source: the limiter will respond with `429 Too Many Requests`. Handling such volumes would require additional work (see the improvement list) — e.g., raising limits, sharding by IP, or moving ingestion to queues.
+With the default settings the limiter allows 120 requests per minute per IP. Therefore the API **cannot** ingest 40 000 logs per minute (~667 per second) or 40 000 per second from a single source: the limiter will respond with `429 Too Many Requests`. You can raise the threshold via `/api/settings/rate-limit`, but high-volume scenarios still demand architectural changes (see the improvement list) such as IP sharding or queue-based ingestion.
 
 Beyond the limiter, MongoDB write throughput matters: every log is inserted synchronously via `LogModel.create`. Tens of thousands of writes per second would demand database tuning (batch operations, replication, dedicated hardware).
 

@@ -2,12 +2,14 @@ import { Router } from 'express';
 import {
   addPingService,
   createProject,
+  deletePingService,
   deleteProject,
   getProject,
   getProjectLogs,
   listPingServices,
   listProjects,
   triggerPingCheck,
+  updatePingService,
   updateProject
 } from '../controllers/projectController';
 import { authGuard } from '../middlewares/authGuard';
@@ -22,6 +24,8 @@ router.put('/:uuid', authGuard, updateProject);
 router.delete('/:uuid', authGuard, deleteProject);
 router.post('/:uuid/ping-services', authGuard, addPingService);
 router.get('/:uuid/ping-services', authGuard, listPingServices);
+router.put('/:uuid/ping-services/:serviceId', authGuard, updatePingService);
+router.delete('/:uuid/ping-services/:serviceId', authGuard, deletePingService);
 router.post('/:uuid/ping-services/check', authGuard, triggerPingCheck);
 
 export default router;

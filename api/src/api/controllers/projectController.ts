@@ -28,6 +28,10 @@ const pingSchema = z.object({
   telegramTags: z.array(z.string()).default([])
 });
 
+const pingUpdateSchema = pingSchema.partial().refine(data => Object.keys(data).length > 0, {
+  message: 'Необходимо указать хотя бы одно поле для обновления'
+});
+
 /**
  * Создает новый проект логирования.
  */
@@ -159,4 +163,42 @@ export async function triggerPingCheck(req: Request, res: Response): Promise<Res
   const { uuid } = req.params;
   const services = await defaultPingMonitor.checkProjectServices(uuid);
   return res.json(services);
+}
+
+/**
+ * Обновляет ping-сервис проекта.
+ */
+export async function updatePingService(req: Request, res: Response): Promise<Response> {
+  const { uuid, serviceId } = req.params as { uuid: string; serviceId: string };
+  const parsed = pingUpdateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ message: 'Неверный формат данных', details: parsed.error.flatten() });
+  }
+
+  const updated = await PingServiceModel.findOneAndUpdate(
+    { _id: serviceId, projectUuid: uuid },
+    parsed.data,
+    { new: true, runValidators: true }
+  );
+
+  if (!updated) {
+    return res.status(404).json({ message: 'Ping-сервис не найден' });
+  }
+
+  await defaultPingMonitor.checkService(updated);
+  return res.json(updated.toJSON());
+}
+
+/**
+ * Удаляет ping-сервис проекта.
+ */
+export async function deletePingService(req: Request, res: Response): Promise<Response> {
+  const { uuid, serviceId } = req.params as { uuid: string; serviceId: string };
+  const deleted = await PingServiceModel.findOneAndDelete({ _id: serviceId, projectUuid: uuid });
+
+  if (!deleted) {
+    return res.status(404).json({ message: 'Ping-сервис не найден' });
+  }
+
+  return res.json({ message: 'Ping-сервис удален', serviceId: deleted._id });
 }

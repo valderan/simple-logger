@@ -276,6 +276,24 @@ export interface PingService extends PingServiceInput {
 }
 
 /**
+ * Данные для обновления ping-сервиса.
+ */
+export interface PingServiceUpdateInput {
+  name?: string;
+  url?: string;
+  interval?: number;
+  telegramTags?: string[];
+}
+
+/**
+ * Ответ при удалении ping-сервиса.
+ */
+export interface DeletePingServiceResponse {
+  message: string;
+  serviceId: string;
+}
+
+/**
  * Данные белого списка IP.
  */
 export interface WhitelistPayload {
@@ -319,6 +337,13 @@ export interface DeleteLogsResponse {
  */
 export interface DeleteWhitelistResponse {
   success: boolean;
+}
+
+/**
+ * Настройки ограничения скорости API.
+ */
+export interface RateLimitSettings {
+  rateLimitPerMinute: number;
 }
 
 /**

@@ -5,7 +5,7 @@
 ## 1. Общие сведения
 
 - Аутентификация: заголовок `Authorization: Bearer <token>` (кроме публичного приёма логов и `/health`).
-- Лимиты: rate limiting и IP whitelist подключены глобально.
+- Лимиты: rate limiting и IP whitelist подключены глобально (значение лимита по умолчанию 120 запросов/минуту и изменяется через `/api/settings/rate-limit`).
 - Формат даты: ISO 8601 (UTC).
 - Swagger: `api/swaggerapi/openapi.yaml` или Swagger UI из `docker-compose.dev.yml`.
 
@@ -114,6 +114,38 @@ Content-Type: application/json
 ### 4.3 POST `/check`
 Ручная проверка доступности. Возвращает объект с результатом последней проверки.
 
+### 4.4 PUT `/:serviceId`
+Обновление параметров ping-сервиса. Можно передавать только изменяемые поля. После сохранения выполняется мгновенная проверка.
+
+```http
+PUT /api/projects/{uuid}/ping-services/{serviceId}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "interval": 120,
+  "telegramTags": ["PING_DOWN", "CRITICAL"]
+}
+```
+
+Успешный ответ `200 OK` содержит обновлённый объект сервиса.
+
+### 4.5 DELETE `/:serviceId`
+Удаляет ping-сервис из проекта. Возвращает идентификатор удалённого сервиса.
+
+```http
+DELETE /api/projects/{uuid}/ping-services/{serviceId}
+Authorization: Bearer <token>
+```
+
+**Ответ `200 OK`**
+```json
+{
+  "message": "Ping-сервис удален",
+  "serviceId": "6650f47f9d3ab00015a81234"
+}
+```
+
 ## 5. Логи `/logs`
 
 ### 5.1 POST `/`
@@ -148,7 +180,7 @@ Content-Type: application/json
 ### 5.3 DELETE `/:uuid`
 Удаление логов проекта. Тело запроса может содержать фильтры (`level`, `tag`, `startDate`, `endDate`, `logId`).
 
-## 6. Настройки `/settings/whitelist`
+## 6. Настройки `/settings`
 
 ### 6.1 GET `/`
 Получить белый список IP.
@@ -169,6 +201,31 @@ Content-Type: application/json
 
 ### 6.3 DELETE `/:ip`
 Удалить IP-адрес из белого списка.
+
+### 6.4 GET `/rate-limit`
+Возвращает текущее значение лимита запросов в минуту (по умолчанию 120).
+
+**Ответ `200 OK`**
+```json
+{
+  "rateLimitPerMinute": 120
+}
+```
+
+### 6.5 PUT `/rate-limit`
+Изменяет лимит запросов в минуту для всего API.
+
+```http
+PUT /api/settings/rate-limit
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "rateLimitPerMinute": 200
+}
+```
+
+Успешный ответ повторяет новое значение лимита.
 
 ## 7. Системные эндпоинты
 

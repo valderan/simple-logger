@@ -47,6 +47,8 @@ After several failed attempts the caller IP is locked for one hour.
 | `GET` | `/:uuid/logs` | Retrieve project logs with filters. |
 | `POST` | `/:uuid/ping-services` | Register a ping service. |
 | `GET` | `/:uuid/ping-services` | List ping services. |
+| `PUT` | `/:uuid/ping-services/:serviceId` | Update ping service parameters. |
+| `DELETE` | `/:uuid/ping-services/:serviceId` | Remove a ping service from the project. |
 | `POST` | `/:uuid/ping-services/check` | Trigger a manual ping check. |
 
 Example request:
@@ -131,6 +133,8 @@ Authorization: Bearer <token>
 | `GET` | `/whitelist` | Retrieve the IP whitelist. |
 | `POST` | `/whitelist` | Add an IP address. |
 | `DELETE` | `/whitelist/:ip` | Remove an IP address. |
+| `GET` | `/rate-limit` | Inspect the current requests-per-minute cap. |
+| `PUT` | `/rate-limit` | Change the requests-per-minute cap. |
 
 Sample request:
 
@@ -144,6 +148,8 @@ Content-Type: application/json
   "description": "VPN"
 }
 ```
+
+To tweak the rate limiter send `PUT /api/settings/rate-limit` with a JSON payload like `{ "rateLimitPerMinute": 200 }`.
 
 ## Swagger and OpenAPI
 

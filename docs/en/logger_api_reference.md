@@ -5,7 +5,7 @@ This document describes the REST endpoints exposed by Logger. The API is powered
 ## 1. General information
 
 - Authentication: `Authorization: Bearer <token>` header (except for public log ingestion and `/health`).
-- Safeguards: global rate limiting and IP whitelist.
+- Safeguards: global rate limiting and IP whitelist (default limit 120 requests/minute, adjustable via `/api/settings/rate-limit`).
 - Date format: ISO 8601 (UTC).
 - Swagger: `api/swaggerapi/openapi.yaml` or the Swagger UI service from `docker-compose.dev.yml`.
 
@@ -114,6 +114,38 @@ List ping services for the project.
 ### 4.3 POST `/check`
 Run a manual availability probe. Returns the latest check result.
 
+### 4.4 PUT `/:serviceId`
+Update ping service parameters. You may send only the fields that should change. A health check is triggered after saving.
+
+```http
+PUT /api/projects/{uuid}/ping-services/{serviceId}
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "interval": 120,
+  "telegramTags": ["PING_DOWN", "CRITICAL"]
+}
+```
+
+The `200 OK` response returns the updated service object.
+
+### 4.5 DELETE `/:serviceId`
+Remove a ping service from the project. The response contains the identifier of the removed service.
+
+```http
+DELETE /api/projects/{uuid}/ping-services/{serviceId}
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`**
+```json
+{
+  "message": "Ping service deleted",
+  "serviceId": "6650f47f9d3ab00015a81234"
+}
+```
+
 ## 5. Logs `/logs`
 
 ### 5.1 POST `/`
@@ -148,7 +180,7 @@ Filter logs using the same parameters as `/:uuid/logs`. Requires a token.
 ### 5.3 DELETE `/:uuid`
 Delete logs for a project. The request body can contain filters (`level`, `tag`, `startDate`, `endDate`, `logId`).
 
-## 6. Settings `/settings/whitelist`
+## 6. Settings `/settings`
 
 ### 6.1 GET `/`
 Retrieve the IP whitelist.
@@ -169,6 +201,31 @@ Content-Type: application/json
 
 ### 6.3 DELETE `/:ip`
 Remove an IP address from the whitelist.
+
+### 6.4 GET `/rate-limit`
+Return the current requests-per-minute cap (120 by default).
+
+**Response `200 OK`**
+```json
+{
+  "rateLimitPerMinute": 120
+}
+```
+
+### 6.5 PUT `/rate-limit`
+Change the global API requests-per-minute cap.
+
+```http
+PUT /api/settings/rate-limit
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "rateLimitPerMinute": 200
+}
+```
+
+The response repeats the new limit value.
 
 ## 7. System endpoints
 

@@ -298,6 +298,70 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/projects/{uuid}/ping-services/{serviceId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+      - name: serviceId
+        in: path
+        required: true
+        description: Identifier of the ping service.
+        schema:
+          type: string
+          example: 6650f47f9d3ab00015a81234
+    put:
+      tags: [Projects, PingServices]
+      summary: Update a ping service
+      description: Updates an existing ping service in the project and triggers a health check.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PingServiceUpdateInput'
+      responses:
+        '200':
+          description: Ping service updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PingService'
+        '400':
+          description: Invalid ping service parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Ping service or project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Projects, PingServices]
+      summary: Delete a ping service
+      description: Removes a ping service from the project.
+      responses:
+        '200':
+          description: Ping service deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeletePingServiceResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Ping service or project not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/projects/{uuid}/ping-services/check:
     parameters:
       - $ref: '#/components/parameters/ProjectUuidPathParam'
@@ -503,6 +567,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/settings/rate-limit:
+    get:
+      tags: [Settings]
+      summary: Get rate limit value
+      description: Returns the current API request-per-minute limit.
+      responses:
+        '200':
+          description: Current rate limit value.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitSettings'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    put:
+      tags: [Settings]
+      summary: Update rate limit value
+      description: Sets a new request-per-minute limit for the API.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RateLimitSettings'
+      responses:
+        '200':
+          description: Rate limit updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RateLimitSettings'
+        '400':
+          description: Invalid rate limit value.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
 components:
   securitySchemes:
     BearerAuth:
@@ -807,6 +914,25 @@ components:
           items:
             type: string
           default: []
+    PingServiceUpdateInput:
+      type: object
+      description: Provide one or more fields to update.
+      minProperties: 1
+      properties:
+        name:
+          type: string
+          minLength: 2
+        url:
+          type: string
+          format: uri
+        interval:
+          type: integer
+          minimum: 5
+          maximum: 3600
+        telegramTags:
+          type: array
+          items:
+            type: string
     PingService:
       allOf:
         - $ref: '#/components/schemas/PingServiceInput'
@@ -830,6 +956,16 @@ components:
             updatedAt:
               type: string
               format: date-time
+    DeletePingServiceResponse:
+      type: object
+      required: [message, serviceId]
+      properties:
+        message:
+          type: string
+          example: Ping service deleted
+        serviceId:
+          type: string
+          example: 6650f47f9d3ab00015a81234
     WhitelistPayload:
       type: object
       required: [ip]
@@ -850,6 +986,14 @@ components:
             createdAt:
               type: string
               format: date-time
+    RateLimitSettings:
+      type: object
+      required: [rateLimitPerMinute]
+      properties:
+        rateLimitPerMinute:
+          type: integer
+          minimum: 1
+          example: 120
     ErrorResponse:
       type: object
       required: [message]

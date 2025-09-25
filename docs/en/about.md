@@ -10,6 +10,7 @@
 - Telegram alerts for incidents and service outages.
 - Ping monitoring with configurable intervals.
 - API protection against spam and unauthorized access (rate limiting, IP whitelist).
+- Ability to tune API request limits without redeploying the service.
 - Ability to export, filter, and purge logs using multiple criteria.
 
 ## Functional requirements
@@ -22,9 +23,9 @@ The client located in `client/` offers the following sections:
 2. **Dashboard** – project, event, and ping-service summary.
 3. **Projects** – create, edit, delete projects and retrieve UUIDs.
 4. **Logs** – view, filter, delete logs and copy entries to the clipboard.
-5. **Ping services** – manage uptime checks and trigger them manually.
+5. **Ping services** – list uptime checks, edit parameters, delete entries, and trigger manual probes.
 6. **Telegram** – configure recipients and anti-spam settings.
-7. **Settings** – manage the IP whitelist and API security options.
+7. **Settings** – manage the IP whitelist, current rate limit, and other security options.
 
 ### MongoDB
 
@@ -40,7 +41,7 @@ Main collections:
 - Authentication (`POST /api/auth/login`).
 - Project and ping-service CRUD (`/api/projects/*`).
 - Log ingestion and filtering (`/api/logs`).
-- IP whitelist management (`/api/settings/whitelist`).
+- IP whitelist and rate limit management (`/api/settings/*`).
 
 ### Security and auditing
 
