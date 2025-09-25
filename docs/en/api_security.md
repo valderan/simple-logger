@@ -70,10 +70,20 @@ Beyond the limiter, MongoDB write throughput matters: every log is inserted sync
 
 Telegram settings are stored per project inside the `Project` document. Each recipient can define tags and an anti-spam interval (in minutes). When logs are ingested, the controller invokes `defaultNotifier.notify`:
 
-1. If the bot token is missing or notifications are disabled for the project, nothing is sent.【F:api/src/telegram/notifier.ts†L20-L23】
-2. For each recipient the notifier computes a `projectUuid:chatId:tag` key. Messages are sent only if at least `antiSpamInterval` minutes passed since the last notification for that key.【F:api/src/telegram/notifier.ts†L24-L37】
+1. If the bot token is missing or notifications are disabled for the project, nothing is sent.【F:api/src/telegram/notifier.ts†L86-L99】
+2. For each recipient the notifier computes a `projectUuid:chatId:tag` key. Messages are sent only if at least `antiSpamInterval` minutes passed since the last notification for that key.【F:api/src/telegram/notifier.ts†L91-L107】
 
 Example: if a website check runs every minute and the site stays down, the `PING_DOWN` notification is sent only once per configured interval. With a 15-minute anti-spam window, repeated alerts are suppressed until the timeout expires, protecting the team from notification storms.
+
+When `BOT_API_KEY` is present the bot starts polling, registers menu commands, and handles interactive events. Responses follow the language selected via `/language` (Russian or English).【F:api/src/telegram/notifier.ts†L72-L190】【F:api/src/telegram/notifier.ts†L285-L337】【F:api/src/telegram/notifier.ts†L395-L413】
+
+- Sending `ADD:<UUID>` subscribes the chat to a project after validating the UUID and confirming that the project exists. Users receive confirmations, duplicates are prevented, and the error counter resets.【F:api/src/telegram/notifier.ts†L191-L224】
+- Sending `DELETE:<UUID>` removes the subscription or reports that the chat is not linked to the project.【F:api/src/telegram/notifier.ts†L226-L257】
+- `/subscriptions` lists active projects and exposes inline buttons that trigger instant unsubscribe callbacks.【F:api/src/telegram/notifier.ts†L167-L209】【F:api/src/telegram/notifier.ts†L259-L328】
+- `/info` returns the current `USERID` and `CHATID` so operators can forward them to administrators for manual onboarding.【F:api/src/telegram/notifier.ts†L167-L185】
+- Invalid UUID attempts increment a counter; after ten failures the bot blocks the user for an hour, notifies them about the lock, and ignores further messages during the cooldown.【F:api/src/telegram/notifier.ts†L142-L148】【F:api/src/telegram/notifier.ts†L354-L370】
+
+Every bot action and notification is written via `writeSystemLog`, simplifying audits in the `logger-system` project. If a log cannot be stored, the service writes an error to stderr.【F:api/src/telegram/notifier.ts†L101-L107】【F:api/src/telegram/notifier.ts†L423-L430】
 
 ## FAQ
 

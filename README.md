@@ -9,6 +9,14 @@
 **Simple Logger** — это способ быстро добавить наблюдаемость в небольшой проект без развёртывания громоздких систем мониторинга. Сервер принимает JSON-логи по HTTP, хранит их в MongoDB, уведомляет о проблемах через Telegram и предоставляет удобный веб-интерфейс для анализа. Для небольших и средних команд такой инструмент часто незаменим: вместо сложного стека достаточно поднять один сервис и получать всю нужную информацию.
 
 
+## Документация Simple Logger
+
+Сервис собирает структурированные логи, отслеживает доступность сервисов и рассылает уведомления в Telegram. В репозитории есть подробные материалы по архитектуре, API, безопасности и клиентским инструментам:
+
+- Обзор и архитектура: [docs/ru/about.md](docs/ru/about.md) · [docs/en/about.md](docs/en/about.md), [docs/ru/architecture.md](docs/ru/architecture.md) · [docs/en/architecture.md](docs/en/architecture.md)
+- Безопасность и настройки API: [docs/ru/api_security.md](docs/ru/api_security.md) · [docs/en/api_security.md](docs/en/api_security.md), [docs/api_security_improvements.md](docs/api_security_improvements.md)
+- Клиент и SDK: [docs/ru/client.md](docs/ru/client.md) · [docs/en/client.md](docs/en/client.md), [docs/ts-library-doc/Logger-ru.md](docs/ts-library-doc/Logger-ru.md) · [docs/ts-library-doc/Logger-en.md](docs/ts-library-doc/Logger-en.md)
+
 ## Возможности
 
 - Приём, хранение и фильтрация логов по UUID проекта.
