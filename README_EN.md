@@ -30,6 +30,8 @@ Administrators can call `GET /api/settings/telegram-status` to instantly verify 
 - Reference guide: [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md#66-get-telegram-status) · [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md#66-get-telegram-status)
 - SDK docs: [docs/ts-library-doc/ApiClient-en.md](docs/ts-library-doc/ApiClient-en.md#api-settings) · [docs/ts-library-doc/ApiClient-ru.md](docs/ts-library-doc/ApiClient-ru.md#настройки-api)
 
+To share the bot link use `GET /api/settings/telegram-url` or the `getTelegramBotUrl()` helper. The service returns the URL from `BOT_URL` or, when the bot is active, resolves the username via Telegram Bot API. Read more in [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md#67-get-telegram-url) and [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md#67-get-telegram-url).
+
 ## Project components
 
 | Path | Description |
@@ -51,6 +53,8 @@ Documentation and usage guides:
 
 - [Logger (ru)](docs/ts-library-doc/Logger-ru.md) / [Logger (en)](docs/ts-library-doc/Logger-en.md)
 - [ApiClient (ru)](docs/ts-library-doc/ApiClient-ru.md) / [ApiClient (en)](docs/ts-library-doc/ApiClient-en.md)
+
+The new `getTelegramBotUrl()` method extends the `ApiClient`, returning the invite link together with its source (`env`, `telegram`, `inactive`, `unknown`) and a `botActive` flag. This enables the UI to surface an up-to-date invitation even when the environment variable is missing.
 
 Build the package with `npm install`, `npm run build`, and `npm test` inside the `ts-library` folder.
 

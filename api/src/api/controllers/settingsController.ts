@@ -73,3 +73,11 @@ export function getTelegramStatus(_req: Request, res: Response): Response {
   const status = defaultNotifier.getStatus();
   return res.json(status);
 }
+
+/**
+ * Возвращает URL Telegram-бота и источник данных.
+ */
+export async function getTelegramBotUrl(_req: Request, res: Response): Promise<Response> {
+  const info = await defaultNotifier.getBotUrlInfo();
+  return res.json(info);
+}

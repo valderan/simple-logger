@@ -78,6 +78,7 @@ all protected endpoints.
 - `getRateLimitSettings()` — `GET /api/settings/rate-limit`, returns `{ rateLimitPerMinute }`.
 - `updateRateLimitSettings(payload)` — `PUT /api/settings/rate-limit`.
 - `getTelegramStatus()` — `GET /api/settings/telegram-status`, returns `{ tokenProvided, botStarted }`.
+- `getTelegramBotUrl()` — `GET /api/settings/telegram-url`, returns `{ url, source, botActive }`.
 
 ## Error handling
 

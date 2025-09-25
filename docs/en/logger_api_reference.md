@@ -244,6 +244,26 @@ Authorization: Bearer <token>
 }
 ```
 
+### 6.7 GET `/telegram-url`
+Return the public Telegram bot link together with metadata.
+
+```http
+GET /api/settings/telegram-url
+Authorization: Bearer <token>
+```
+
+**Response `200 OK`**
+
+```json
+{
+  "url": "https://t.me/devinfotestbot",
+  "source": "telegram",
+  "botActive": true
+}
+```
+
+The `url` field becomes `null` if the link cannot be resolved. The `source` value is one of `env`, `telegram`, `inactive`, `unknown` and signals where the link originated. The `botActive` flag indicates whether the bot is running and able to reach the Telegram Bot API.
+
 ## 7. System endpoints
 
 - `GET /health` – service readiness probe (without the `/api` prefix).

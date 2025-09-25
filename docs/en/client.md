@@ -61,7 +61,7 @@ All requests live in the `src/api` module. Each helper uses `axios` with the bas
 - `fetchProjects`, `createProject`, `updateProject`, `deleteProject` – project CRUD.
 - `filterLogs`, `deleteLogs`, `ingestLog` – log retrieval and cleanup.
 - `createPingService`, `updatePingService`, `deletePingService`, `triggerPingCheck` – uptime monitoring with on-demand checks.
-- `fetchRateLimitSettings`, `updateRateLimitSettings`, `fetchTelegramStatus` – security controls and Telegram diagnostics.
+- `fetchRateLimitSettings`, `updateRateLimitSettings`, `fetchTelegramStatus`, `fetchTelegramBotUrl` – security controls and Telegram diagnostics.
 - `listWhitelist`, `addWhitelistIp`, `removeWhitelistIp` – access control.
 
 TanStack Query handles caching and updates UI state after mutations.
@@ -92,7 +92,7 @@ The container builds the static bundle and serves it through Nginx on port `80`.
 - Translation strings live in `localization/translations.ts`; the active language is detected from the browser.
 - Log filter state is stored in query parameters so you can share links.
 - Data grid components rely on `@mui/x-data-grid` for virtualization and custom row actions.
-- Telegram page displays the bot status (connected/token missing) based on `/api/settings/telegram-status`.
+- Telegram page displays the bot status (connected/token missing) based on `/api/settings/telegram-status` and shows the invite link from `/api/settings/telegram-url` when available.
 - Ping services page refreshes check timestamps in the background every two minutes to keep the UI fresh without exceeding rate limits.
 - Rate limit changes require confirmation and log a warning to the `logger-system` project for auditability.
 

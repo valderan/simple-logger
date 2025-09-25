@@ -136,6 +136,7 @@ Authorization: Bearer <token>
 | `GET` | `/rate-limit` | Узнать текущее ограничение запросов в минуту. |
 | `PUT` | `/rate-limit` | Изменить значение ограничения запросов в минуту. |
 | `GET` | `/telegram-status` | Проверить, настроен ли Telegram-бот и запущен ли polling. |
+| `GET` | `/telegram-url` | Получить публичную ссылку на Telegram-бота и источник данных. |
 
 Запрос на добавление IP:
 
@@ -160,6 +161,18 @@ Content-Type: application/json
   "botStarted": true
 }
 ```
+
+Ссылка на Telegram-бота доступна по запросу `GET /api/settings/telegram-url`. Если переменная окружения `BOT_URL` содержит корректный адрес вида `https://t.me/<botname>`, он возвращается напрямую. При активном боте и отсутствии переменной сервис запрашивает username через Telegram Bot API и формирует ссылку автоматически. Ответ также сообщает источник данных и признак активности:
+
+```json
+{
+  "url": "https://t.me/devinfotestbot",
+  "source": "telegram",
+  "botActive": true
+}
+```
+
+Если ссылка недоступна (например, бот не запущен или у него нет username), поле `url` будет `null`, а `source` примет значение `inactive` или `unknown`.
 
 ## Swagger и OpenAPI
 
