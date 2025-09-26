@@ -311,6 +311,7 @@ export interface WhitelistPayload {
 export interface WhitelistEntry extends WhitelistPayload {
   _id: string;
   createdAt: string;
+  isProtected: boolean;
 }
 
 /**

@@ -20,27 +20,27 @@ If a developer mistypes the password five times and gets locked out, there are t
 
 The API currently does not expose a dedicated endpoint for manually clearing the lockout counter.
 
-## IP allowlist and related blocks
+## IP allowlist and rate-limit exemptions
 
-Every request passes through the global [`ipWhitelist`](../../api/src/api/middlewares/ipWhitelist.ts) middleware, executed after the blacklist check and the rate limiter. Its workflow:
+Every request passes through the global [`ipWhitelist`](../../api/src/api/middlewares/ipWhitelist.ts) middleware after the blacklist guard and before routing. The middleware does not block traffic anymore. Instead, it classifies the current client IP so downstream components can decide whether throttling should apply.【F:api/src/api/middlewares/ipWhitelist.ts†L1-L45】
 
-1. Once per minute it refreshes the local cache from the MongoDB `Whitelist` collection (model [`WhitelistModel`](../../api/src/api/models/Whitelist.ts)).【F:api/src/api/middlewares/ipWhitelist.ts†L4-L20】【F:api/src/api/models/Whitelist.ts†L3-L17】
-2. If the allowlist is empty, all clients are allowed (default behaviour for a fresh installation).【F:api/src/api/middlewares/ipWhitelist.ts†L28-L29】
-3. Local requests (`127.0.0.1` and `::1`) are always accepted so the service can call itself or work inside the same container.【F:api/src/api/middlewares/ipWhitelist.ts†L31-L33】
-4. Other IPs are checked against the cache; if the address is missing, the response is `403 Forbidden` with the message “IP not in allowlist.”【F:api/src/api/middlewares/ipWhitelist.ts†L34-L37】
+1. Once per minute the middleware refreshes an in-memory cache of normalized IPs from the MongoDB `Whitelist` collection and automatically adds the administrator IP defined via `ADMIN_IP` (if present).【F:api/src/api/middlewares/ipWhitelist.ts†L16-L27】【F:api/src/api/services/whitelist.ts†L5-L24】
+2. The normalized request IP is compared against the cache. Loopback addresses (`127.0.0.1`, `::1`) are always trusted. The boolean result is stored on `req.isWhitelistedIp`, and the request continues down the stack.【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】
+3. The rate limiter reads this flag and skips throttling for trusted IPs while still exempting projects configured with the `whitelist` or `docker` access level.【F:api/src/api/middlewares/rateLimiter.ts†L1-L35】
 
-### Data storage
+All other addresses follow the regular security rules: blacklist checks, global rate limiting and validation continue to apply. Removing an address from the allowlist simply returns it to the shared limits.
 
-The allowlist lives in the MongoDB `whitelists` collection. Its schema enforces a unique IP, optional description, and a creation timestamp.【F:api/src/api/models/Whitelist.ts†L3-L17】 Admins can manage entries via `/api/settings/whitelist` endpoints.
+### Data storage and API
 
-### Lifting the block for a new project
+Whitelist entries reside in the MongoDB `whitelists` collection with a unique IP, optional description and `createdAt` timestamp.【F:api/src/api/models/Whitelist.ts†L3-L17】 The `/api/settings/whitelist` endpoints return enriched objects that expose an `isProtected` flag for administrator-managed records and reuse the same payload for create/update operations.【F:api/src/api/services/whitelist.ts†L31-L96】【F:api/src/api/controllers/settingsController.ts†L40-L74】 Cache invalidation happens automatically whenever an entry is added or removed, so UI changes become visible immediately.【F:api/src/api/middlewares/ipWhitelist.ts†L42-L45】【F:api/src/api/controllers/settingsController.ts†L47-L65】
 
-When an external project floods the API with malformed UUIDs and its IP is not allowlisted, every request will get `403 Forbidden` until the address is added to `Whitelist`. To restore access quickly:
+### Administrator IP override
 
-1. Call `POST /api/settings/whitelist` as an authenticated admin and add the IP via UI or script.
-2. Or insert the document directly in MongoDB (`db.whitelists.insertOne({ ip: 'X.X.X.X', description: 'Project ABC' })`).
+Set the `ADMIN_IP` environment variable in the API service to permanently allow an address. During bootstrap the value is normalized and inserted into the whitelist if missing, and the REST API rejects deletion attempts while the variable is set.【F:api/src/app.ts†L31-L35】【F:api/src/api/services/whitelist.ts†L5-L86】【F:api/src/api/controllers/settingsController.ts†L55-L65】 This guarantees that operational access for administrators remains available even if other settings are misconfigured.
 
-The new entry appears in the cache within a minute (cache TTL) or immediately after restarting the API.【F:api/src/api/middlewares/ipWhitelist.ts†L12-L20】 Any request handled through `/api/settings/whitelist` also clears the middleware cache so updates take effect instantly.【F:api/src/api/controllers/settingsController.ts†L25-L40】【F:api/src/api/middlewares/ipWhitelist.ts†L39-L43】
+### Working with integrations
+
+Use the allowlist to exempt trusted data sources from the global rate limiter. External systems still need valid authentication tokens, and blacklist rules always take precedence. If a partner system hits validation errors (for example, malformed UUIDs), add its IP to the allowlist to keep throughput high while fixing the client. Once the integration stabilises you can remove the address again—the client will fall back to the shared limits without being blocked.
 
 ## IP blacklist
 
@@ -48,26 +48,27 @@ Hard bans are enforced by the [`blacklistGuard`](../../api/src/api/middlewares/b
 
 The persistence logic lives in [`blacklist.ts`](../../api/src/api/services/blacklist.ts):
 
-- every create/update/delete operation calls `writeSystemLog`, providing a full audit trail;【F:api/src/api/services/blacklist.ts†L35-L104】
-- active bans are cached in memory for a minute to avoid hitting the database on every request;【F:api/src/api/services/blacklist.ts†L8-L33】
+- every create/update/delete operation calls `writeSystemLog`, providing a full audit trail;【F:api/src/api/services/blacklist.ts†L35-L156】
+- active bans are cached in memory for a minute to avoid hitting the database on every request;【F:api/src/api/services/blacklist.ts†L6-L60】
+- temporary blocks are removed automatically once they expire; each cleanup run logs a dedicated `blacklist-cleanup` entry for visibility;【F:api/src/api/services/blacklist.ts†L24-L59】
 - permanent bans keep `expiresAt` as `null`, while temporary ones store the exact expiration timestamp.
 
 Admins manage the blacklist through `/api/settings/blacklist` (list and create) and `/api/settings/blacklist/{id}` (update, delete). Attempting to reuse an IP returns `409 Conflict`, which simplifies error handling on the client side.【F:api/src/api/controllers/settingsController.ts†L42-L107】
 
 ### Interaction with other locks
 
-Adding an IP to the allowlist **does not** influence login lockouts: they are stored separately inside `LoginAttempts`. When an address is locked because of five failed logins, the user must wait for the timeout or restart the service. Conversely, if an address was blocked only by the allowlist, adding it to `Whitelist` automatically restores access after the cache refresh.
+Adding an IP to the allowlist **does not** influence login lockouts: they are stored separately inside `LoginAttempts`. When an address is locked because of five failed logins, the user must wait for the timeout or restart the service. Because the allowlist no longer rejects requests, removing an entry simply puts the client back under the shared rate limit—persistent `403` responses always come from the blacklist.【F:api/src/api/utils/loginAttempts.ts†L11-L38】【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】【F:api/src/api/middlewares/blacklistGuard.ts†L8-L37】
 
 ### Access logging
 
-All blacklist actions and blocked requests are recorded in the system journal. The `blacklistGuard` middleware logs the reason, HTTP method, and requested path whenever an IP is denied.【F:api/src/api/middlewares/blacklistGuard.ts†L17-L35】 Administrative operations (create, update, delete) also write entries with `BLACKLIST` and `SETTINGS` tags. The allowlist still does not log rejections, but its cache invalidates automatically after API changes.【F:api/src/api/services/blacklist.ts†L35-L104】【F:api/src/api/middlewares/ipWhitelist.ts†L39-L43】
+All blacklist actions and blocked requests are recorded in the system journal. The `blacklistGuard` middleware logs the reason, HTTP method, and requested path whenever an IP is denied.【F:api/src/api/middlewares/blacklistGuard.ts†L17-L35】 Administrative operations (create, update, delete) also write entries with `BLACKLIST` and `SETTINGS` tags, and automatic expiry cleanup is reported as well.【F:api/src/api/services/blacklist.ts†L24-L156】 The allowlist merely marks trusted requests for the rate limiter and therefore does not generate its own log entries.【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】【F:api/src/api/middlewares/rateLimiter.ts†L1-L35】
 
 ## Global protection rules
 
 Base protections are configured in `app.ts`:
 
 - Security headers via `helmet`, CORS control through `cors`, and a JSON body size limit of 1 MB to block oversized payloads.【F:api/src/app.ts†L17-L23】
-- A global rate limiter (`express-rate-limit`) defaults to 120 requests per minute per IP and can be adjusted through `PUT /api/settings/rate-limit`. Projects with the `whitelist` or `docker` access level bypass the limiter to keep trusted services responsive.【F:api/src/api/middlewares/rateLimiter.ts†L6-L34】
+- A global rate limiter (`express-rate-limit`) defaults to 120 requests per minute per IP and can be adjusted through `PUT /api/settings/rate-limit`. Requests flagged by the allowlist and projects with the `whitelist` or `docker` access level bypass the limiter to keep trusted services responsive.【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】【F:api/src/api/middlewares/rateLimiter.ts†L1-L35】
 - Admin sessions are kept in memory with a 60-minute TTL. Tokens appear only after a successful `ADMIN_USER`/`ADMIN_PASS` check and are purged automatically when expired.【F:api/src/api/utils/sessionStore.ts†L13-L50】
 - Payloads submitted to `/api/logs` are validated with `zod`, which prevents arbitrary structures from entering the database and simplifies troubleshooting.【F:api/src/api/controllers/logController.ts†L9-L76】
 - Telegram notifications apply anti-spam intervals and tag filtering to avoid message storms.【F:api/src/telegram/notifier.ts†L104-L127】
@@ -101,8 +102,8 @@ Every bot action and notification is written via `writeSystemLog`, simplifying a
 
 - **How do I view active locks?** Temporary and permanent IP bans are visible via `GET /api/settings/blacklist`; login lockouts still live in memory and expire automatically.
 - **Are system logs written when an IP is banned?** Yes. `blacklistGuard` records every denied request, and administrative changes to the blacklist are logged inside `logger-system` as well.
-- **What happens if I add a banned IP to the allowlist?** Access is restored after the cache refresh (up to one minute) or immediately after restarting the API. It does not clear login lockouts — you must wait or restart the service.【F:api/src/api/middlewares/ipWhitelist.ts†L12-L37】【F:api/src/api/utils/loginAttempts.ts†L11-L38】
-- **How do I clear a block caused by invalid UUID spam?** Add the sender IP to `Whitelist` and fix the UUID on the client. Wrong UUIDs are also logged in `logger-system`, aiding diagnosis.【F:api/src/api/controllers/logController.ts†L52-L59】
+- **What happens if I add a banned IP to the allowlist?** The allowlist only disables the rate limiter. Blacklist bans and login lockouts still apply until the block expires or is removed.【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】【F:api/src/api/middlewares/blacklistGuard.ts†L8-L37】【F:api/src/api/utils/loginAttempts.ts†L11-L38】
+- **How do I clear throttling caused by invalid UUID spam?** Fix the UUID on the client and optionally add the sender IP to the allowlist so requests are not rate-limited while debugging. Validation errors are written to `logger-system` for investigation.【F:api/src/api/controllers/logController.ts†L52-L59】【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】
 
 ## Security layers in the project
 

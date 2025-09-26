@@ -26,7 +26,36 @@ async function refreshCache(force = false): Promise<void> {
     return;
   }
   const records = await BlacklistModel.find();
-  cache = new Map(records.map((record) => [record.ip, { reason: record.reason, expiresAt: record.expiresAt ?? null }]));
+  const activeRecords: typeof records = [];
+  const expiredRecords: typeof records = [];
+  const now = Date.now();
+  for (const record of records) {
+    const expiresAt = record.expiresAt ?? null;
+    if (expiresAt && expiresAt.getTime() <= now) {
+      expiredRecords.push(record);
+    } else {
+      activeRecords.push(record);
+    }
+  }
+  if (expiredRecords.length > 0) {
+    const ids = expiredRecords.map((record) => record._id);
+    await BlacklistModel.deleteMany({ _id: { $in: ids } });
+    await Promise.all(expiredRecords.map((record) =>
+      writeSystemLog(`Автоматически снята блокировка IP ${record.ip}`, {
+        level: 'SECURITY',
+        tags: ['BLACKLIST', 'SECURITY'],
+        metadata: {
+          ip: record.ip,
+          service: 'blacklist-cleanup',
+          extra: {
+            reason: record.reason,
+            expiredAt: record.expiresAt ? record.expiresAt.toISOString() : null
+          }
+        }
+      })
+    ));
+  }
+  cache = new Map(activeRecords.map((record) => [record.ip, { reason: record.reason, expiresAt: record.expiresAt ?? null }]));
   cachedAt = Date.now();
 }
 

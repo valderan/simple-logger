@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { WhitelistModel } from '../models/Whitelist';
 import { getRateLimitValue, updateRateLimitValue } from '../services/systemSettings';
 import {
   createBlacklistEntry,
@@ -9,6 +8,11 @@ import {
   updateBlacklistEntry
 } from '../services/blacklist';
 import { invalidateWhitelistCache } from '../middlewares/ipWhitelist';
+import {
+  listWhitelistEntries,
+  removeWhitelistEntry as removeWhitelistEntryService,
+  upsertWhitelistEntry
+} from '../services/whitelist';
 import { defaultNotifier } from '../../telegram/notifier';
 
 const whitelistSchema = z.object({
@@ -40,7 +44,7 @@ export async function addWhitelistIp(req: Request, res: Response): Promise<Respo
   if (!parsed.success) {
     return res.status(400).json({ message: 'Неверные параметры', details: parsed.error.flatten() });
   }
-  const record = await WhitelistModel.findOneAndUpdate({ ip: parsed.data.ip }, parsed.data, { upsert: true, new: true });
+  const record = await upsertWhitelistEntry(parsed.data);
   invalidateWhitelistCache();
   return res.status(201).json(record);
 }
@@ -50,9 +54,12 @@ export async function addWhitelistIp(req: Request, res: Response): Promise<Respo
  */
 export async function removeWhitelistIp(req: Request, res: Response): Promise<Response> {
   const { ip } = req.params;
-  const result = await WhitelistModel.findOneAndDelete({ ip });
-  if (!result) {
-    return res.status(404).json({ message: 'IP не найден' });
+  const result = await removeWhitelistEntryService(ip);
+  if (result.status === 'protected') {
+    return res.status(403).json({ message: 'IP защищён от удаления', code: 'WHITELIST_PROTECTED' });
+  }
+  if (result.status === 'not_found') {
+    return res.status(404).json({ message: 'IP не найден', code: 'WHITELIST_NOT_FOUND' });
   }
   invalidateWhitelistCache();
   return res.json({ success: true });
@@ -62,7 +69,7 @@ export async function removeWhitelistIp(req: Request, res: Response): Promise<Re
  * Возвращает текущий белый список.
  */
 export async function listWhitelist(_req: Request, res: Response): Promise<Response> {
-  const ips = await WhitelistModel.find().sort({ createdAt: -1 });
+  const ips = await listWhitelistEntries();
   return res.json(ips);
 }
 

@@ -75,6 +75,7 @@ export interface WhitelistEntry {
   ip: string;
   description?: string;
   createdAt: string;
+  isProtected: boolean;
 }
 
 export interface AuthResponse {

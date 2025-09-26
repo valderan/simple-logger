@@ -18,6 +18,7 @@ import {
   type AlertColor
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { isAxiosError } from 'axios';
 import {
   addWhitelistEntry,
   createBlacklistEntry,
@@ -50,6 +51,7 @@ export const SettingsPage = (): JSX.Element => {
     severity: 'success' | 'error' | 'info' | 'warning';
     message: string;
   } | null>(null);
+  const [whitelistFeedback, setWhitelistFeedback] = useState<{ severity: AlertColor; message: string } | null>(null);
   const [blacklistForm, setBlacklistForm] = useState({ ip: '', reason: '', expiresAt: '' });
   const [blacklistFeedback, setBlacklistFeedback] = useState<{ severity: AlertColor; message: string } | null>(null);
   const [editBlacklistDialogOpen, setEditBlacklistDialogOpen] = useState(false);
@@ -98,18 +100,51 @@ export const SettingsPage = (): JSX.Element => {
   const editBlacklistIpInvalid =
     trimmedEditBlacklistIp.length > 0 && !isValidIpAddress(trimmedEditBlacklistIp);
 
+  const getWhitelistErrorMessage = (error: unknown): string => {
+    if (isAxiosError(error)) {
+      const data = error.response?.data as { message?: string; code?: string } | undefined;
+      if (data?.code === 'WHITELIST_PROTECTED') {
+        return t('settings.whitelistProtectedMessage');
+      }
+      if (typeof data?.message === 'string' && data.message.trim().length > 0) {
+        return data.message;
+      }
+    }
+    return t('common.unexpectedError');
+  };
+
+  const [removingWhitelistIp, setRemovingWhitelistIp] = useState<string | null>(null);
+
   const addMutation = useMutation({
     mutationFn: (payload: WhitelistPayload) => addWhitelistEntry(payload),
+    onMutate: () => {
+      setWhitelistFeedback(null);
+    },
     onSuccess: () => {
       setIpInput({ ip: '', description: '' });
+      setWhitelistFeedback({ severity: 'success', message: t('settings.whitelistAdded') });
       queryClient.invalidateQueries({ queryKey: ['whitelist'] });
+    },
+    onError: (error: unknown) => {
+      setWhitelistFeedback({ severity: 'error', message: getWhitelistErrorMessage(error) });
     }
   });
 
   const removeMutation = useMutation({
     mutationFn: (ip: string) => removeWhitelistEntry(ip),
+    onMutate: (ip: string) => {
+      setWhitelistFeedback(null);
+      setRemovingWhitelistIp(ip);
+    },
     onSuccess: () => {
+      setWhitelistFeedback({ severity: 'success', message: t('settings.whitelistRemoved') });
       queryClient.invalidateQueries({ queryKey: ['whitelist'] });
+    },
+    onError: (error: unknown) => {
+      setWhitelistFeedback({ severity: 'error', message: getWhitelistErrorMessage(error) });
+    },
+    onSettled: () => {
+      setRemovingWhitelistIp(null);
     }
   });
 
@@ -207,19 +242,30 @@ export const SettingsPage = (): JSX.Element => {
         headerName: t('settings.actions'),
         minWidth: isSmDown ? 140 : 160,
         sortable: false,
-        renderCell: (params) => (
-          <Button
-            color="error"
-            size="small"
-            onClick={() => removeMutation.mutate(params.row.ip)}
-            fullWidth={isSmDown}
-          >
-            {t('settings.remove')}
-          </Button>
-        )
+        renderCell: (params) => {
+          if (params.row.isProtected) {
+            return (
+              <Typography variant="body2" color="text.secondary">
+                {t('settings.whitelistProtectedLabel')}
+              </Typography>
+            );
+          }
+          const deleting = removingWhitelistIp === params.row.ip && removeMutation.isPending;
+          return (
+            <Button
+              color="error"
+              size="small"
+              onClick={() => removeMutation.mutate(params.row.ip)}
+              disabled={deleting}
+              fullWidth={isSmDown}
+            >
+              {deleting ? t('common.removing') : t('settings.remove')}
+            </Button>
+          );
+        }
       }
     ],
-    [isSmDown, removeMutation, t]
+    [isSmDown, removeMutation, removingWhitelistIp, t]
   );
 
   const columnVisibilityModel = useMemo(
@@ -529,7 +575,12 @@ export const SettingsPage = (): JSX.Element => {
       <Card>
         <CardContent>
           <Stack spacing={3}>
-            <Typography variant="h6">{t('settings.whitelistTitle')}</Typography>
+            <Stack spacing={1}>
+              <Typography variant="h6">{t('settings.whitelistTitle')}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('settings.whitelistDescription')}
+              </Typography>
+            </Stack>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
               <TextField
                 label={t('settings.ipLabel')}
@@ -562,6 +613,15 @@ export const SettingsPage = (): JSX.Element => {
                 {addMutation.isPending ? t('common.savingWhitelist') : t('settings.add')}
               </Button>
             </Stack>
+            {whitelistFeedback && (
+              <Alert
+                severity={whitelistFeedback.severity}
+                onClose={() => setWhitelistFeedback(null)}
+                sx={{ maxWidth: 640 }}
+              >
+                {whitelistFeedback.message}
+              </Alert>
+            )}
             <Box
               sx={{
                 width: '100%',

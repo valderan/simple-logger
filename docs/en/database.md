@@ -48,8 +48,10 @@ MongoDB is used as the primary datastore. Key collections and fields are listed 
 | `description` | string | Optional comment. |
 | `createdAt` | date | Added on timestamp. |
 
+The public API augments responses with an `isProtected` flag that marks entries injected via the `ADMIN_IP` environment variable.【F:api/src/api/services/whitelist.ts†L31-L96】
+
 ## Security notes
 
 - A `logger-system` project is created automatically to store internal events.
 - Invalid UUIDs are logged as security incidents.
-- The whitelist is enforced by the `ipWhitelist` middleware.
+- The whitelist marks trusted IPs for the rate limiter via the `ipWhitelist` middleware.

@@ -19,6 +19,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       confirm: 'Confirm',
       retry: 'Retry',
       error: 'Error',
+      unexpectedError: 'Unexpected error. Please try again.',
       success: 'Success',
       filters: 'Filters',
       hide: 'Hide',
@@ -339,6 +340,8 @@ export const translations: Record<Locale, TranslationRecord> = {
     settings: {
       title: 'Security settings',
       whitelistTitle: 'IP whitelist',
+      whitelistDescription:
+        'Whitelisted IPs bypass the global rate limit. Other addresses follow the configured security rules unless they are blacklisted.',
       blacklistTitle: 'IP blacklist',
       blacklistDescription:
         'Block suspicious addresses permanently or for a limited time. Entries are applied instantly to all API routes.',
@@ -348,6 +351,10 @@ export const translations: Record<Locale, TranslationRecord> = {
       saving: 'Saving...',
       deleting: 'Deleting...',
       whitelistEmpty: 'Whitelist is empty',
+      whitelistAdded: 'IP added to whitelist.',
+      whitelistRemoved: 'IP removed from whitelist.',
+      whitelistProtectedLabel: 'Protected entry',
+      whitelistProtectedMessage: 'This IP is managed by the ADMIN_IP environment variable and cannot be removed.',
       remove: 'Delete',
       actions: 'Actions',
       addedAt: 'Added',
@@ -439,7 +446,7 @@ export const translations: Record<Locale, TranslationRecord> = {
         overview:
           'Use the Security settings page to maintain trusted and blocked IP addresses. Changes apply instantly to API requests.',
         whitelistUsage:
-          'Whitelist — enter an IPv4 or IPv6 address with an optional description and press "+" to allow it. Remove entries to revoke access.',
+          'Whitelist — approve IPv4 or IPv6 addresses to bypass the global rate limit. Standard security checks still apply to all other clients unless the IP is blacklisted.',
         blacklistUsage:
           'Blacklist — provide an IP, reason and optional expiry. Leave “Blocked until” empty for a permanent block or set a date to automatically unblock.',
         accessLevels:
@@ -510,6 +517,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       loadingProject: 'Загрузка проекта...',
       loadingSystemLogs: 'Загрузка системных логов...',
       removing: 'Удаление...',
+      unexpectedError: 'Произошла непредвиденная ошибка. Повторите попытку.',
       checking: 'Проверка...',
       savingChanges: 'Сохранение изменений...',
       creatingProject: 'Создание проекта...',
@@ -806,6 +814,8 @@ export const translations: Record<Locale, TranslationRecord> = {
     settings: {
       title: 'Настройки безопасности',
       whitelistTitle: 'Белый список IP',
+      whitelistDescription:
+        'IP-адреса из белого списка обходят глобальное ограничение скорости. Остальные адреса работают по стандартным правилам безопасности, если только не попали в чёрный список.',
       blacklistTitle: 'Чёрный список IP',
       blacklistDescription:
         'Блокируйте подозрительные адреса навсегда или на ограниченное время. Правила применяются мгновенно ко всем маршрутам API.',
@@ -815,6 +825,10 @@ export const translations: Record<Locale, TranslationRecord> = {
       saving: 'Сохранение...',
       deleting: 'Удаление...',
       whitelistEmpty: 'Белый список пуст',
+      whitelistAdded: 'IP добавлен в белый список.',
+      whitelistRemoved: 'IP удалён из белого списка.',
+      whitelistProtectedLabel: 'Защищённая запись',
+      whitelistProtectedMessage: 'Этот IP задан переменной окружения ADMIN_IP и не может быть удалён.',
       remove: 'Удалить',
       actions: 'Действия',
       addedAt: 'Добавлен',
@@ -906,7 +920,7 @@ export const translations: Record<Locale, TranslationRecord> = {
         overview:
           'Раздел «Настройки безопасности» позволяет вести белый и чёрный списки. Изменения применяются ко всем запросам API мгновенно.',
         whitelistUsage:
-          'Белый список — укажите IPv4/IPv6 и при необходимости комментарий, нажмите «+», чтобы выдать доступ. Удаление записи сразу запрещает IP.',
+          'Белый список — добавляйте IPv4/IPv6, чтобы освободить адреса от глобального rate limit. Для остальных клиентов продолжают действовать стандартные проверки, если IP не заблокирован.',
         blacklistUsage:
           'Чёрный список — задайте IP, причину и при желании дату окончания. Пустое поле «Блокировка до» делает блокировку бессрочной.',
         accessLevels:

@@ -1,6 +1,13 @@
 import { NextFunction, Request, Response } from 'express';
 import { WhitelistModel } from '../models/Whitelist';
+import { getAdminIp } from '../services/whitelist';
 import { isLoopback, normalizeIp } from '../utils/ipUtils';
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    isWhitelistedIp?: boolean;
+  }
+}
 
 let cachedIps = new Set<string>();
 let lastLoaded = 0;
@@ -11,27 +18,25 @@ async function refreshCache(): Promise<void> {
   if (now - lastLoaded < CACHE_TTL_MS) {
     return;
   }
-  const records = await WhitelistModel.find();
-  cachedIps = new Set(records.map((record) => record.ip));
+  const records = await WhitelistModel.find().select('ip');
+  const normalizedIps = records.map((record) => normalizeIp(record.ip));
+  const adminIp = getAdminIp();
+  if (adminIp) {
+    normalizedIps.push(adminIp);
+  }
+  cachedIps = new Set(normalizedIps.filter((value) => value));
   lastLoaded = now;
 }
 
 /**
  * Middleware, разрешающий доступ на основе белого списка IP.
  */
-export async function ipWhitelist(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function ipWhitelist(req: Request, _res: Response, next: NextFunction): Promise<void> {
   await refreshCache();
   const ip = normalizeIp(req.ip);
-  if (cachedIps.size === 0) {
-    return next();
-  }
-  if (isLoopback(ip)) {
-    return next();
-  }
-  if (cachedIps.has(ip)) {
-    return next();
-  }
-  res.status(403).json({ message: 'IP не входит в белый список' });
+  const isWhitelisted = Boolean(ip) && cachedIps.has(ip);
+  req.isWhitelistedIp = isWhitelisted || isLoopback(ip);
+  next();
 }
 
 export function invalidateWhitelistCache(): void {
