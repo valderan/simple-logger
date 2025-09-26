@@ -48,9 +48,9 @@ Hard bans are enforced by the [`blacklistGuard`](../../api/src/api/middlewares/b
 
 The persistence logic lives in [`blacklist.ts`](../../api/src/api/services/blacklist.ts):
 
-- every create/update/delete operation calls `writeSystemLog`, providing a full audit trail;【F:api/src/api/services/blacklist.ts†L35-L156】
-- active bans are cached in memory for a minute to avoid hitting the database on every request;【F:api/src/api/services/blacklist.ts†L6-L60】
-- temporary blocks are removed automatically once they expire; each cleanup run logs a dedicated `blacklist-cleanup` entry for visibility;【F:api/src/api/services/blacklist.ts†L24-L59】
+- every create/update/delete operation calls `writeSystemLog`, providing a full audit trail;【F:api/src/api/services/blacklist.ts†L83-L160】
+- active bans are cached in memory for a minute to avoid hitting the database on every request;【F:api/src/api/services/blacklist.ts†L6-L63】
+- temporary blocks are removed automatically once they expire; each cleanup run logs a dedicated `blacklist-cleanup` entry for visibility;【F:api/src/api/services/blacklist.ts†L24-L60】
 - permanent bans keep `expiresAt` as `null`, while temporary ones store the exact expiration timestamp.
 
 Admins manage the blacklist through `/api/settings/blacklist` (list and create) and `/api/settings/blacklist/{id}` (update, delete). Attempting to reuse an IP returns `409 Conflict`, which simplifies error handling on the client side.【F:api/src/api/controllers/settingsController.ts†L42-L107】
@@ -61,7 +61,7 @@ Adding an IP to the allowlist **does not** influence login lockouts: they are st
 
 ### Access logging
 
-All blacklist actions and blocked requests are recorded in the system journal. The `blacklistGuard` middleware logs the reason, HTTP method, and requested path whenever an IP is denied.【F:api/src/api/middlewares/blacklistGuard.ts†L17-L35】 Administrative operations (create, update, delete) also write entries with `BLACKLIST` and `SETTINGS` tags, and automatic expiry cleanup is reported as well.【F:api/src/api/services/blacklist.ts†L24-L156】 The allowlist merely marks trusted requests for the rate limiter and therefore does not generate its own log entries.【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】【F:api/src/api/middlewares/rateLimiter.ts†L1-L35】
+All blacklist actions and blocked requests are recorded in the system journal. The `blacklistGuard` middleware logs the reason, HTTP method, and requested path whenever an IP is denied.【F:api/src/api/middlewares/blacklistGuard.ts†L19-L32】 Administrative operations (create, update, delete) also write entries with `BLACKLIST` and `SETTINGS` tags, and automatic expiry cleanup is reported as well.【F:api/src/api/services/blacklist.ts†L24-L160】 All system messages are persisted in English to keep the audit trail consistent. The allowlist merely marks trusted requests for the rate limiter and therefore does not generate its own log entries.【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】【F:api/src/api/middlewares/rateLimiter.ts†L1-L35】
 
 ## Global protection rules
 
@@ -103,7 +103,7 @@ Every bot action and notification is written via `writeSystemLog`, simplifying a
 - **How do I view active locks?** Temporary and permanent IP bans are visible via `GET /api/settings/blacklist`; login lockouts still live in memory and expire automatically.
 - **Are system logs written when an IP is banned?** Yes. `blacklistGuard` records every denied request, and administrative changes to the blacklist are logged inside `logger-system` as well.
 - **What happens if I add a banned IP to the allowlist?** The allowlist only disables the rate limiter. Blacklist bans and login lockouts still apply until the block expires or is removed.【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】【F:api/src/api/middlewares/blacklistGuard.ts†L8-L37】【F:api/src/api/utils/loginAttempts.ts†L11-L38】
-- **How do I clear throttling caused by invalid UUID spam?** Fix the UUID on the client and optionally add the sender IP to the allowlist so requests are not rate-limited while debugging. Validation errors are written to `logger-system` for investigation.【F:api/src/api/controllers/logController.ts†L52-L59】【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】
+- **How do I clear throttling caused by invalid UUID spam?** Fix the UUID on the client and optionally add the sender IP to the allowlist so requests are not rate-limited while debugging. Validation errors are written to `logger-system` for investigation.【F:api/src/api/controllers/logController.ts†L64-L85】【F:api/src/api/middlewares/ipWhitelist.ts†L31-L39】
 
 ## Security layers in the project
 

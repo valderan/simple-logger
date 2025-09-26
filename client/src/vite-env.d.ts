@@ -2,8 +2,8 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
-  readonly LOGGER_VERSION?: string;
-  readonly LOGGER_PAGE_URL?: string;
+  readonly VITE_LOGGER_VERSION?: string;
+  readonly VITE_LOGGER_PAGE_URL?: string;
 }
 
 interface ImportMeta {

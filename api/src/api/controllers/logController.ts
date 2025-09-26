@@ -61,7 +61,7 @@ export async function ingestLog(req: Request, res: Response): Promise<Response> 
         const issues = parsed.error.issues
           .map((issue) => `${issue.path.join('.') || 'root'}: ${issue.message}`)
           .join('; ');
-        await writeSystemLog(`Получен лог неверного формата для проекта ${rawUuid}`, {
+        await writeSystemLog(`Received malformed log payload for project ${rawUuid}`, {
           level: 'WARNING',
           tags: ['INGEST', 'VALIDATION'],
           metadata: {
@@ -77,7 +77,7 @@ export async function ingestLog(req: Request, res: Response): Promise<Response> 
   const { uuid, log } = parsed.data;
   const project = await ProjectModel.findOne({ uuid });
   if (!project) {
-    await writeSystemLog(`Получен лог с неверным UUID: ${uuid}`, {
+    await writeSystemLog(`Received log with unknown project UUID: ${uuid}`, {
       level: 'SECURITY',
       tags: ['SECURITY'],
       metadata: { ip: clientIp, service: 'log-ingest', extra: { projectUuid: uuid } }

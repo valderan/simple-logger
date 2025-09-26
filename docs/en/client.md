@@ -35,10 +35,10 @@ client/
 The client relies on Vite environment variables (`VITE_*`) provided via `.env` files or command-line flags:
 
 - `VITE_API_URL` – base REST API URL (for example `http://localhost:3000/api`).
-- `LOGGER_VERSION` – version string rendered in the footer.
-- `LOGGER_PAGE_URL` – link to the product page.
+- `VITE_LOGGER_VERSION` – product version rendered in the sidebar and on the sign-in screen.
+- `VITE_LOGGER_PAGE_URL` – product or repository link applied to the logo and exposed on the sign-in screen.
 
-When running through `docker-compose.yml`, values are passed as container environment variables (`API_URL`, `LOGGER_VERSION`, `LOGGER_PAGE_URL`) and baked into the build.
+When running through `docker-compose.yml`, define the values inside the `environment` section (`VITE_API_URL`, `VITE_LOGGER_VERSION`, `VITE_LOGGER_PAGE_URL`). Legacy keys without the prefix may be supplied for compatibility with external tooling, but the client ignores them.
 
 ## Main interface sections
 

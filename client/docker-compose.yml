@@ -5,6 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
     environment:
+      VITE_API_URL: http://localhost:3000
+      VITE_LOGGER_VERSION: 1.1.0
+      VITE_LOGGER_PAGE_URL: https://github.com/valderan/simple-logger
+      # Legacy keys for external scripts (frontend ignores them)
       API_URL: http://localhost:3000
       LOGGER_VERSION: 1.1.0
       LOGGER_PAGE_URL: https://github.com/valderan/simple-logger

@@ -16,7 +16,7 @@ export async function blacklistGuard(req: Request, res: Response, next: NextFunc
     return next();
   }
 
-  await writeSystemLog(`Заблокирован запрос от IP ${ip}`, {
+  await writeSystemLog(`Blocked request from IP ${ip}`, {
     level: 'SECURITY',
     tags: ['BLACKLIST', 'SECURITY'],
     metadata: {
