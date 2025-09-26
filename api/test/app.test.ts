@@ -20,6 +20,7 @@ describe('Logger API', () => {
     process.env.MONGO_URI = mongoServer.getUri();
     process.env.ADMIN_USER = adminUser;
     process.env.ADMIN_PASS = adminPass;
+    process.env.ADMIN_IP = '10.10.10.10';
     await bootstrap();
   });
 
@@ -101,11 +102,28 @@ describe('Logger API', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .send({ ip: '192.168.0.1' });
     expect(createResponse.status).toBe(201);
+    expect(createResponse.body.isProtected).toBe(false);
 
     const listResponse = await request(app)
       .get('/api/settings/whitelist')
       .set('Authorization', `Bearer ${authToken}`);
-    expect(listResponse.body).toEqual(expect.arrayContaining([expect.objectContaining({ ip: '192.168.0.1' })]));
+    expect(listResponse.body).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ip: '192.168.0.1', isProtected: false }),
+        expect.objectContaining({ ip: '10.10.10.10', isProtected: true })
+      ])
+    );
+
+    const deleteResponse = await request(app)
+      .delete('/api/settings/whitelist/192.168.0.1')
+      .set('Authorization', `Bearer ${authToken}`);
+    expect(deleteResponse.status).toBe(200);
+
+    const protectedDelete = await request(app)
+      .delete('/api/settings/whitelist/10.10.10.10')
+      .set('Authorization', `Bearer ${authToken}`);
+    expect(protectedDelete.status).toBe(403);
+    expect(protectedDelete.body.code).toBe('WHITELIST_PROTECTED');
   });
 
   it('удаляет логи по фильтру', async () => {

@@ -4,6 +4,9 @@ import { getRateLimitValue } from '../services/systemSettings';
 import { ProjectModel } from '../models/Project';
 
 async function shouldSkipRateLimit(req: Request): Promise<boolean> {
+  if ((req as Request & { isWhitelistedIp?: boolean }).isWhitelistedIp) {
+    return true;
+  }
   if (req.method !== 'POST') {
     return false;
   }

@@ -41,7 +41,7 @@ Read the full guides in the repository:
 - Ingest, store, and filter logs by project UUID.
 - Ping monitoring for HTTP services with manual probe triggers.
 - Telegram notifications based on tags and incidents.
-- IP whitelist and rate limiting to protect the API.
+- IP allowlist disables the rate limiter for trusted addresses, while global rate limiting protects all other clients.
 - Web client with dark/light themes, search, and detailed log views.
 
 ## Telegram bot status check
@@ -95,6 +95,7 @@ Environment variables:
 
 - `MONGO_URI` – MongoDB connection string (defaults to `mongodb://localhost:27017/logger`).
 - `ADMIN_USER`, `ADMIN_PASS` – administrator credentials.
+- `ADMIN_IP` – permanently allow this IP; it cannot be removed from the whitelist while the variable is set.
 - `BOT_API_KEY` – Telegram bot token (optional).
 
 For development:

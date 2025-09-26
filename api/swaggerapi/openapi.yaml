@@ -492,7 +492,7 @@ paths:
     get:
       tags: [Settings]
       summary: Список IP в белом списке
-      description: Возвращает все записи белого списка IP.
+      description: Возвращает все записи белого списка, включая описание, дату создания и флаг `isProtected` для записей, добавленных через переменную `ADMIN_IP`.
       responses:
         '200':
           description: Текущий белый список.
@@ -545,7 +545,7 @@ paths:
     delete:
       tags: [Settings]
       summary: Удаление IP из белого списка
-      description: Удаляет запись по IP адресу.
+      description: Удаляет запись по IP адресу. При попытке удалить IP, заданный переменной `ADMIN_IP`, возвращает `403 Forbidden`.
       responses:
         '200':
           description: IP удалён из списка.
@@ -560,7 +560,11 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedResponse'
         '403':
-          $ref: '#/components/responses/ForbiddenResponse'
+          description: IP защищён переменной `ADMIN_IP`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Запись не найдена.
           content:
@@ -1182,6 +1186,9 @@ components:
             createdAt:
               type: string
               format: date-time
+            isProtected:
+              type: boolean
+              description: Признак записи, добавленной автоматически через переменную ADMIN_IP.
     BlacklistPayload:
       type: object
       required: [ip, reason]

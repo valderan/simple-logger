@@ -10,6 +10,7 @@ import { blacklistGuard } from './api/middlewares/blacklistGuard';
 import { errorHandler } from './api/middlewares/errorHandler';
 import { connectMongo } from './api/utils/mongo';
 import { ProjectModel } from './api/models/Project';
+import { ensureAdminIpInWhitelist } from './api/services/whitelist';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use(errorHandler);
 export async function bootstrap(uri = process.env.MONGO_URI ?? 'mongodb://localhost:27017/logger'): Promise<void> {
   await connectMongo(uri);
   await ProjectModel.ensureSystemProject();
+  await ensureAdminIpInWhitelist();
 }
 
 if (require.main === module) {

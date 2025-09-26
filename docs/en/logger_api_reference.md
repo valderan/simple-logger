@@ -5,7 +5,7 @@ This document describes the REST endpoints exposed by Logger. The API is powered
 ## 1. General information
 
 - Authentication: `Authorization: Bearer <token>` header (except for public log ingestion and `/health`).
-- Safeguards: global rate limiting and IP whitelist (default limit 120 requests/minute, adjustable via `/api/settings/rate-limit`). Projects with the `whitelist` or `docker` access level bypass the limiter, and IPs placed on the blacklist are blocked until the entry is removed.
+- Safeguards: global rate limiting and IP allowlist (default limit 120 requests/minute, adjustable via `/api/settings/rate-limit`). Requests flagged by the allowlist and projects with the `whitelist` or `docker` access level bypass the limiter, and IPs placed on the blacklist are blocked until the entry is removed.
 - Date format: ISO 8601 (UTC).
 - Swagger: `api/swaggerapi/openapi.yaml` or the Swagger UI service from `docker-compose.dev.yml`.
 
@@ -206,7 +206,7 @@ Delete logs for a project. The request body can contain filters (`level`, `tag`,
 ## 6. Settings `/settings`
 
 ### 6.1 GET `/whitelist`
-Return all IP addresses that are allowed to access administrative endpoints.
+Return all IP addresses that bypass the global rate limit. Each entry includes the optional description, creation timestamp, and an `isProtected` flag for records injected via the `ADMIN_IP` environment variable.【F:api/src/api/services/whitelist.ts†L31-L96】
 
 ### 6.2 POST `/whitelist`
 Create or update an allowlist entry.
@@ -223,7 +223,7 @@ Content-Type: application/json
 ```
 
 ### 6.3 DELETE `/whitelist/:ip`
-Remove an IP address from the allowlist.
+Remove an IP address from the allowlist. Deleting the administrator IP configured through `ADMIN_IP` returns `403 Forbidden` with the code `WHITELIST_PROTECTED` while the variable is present.【F:api/src/api/controllers/settingsController.ts†L55-L65】
 
 ### 6.4 GET `/blacklist`
 Return active and scheduled IP blocks.
