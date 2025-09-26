@@ -310,6 +310,34 @@ export interface WhitelistEntry extends WhitelistPayload {
 }
 
 /**
+ * Данные для создания записи чёрного списка IP.
+ */
+export interface BlacklistPayload {
+  ip: string;
+  reason: string;
+  expiresAt?: string | null;
+}
+
+/**
+ * Данные для обновления записи чёрного списка IP.
+ */
+export interface BlacklistUpdatePayload {
+  ip?: string;
+  reason?: string;
+  expiresAt?: string | null;
+}
+
+/**
+ * Запись чёрного списка, возвращаемая API.
+ */
+export interface BlacklistEntry extends BlacklistPayload {
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+  expiresAt: string | null;
+}
+
+/**
  * Параметры фильтрации логов в API.
  */
 export interface LogFilterParameters {
@@ -336,6 +364,13 @@ export interface DeleteLogsResponse {
  * Ответ на удаление IP из белого списка.
  */
 export interface DeleteWhitelistResponse {
+  success: boolean;
+}
+
+/**
+ * Ответ на удаление IP из чёрного списка.
+ */
+export interface DeleteBlacklistResponse {
   success: boolean;
 }
 

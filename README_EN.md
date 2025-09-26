@@ -8,6 +8,16 @@
 
 ## Simple Logger documentation
 
+> ℹ️ **Quick documentation guide**
+> 
+> • 🇬🇧 Core guides: [docs/en/api.md](docs/en/api.md), [docs/en/api_security.md](docs/en/api_security.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md)
+> 
+> • 🇷🇺 Russian resources: [docs/ru/api.md](docs/ru/api.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md)
+> 
+> • 📘 OpenAPI specs: [api/swaggerapi/openapi.yaml](api/swaggerapi/openapi.yaml) · [api/swaggerapi/openapi_en.yaml](api/swaggerapi/openapi_en.yaml)
+> 
+> • 📦 TypeScript SDK: [docs/ts-library-doc/Logger-en.md](docs/ts-library-doc/Logger-en.md), [docs/ts-library-doc/Logger-ru.md](docs/ts-library-doc/Logger-ru.md)
+
 The platform ingests structured logs, tracks service uptime, and forwards alerts to Telegram. The repository ships with detailed guides that explain the architecture, API, security model, and client tooling:
 
 - Overview and architecture: [docs/en/about.md](docs/en/about.md) · [docs/ru/about.md](docs/ru/about.md), [docs/en/architecture.md](docs/en/architecture.md) · [docs/ru/architecture.md](docs/ru/architecture.md)

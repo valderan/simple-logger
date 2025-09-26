@@ -567,6 +567,126 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/settings/blacklist:
+    get:
+      tags: [Settings]
+      summary: Список IP в чёрном списке
+      description: Возвращает все активные и запланированные блокировки IP.
+      responses:
+        '200':
+          description: Текущий чёрный список.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlacklistEntry'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    post:
+      tags: [Settings]
+      summary: Добавление IP в чёрный список
+      description: Создаёт новую блокировку IP с указанием причины и срока действия.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlacklistPayload'
+      responses:
+        '201':
+          description: Блокировка создана.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlacklistEntry'
+        '400':
+          description: Некорректные параметры блокировки.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '409':
+          description: Блокировка для указанного IP уже существует.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/settings/blacklist/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Идентификатор блокировки IP.
+        schema:
+          type: string
+          example: 6650f669d4b5c00017da5678
+    put:
+      tags: [Settings]
+      summary: Обновление блокировки IP
+      description: Позволяет изменить IP, причину или срок действия блокировки.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlacklistUpdatePayload'
+      responses:
+        '200':
+          description: Блокировка обновлена.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlacklistEntry'
+        '400':
+          description: Некорректные параметры обновления.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Блокировка не найдена.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Попытка изменить IP на уже заблокированный адрес.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Settings]
+      summary: Удаление блокировки IP
+      description: Снимает блокировку и удаляет запись из чёрного списка.
+      responses:
+        '200':
+          description: Блокировка удалена.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteBlacklistResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Блокировка не найдена.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/settings/rate-limit:
     get:
       tags: [Settings]
@@ -1050,6 +1170,56 @@ components:
             createdAt:
               type: string
               format: date-time
+    BlacklistPayload:
+      type: object
+      required: [ip, reason]
+      properties:
+        ip:
+          type: string
+          example: 203.0.113.10
+        reason:
+          type: string
+          example: Подозрительная активность
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Дата окончания блокировки. Укажите null для бессрочной блокировки.
+    BlacklistUpdatePayload:
+      type: object
+      properties:
+        ip:
+          type: string
+          example: 203.0.113.10
+        reason:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Новая дата окончания блокировки или null для бессрочной блокировки.
+      minProperties: 1
+    BlacklistEntry:
+      allOf:
+        - $ref: '#/components/schemas/BlacklistPayload'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: 6650f669d4b5c00017da5678
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    DeleteBlacklistResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: true
     RateLimitSettings:
       type: object
       required: [rateLimitPerMinute]
@@ -1058,6 +1228,7 @@ components:
           type: integer
           minimum: 1
           example: 120
+      description: Лимит применяется ко всем запросам, кроме проектов с уровнями доступа `whitelist` и `docker`.
     ErrorResponse:
       type: object
       required: [message]

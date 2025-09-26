@@ -4,11 +4,15 @@
 
 import fetch from 'cross-fetch';
 import type {
+  BlacklistEntry,
+  BlacklistPayload,
+  BlacklistUpdatePayload,
   AuthRequest,
   AuthResponse,
   DeleteLogsResponse,
   DeletePingServiceResponse,
   DeleteProjectResponse,
+  DeleteBlacklistResponse,
   DeleteWhitelistResponse,
   HealthResponse,
   LogFilterParameters,
@@ -249,6 +253,42 @@ export class ApiClient {
    */
   async deleteWhitelist(ip: string): Promise<DeleteWhitelistResponse> {
     return this.request<DeleteWhitelistResponse>(`/api/settings/whitelist/${encodeURIComponent(ip)}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Получает чёрный список IP.
+   */
+  async getBlacklist(): Promise<BlacklistEntry[]> {
+    return this.request<BlacklistEntry[]>('/api/settings/blacklist');
+  }
+
+  /**
+   * Создаёт новую запись чёрного списка.
+   */
+  async createBlacklistEntry(payload: BlacklistPayload): Promise<BlacklistEntry> {
+    return this.request<BlacklistEntry>('/api/settings/blacklist', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  /**
+   * Обновляет запись чёрного списка.
+   */
+  async updateBlacklistEntry(id: string, payload: BlacklistUpdatePayload): Promise<BlacklistEntry> {
+    return this.request<BlacklistEntry>(`/api/settings/blacklist/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    });
+  }
+
+  /**
+   * Удаляет запись чёрного списка.
+   */
+  async deleteBlacklistEntry(id: string): Promise<DeleteBlacklistResponse> {
+    return this.request<DeleteBlacklistResponse>(`/api/settings/blacklist/${encodeURIComponent(id)}`, {
       method: 'DELETE'
     });
   }

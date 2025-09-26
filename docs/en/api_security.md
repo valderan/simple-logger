@@ -22,7 +22,7 @@ The API currently does not expose a dedicated endpoint for manually clearing the
 
 ## IP allowlist and related blocks
 
-Every request passes through the global [`ipWhitelist`](../../api/src/api/middlewares/ipWhitelist.ts) middleware, executed after the rate limiter. Its workflow:
+Every request passes through the global [`ipWhitelist`](../../api/src/api/middlewares/ipWhitelist.ts) middleware, executed after the blacklist check and the rate limiter. Its workflow:
 
 1. Once per minute it refreshes the local cache from the MongoDB `Whitelist` collection (model [`WhitelistModel`](../../api/src/api/models/Whitelist.ts)).【F:api/src/api/middlewares/ipWhitelist.ts†L4-L20】【F:api/src/api/models/Whitelist.ts†L3-L17】
 2. If the allowlist is empty, all clients are allowed (default behaviour for a fresh installation).【F:api/src/api/middlewares/ipWhitelist.ts†L28-L29】
@@ -40,7 +40,19 @@ When an external project floods the API with malformed UUIDs and its IP is not a
 1. Call `POST /api/settings/whitelist` as an authenticated admin and add the IP via UI or script.
 2. Or insert the document directly in MongoDB (`db.whitelists.insertOne({ ip: 'X.X.X.X', description: 'Project ABC' })`).
 
-The new entry appears in the cache within a minute (cache TTL) or immediately after restarting the API.【F:api/src/api/middlewares/ipWhitelist.ts†L12-L20】
+The new entry appears in the cache within a minute (cache TTL) or immediately after restarting the API.【F:api/src/api/middlewares/ipWhitelist.ts†L12-L20】 Any request handled through `/api/settings/whitelist` also clears the middleware cache so updates take effect instantly.【F:api/src/api/controllers/settingsController.ts†L25-L40】【F:api/src/api/middlewares/ipWhitelist.ts†L39-L43】
+
+## IP blacklist
+
+Hard bans are enforced by the [`blacklistGuard`](../../api/src/api/middlewares/blacklistGuard.ts) middleware. It runs before the rate limiter and allowlist and checks whether the client IP is stored in the MongoDB `blacklists` collection. When a block is active (no expiration or `expiresAt` in the future) the request is rejected with `403 Forbidden`, and a `SECURITY` log entry is written to the `logger-system` project with the reason and requested path.【F:api/src/api/middlewares/blacklistGuard.ts†L8-L37】
+
+The persistence logic lives in [`blacklist.ts`](../../api/src/api/services/blacklist.ts):
+
+- every create/update/delete operation calls `writeSystemLog`, providing a full audit trail;【F:api/src/api/services/blacklist.ts†L35-L104】
+- active bans are cached in memory for a minute to avoid hitting the database on every request;【F:api/src/api/services/blacklist.ts†L8-L33】
+- permanent bans keep `expiresAt` as `null`, while temporary ones store the exact expiration timestamp.
+
+Admins manage the blacklist through `/api/settings/blacklist` (list and create) and `/api/settings/blacklist/{id}` (update, delete). Attempting to reuse an IP returns `409 Conflict`, which simplifies error handling on the client side.【F:api/src/api/controllers/settingsController.ts†L42-L107】
 
 ### Interaction with other locks
 
@@ -48,14 +60,14 @@ Adding an IP to the allowlist **does not** influence login lockouts: they are st
 
 ### Access logging
 
-The allowlist middleware currently does not emit system logs for rejected requests, and `LoginAttempts` does not write lockout events to `logger-system`. The only automatic security logs happen when the log ingestion endpoint receives an invalid payload or a wrong UUID: `writeSystemLog` stores the warning in the `logger-system` project with security tags.【F:api/src/api/controllers/logController.ts†L29-L59】【F:api/src/api/utils/systemLogger.ts†L9-L19】
+All blacklist actions and blocked requests are recorded in the system journal. The `blacklistGuard` middleware logs the reason, HTTP method, and requested path whenever an IP is denied.【F:api/src/api/middlewares/blacklistGuard.ts†L17-L35】 Administrative operations (create, update, delete) also write entries with `BLACKLIST` and `SETTINGS` tags. The allowlist still does not log rejections, but its cache invalidates automatically after API changes.【F:api/src/api/services/blacklist.ts†L35-L104】【F:api/src/api/middlewares/ipWhitelist.ts†L39-L43】
 
 ## Global protection rules
 
 Base protections are configured in `app.ts`:
 
 - Security headers via `helmet`, CORS control through `cors`, and a JSON body size limit of 1 MB to block oversized payloads.【F:api/src/app.ts†L17-L23】
-- A global rate limiter (`express-rate-limit`) defaults to 120 requests per minute per IP and can be adjusted through `PUT /api/settings/rate-limit`, providing a basic anti-DoS shield.【F:api/src/api/middlewares/rateLimiter.ts†L6-L11】
+- A global rate limiter (`express-rate-limit`) defaults to 120 requests per minute per IP and can be adjusted through `PUT /api/settings/rate-limit`. Projects with the `whitelist` or `docker` access level bypass the limiter to keep trusted services responsive.【F:api/src/api/middlewares/rateLimiter.ts†L6-L34】
 - Admin sessions are kept in memory with a 60-minute TTL. Tokens appear only after a successful `ADMIN_USER`/`ADMIN_PASS` check and are purged automatically when expired.【F:api/src/api/utils/sessionStore.ts†L13-L50】
 - Payloads submitted to `/api/logs` are validated with `zod`, which prevents arbitrary structures from entering the database and simplifies troubleshooting.【F:api/src/api/controllers/logController.ts†L9-L76】
 - Telegram notifications apply anti-spam intervals and tag filtering to avoid message storms.【F:api/src/telegram/notifier.ts†L104-L127】
@@ -87,8 +99,8 @@ Every bot action and notification is written via `writeSystemLog`, simplifying a
 
 ## FAQ
 
-- **How do I view active locks?** There is no dedicated interface. Login locks live in RAM; allowlist blocks depend solely on documents inside the `whitelists` collection.
-- **Are system logs written when an IP is banned?** No. However, the system records invalid UUIDs and payloads inside the `logger-system` project, which helps detect faulty integrations.【F:api/src/api/controllers/logController.ts†L29-L59】
+- **How do I view active locks?** Temporary and permanent IP bans are visible via `GET /api/settings/blacklist`; login lockouts still live in memory and expire automatically.
+- **Are system logs written when an IP is banned?** Yes. `blacklistGuard` records every denied request, and administrative changes to the blacklist are logged inside `logger-system` as well.
 - **What happens if I add a banned IP to the allowlist?** Access is restored after the cache refresh (up to one minute) or immediately after restarting the API. It does not clear login lockouts — you must wait or restart the service.【F:api/src/api/middlewares/ipWhitelist.ts†L12-L37】【F:api/src/api/utils/loginAttempts.ts†L11-L38】
 - **How do I clear a block caused by invalid UUID spam?** Add the sender IP to `Whitelist` and fix the UUID on the client. Wrong UUIDs are also logged in `logger-system`, aiding diagnosis.【F:api/src/api/controllers/logController.ts†L52-L59】
 

@@ -5,7 +5,7 @@ This document describes the REST endpoints exposed by Logger. The API is powered
 ## 1. General information
 
 - Authentication: `Authorization: Bearer <token>` header (except for public log ingestion and `/health`).
-- Safeguards: global rate limiting and IP whitelist (default limit 120 requests/minute, adjustable via `/api/settings/rate-limit`).
+- Safeguards: global rate limiting and IP whitelist (default limit 120 requests/minute, adjustable via `/api/settings/rate-limit`). Projects with the `whitelist` or `docker` access level bypass the limiter, and IPs placed on the blacklist are blocked until the entry is removed.
 - Date format: ISO 8601 (UTC).
 - Swagger: `api/swaggerapi/openapi.yaml` or the Swagger UI service from `docker-compose.dev.yml`.
 
@@ -182,11 +182,11 @@ Delete logs for a project. The request body can contain filters (`level`, `tag`,
 
 ## 6. Settings `/settings`
 
-### 6.1 GET `/`
-Retrieve the IP whitelist.
+### 6.1 GET `/whitelist`
+Return all IP addresses that are allowed to access administrative endpoints.
 
-### 6.2 POST `/`
-Add an IP address.
+### 6.2 POST `/whitelist`
+Create or update an allowlist entry.
 
 ```http
 POST /api/settings/whitelist
@@ -199,10 +199,36 @@ Content-Type: application/json
 }
 ```
 
-### 6.3 DELETE `/:ip`
-Remove an IP address from the whitelist.
+### 6.3 DELETE `/whitelist/:ip`
+Remove an IP address from the allowlist.
 
-### 6.4 GET `/rate-limit`
+### 6.4 GET `/blacklist`
+Return active and scheduled IP blocks.
+
+**Response `200 OK`**
+```json
+[
+  {
+    "_id": "6650f669d4b5c00017da5678",
+    "ip": "203.0.113.10",
+    "reason": "Suspicious activity",
+    "expiresAt": "2024-09-01T12:00:00.000Z",
+    "createdAt": "2024-08-01T08:15:00.000Z",
+    "updatedAt": "2024-08-15T08:15:00.000Z"
+  }
+]
+```
+
+### 6.5 POST `/blacklist`
+Create a new blacklist entry. The reason is mandatory; set `expiresAt` to `null` for a permanent ban.
+
+### 6.6 PUT `/blacklist/:id`
+Update an existing block — you may change the IP, reason, or expiration date.
+
+### 6.7 DELETE `/blacklist/:id`
+Delete a block and immediately restore access for the IP.
+
+### 6.8 GET `/rate-limit`
 Return the current requests-per-minute cap (120 by default).
 
 **Response `200 OK`**
@@ -212,8 +238,8 @@ Return the current requests-per-minute cap (120 by default).
 }
 ```
 
-### 6.5 PUT `/rate-limit`
-Change the global API requests-per-minute cap.
+### 6.9 PUT `/rate-limit`
+Change the global API requests-per-minute cap. Projects with the `whitelist` or `docker` access level are exempt from the limiter.
 
 ```http
 PUT /api/settings/rate-limit
@@ -227,7 +253,7 @@ Content-Type: application/json
 
 The response repeats the new limit value.
 
-### 6.6 GET `/telegram-status`
+### 6.10 GET `/telegram-status`
 Check whether the Telegram bot is configured and polling.
 
 ```http
@@ -244,7 +270,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 6.7 GET `/telegram-url`
+### 6.11 GET `/telegram-url`
 Return the public Telegram bot link together with metadata.
 
 ```http

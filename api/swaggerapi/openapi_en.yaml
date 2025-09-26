@@ -567,6 +567,126 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/settings/blacklist:
+    get:
+      tags: [Settings]
+      summary: List blocked IPs
+      description: Returns all active and scheduled IP blocks.
+      responses:
+        '200':
+          description: Current blacklist entries.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlacklistEntry'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+    post:
+      tags: [Settings]
+      summary: Add an IP to the blacklist
+      description: Creates a new IP block with a reason and optional expiration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlacklistPayload'
+      responses:
+        '201':
+          description: Blacklist entry created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlacklistEntry'
+        '400':
+          description: Invalid blacklist parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '409':
+          description: A block for this IP already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/settings/blacklist/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: Identifier of the blacklist entry.
+        schema:
+          type: string
+          example: 6650f669d4b5c00017da5678
+    put:
+      tags: [Settings]
+      summary: Update a blacklist entry
+      description: Allows changing the IP address, reason, or expiration date.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlacklistUpdatePayload'
+      responses:
+        '200':
+          description: Blacklist entry updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlacklistEntry'
+        '400':
+          description: Invalid update parameters.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Blacklist entry not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Attempt to change the IP to one that is already blocked.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      tags: [Settings]
+      summary: Remove a blacklist entry
+      description: Clears the block and removes the IP from the blacklist.
+      responses:
+        '200':
+          description: Blacklist entry removed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteBlacklistResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Blacklist entry not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/settings/rate-limit:
     get:
       tags: [Settings]
@@ -1050,6 +1170,56 @@ paths:
             createdAt:
               type: string
               format: date-time
+    BlacklistPayload:
+      type: object
+      required: [ip, reason]
+      properties:
+        ip:
+          type: string
+          example: 203.0.113.10
+        reason:
+          type: string
+          example: Suspicious activity detected
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Expiration date for the block. Use null for a permanent block.
+    BlacklistUpdatePayload:
+      type: object
+      properties:
+        ip:
+          type: string
+          example: 203.0.113.10
+        reason:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: New expiration date or null for a permanent block.
+      minProperties: 1
+    BlacklistEntry:
+      allOf:
+        - $ref: '#/components/schemas/BlacklistPayload'
+        - type: object
+          properties:
+            _id:
+              type: string
+              example: 6650f669d4b5c00017da5678
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+    DeleteBlacklistResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          example: true
     RateLimitSettings:
       type: object
       required: [rateLimitPerMinute]
@@ -1058,6 +1228,7 @@ paths:
           type: integer
           minimum: 1
           example: 120
+      description: Applies to all requests except projects with the `whitelist` or `docker` access level.
     ErrorResponse:
       type: object
       required: [message]

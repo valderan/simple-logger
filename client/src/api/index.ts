@@ -12,6 +12,9 @@ import {
   TelegramBotUrlInfo,
   TelegramStatus,
   UpdatePingServicePayload,
+  BlacklistEntry,
+  BlacklistPayload,
+  BlacklistUpdatePayload,
   WhitelistEntry,
   WhitelistPayload
 } from './types';
@@ -163,6 +166,25 @@ export const addWhitelistEntry = async (payload: WhitelistPayload) => {
 
 export const removeWhitelistEntry = async (ip: string) => {
   await apiClient.delete(`/api/settings/whitelist/${ip}`);
+};
+
+export const fetchBlacklist = async () => {
+  const { data } = await apiClient.get<BlacklistEntry[]>('/api/settings/blacklist');
+  return data;
+};
+
+export const createBlacklistEntry = async (payload: BlacklistPayload) => {
+  const { data } = await apiClient.post<BlacklistEntry>('/api/settings/blacklist', payload);
+  return data;
+};
+
+export const updateBlacklistEntry = async (id: string, payload: BlacklistUpdatePayload) => {
+  const { data } = await apiClient.put<BlacklistEntry>(`/api/settings/blacklist/${id}`, payload);
+  return data;
+};
+
+export const deleteBlacklistEntry = async (id: string) => {
+  await apiClient.delete(`/api/settings/blacklist/${id}`);
 };
 
 export const fetchRateLimitSettings = async () => {
