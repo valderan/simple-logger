@@ -2,7 +2,7 @@ import axios from 'axios';
 import { API_URL } from '../config';
 
 const API_STORAGE_KEY = 'logger_api_url';
-const DEFAULT_API_BASE = '/api';
+const DEFAULT_API_BASE = 'http://localhost:3000';
 
 let authToken: string | null = null;
 let unauthorizedHandler: (() => void) | undefined;

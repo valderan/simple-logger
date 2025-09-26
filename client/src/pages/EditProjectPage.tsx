@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Button, Card, CardContent, Stack, Typography } from '@mui/material';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
-import { deleteProject, fetchProject, updateProject } from '../api';
+import { deleteProject, fetchProject, fetchRateLimitSettings, updateProject } from '../api';
 import { CreateProjectPayload, Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -40,6 +40,7 @@ export const EditProjectPage = (): JSX.Element => {
     enabled: Boolean(uuid),
     retry: false
   });
+  const rateLimitQuery = useQuery({ queryKey: ['rate-limit'], queryFn: fetchRateLimitSettings });
 
   const updateMutation = useMutation({
     mutationFn: (values: CreateProjectPayload) => updateProject(uuid!, values),
@@ -109,6 +110,7 @@ export const EditProjectPage = (): JSX.Element => {
             isSubmitting={updateMutation.isPending}
             onSubmit={handleSubmit}
             error={formError}
+            rateLimitPerMinute={rateLimitQuery.data?.rateLimitPerMinute}
             secondaryActions={[
               <Button key="cancel" variant="text" onClick={() => navigate('/projects')}>
                 {t('common.cancel')}

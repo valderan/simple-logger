@@ -32,11 +32,12 @@ import {
   removeWhitelistEntry,
   updateRateLimitSettings
 } from '../api';
-import { BlacklistEntry, WhitelistEntry } from '../api/types';
+import { BlacklistEntry, WhitelistEntry, type WhitelistPayload } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime } from '../utils/formatters';
 import { useTranslation } from '../hooks/useTranslation';
+import { isValidIpAddress } from '../utils/ip';
 
 export const SettingsPage = (): JSX.Element => {
   const queryClient = useQueryClient();
@@ -89,8 +90,16 @@ export const SettingsPage = (): JSX.Element => {
     return local.toISOString().slice(0, 16);
   };
 
+  const trimmedWhitelistIp = ipInput.ip.trim();
+  const whitelistIpInvalid = trimmedWhitelistIp.length > 0 && !isValidIpAddress(trimmedWhitelistIp);
+  const trimmedBlacklistIp = blacklistForm.ip.trim();
+  const blacklistIpInvalid = trimmedBlacklistIp.length > 0 && !isValidIpAddress(trimmedBlacklistIp);
+  const trimmedEditBlacklistIp = editBlacklistForm.ip.trim();
+  const editBlacklistIpInvalid =
+    trimmedEditBlacklistIp.length > 0 && !isValidIpAddress(trimmedEditBlacklistIp);
+
   const addMutation = useMutation({
-    mutationFn: () => addWhitelistEntry(ipInput),
+    mutationFn: (payload: WhitelistPayload) => addWhitelistEntry(payload),
     onSuccess: () => {
       setIpInput({ ip: '', description: '' });
       queryClient.invalidateQueries({ queryKey: ['whitelist'] });
@@ -221,7 +230,10 @@ export const SettingsPage = (): JSX.Element => {
   );
 
   const handleCreateBlacklist = () => {
-    const ip = blacklistForm.ip.trim();
+    const ip = trimmedBlacklistIp;
+    if (!ip || blacklistIpInvalid) {
+      return;
+    }
     const reason = blacklistForm.reason.trim();
     if (!ip || !reason) {
       return;
@@ -323,9 +335,9 @@ export const SettingsPage = (): JSX.Element => {
     if (!editingBlacklist) {
       return;
     }
-    const ip = editBlacklistForm.ip.trim();
+    const ip = trimmedEditBlacklistIp;
     const reason = editBlacklistForm.reason.trim();
-    if (!ip || !reason) {
+    if (!ip || !reason || editBlacklistIpInvalid) {
       return;
     }
     const expiresAt = toIsoString(editBlacklistForm.expiresAt);
@@ -354,8 +366,12 @@ export const SettingsPage = (): JSX.Element => {
   const parsedRateLimit = Number(rateLimitInput);
   const rateLimitInvalid = !rateLimitInput || Number.isNaN(parsedRateLimit) || parsedRateLimit <= 0;
   const blacklistCreateDisabled =
-    !blacklistForm.ip.trim() || !blacklistForm.reason.trim() || createBlacklistMutation.isPending;
-  const blacklistEditInvalid = !editBlacklistForm.ip.trim() || !editBlacklistForm.reason.trim();
+    !trimmedBlacklistIp ||
+    !blacklistForm.reason.trim() ||
+    createBlacklistMutation.isPending ||
+    blacklistIpInvalid;
+  const blacklistEditInvalid =
+    !trimmedEditBlacklistIp || !editBlacklistForm.reason.trim() || editBlacklistIpInvalid;
 
   const openRateLimitDialog = (action: 'update' | 'reset', value: number) => {
     if (Number.isNaN(value) || value <= 0) {
@@ -432,11 +448,13 @@ export const SettingsPage = (): JSX.Element => {
                 {blacklistFeedback.message}
               </Alert>
             )}
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
               <TextField
                 label={t('settings.ipLabel')}
                 value={blacklistForm.ip}
                 onChange={(event) => setBlacklistForm((prev) => ({ ...prev, ip: event.target.value }))}
+                error={blacklistIpInvalid}
+                helperText={blacklistIpInvalid ? t('settings.invalidIp') : ' '}
                 fullWidth
               />
               <TextField
@@ -512,11 +530,13 @@ export const SettingsPage = (): JSX.Element => {
         <CardContent>
           <Stack spacing={3}>
             <Typography variant="h6">{t('settings.whitelistTitle')}</Typography>
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
               <TextField
                 label={t('settings.ipLabel')}
                 value={ipInput.ip}
                 onChange={(event) => setIpInput((prev) => ({ ...prev, ip: event.target.value }))}
+                error={whitelistIpInvalid}
+                helperText={whitelistIpInvalid ? t('settings.invalidIp') : ' '}
                 fullWidth
               />
               <TextField
@@ -527,8 +547,16 @@ export const SettingsPage = (): JSX.Element => {
               />
               <Button
                 variant="contained"
-                onClick={() => addMutation.mutate()}
-                disabled={addMutation.isPending || !ipInput.ip}
+                onClick={() => {
+                  if (whitelistIpInvalid || !trimmedWhitelistIp) {
+                    return;
+                  }
+                  addMutation.mutate({
+                    ip: trimmedWhitelistIp,
+                    description: ipInput.description.trim() ? ipInput.description.trim() : undefined
+                  });
+                }}
+                disabled={addMutation.isPending || !trimmedWhitelistIp || whitelistIpInvalid}
                 fullWidth={isSmDown}
               >
                 {addMutation.isPending ? t('common.savingWhitelist') : t('settings.add')}
@@ -635,6 +663,8 @@ export const SettingsPage = (): JSX.Element => {
               label={t('settings.ipLabel')}
               value={editBlacklistForm.ip}
               onChange={(event) => setEditBlacklistForm((prev) => ({ ...prev, ip: event.target.value }))}
+              error={editBlacklistIpInvalid}
+              helperText={editBlacklistIpInvalid ? t('settings.invalidIp') : ' '}
               fullWidth
             />
             <TextField
