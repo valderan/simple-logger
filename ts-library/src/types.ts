@@ -78,8 +78,10 @@ export interface FileTransportOptions {
 export interface LoggerOptions {
   /** Базовый URL сервера Simple Logger API. */
   apiBaseUrl?: string;
-  /** Текущий лимит отправки логов в API (сообщений в минуту). */
+  /** Текущий лимит отправки логов в API (сообщений в минуту). Значение `0` отключает ограничение при выключенном авто-режиме. */
   rateLimitPerMinute?: number;
+  /** Автоматически синхронизировать rate limit с ответами API. */
+  rateLimitAuto?: boolean;
   /** UUID проекта, используемый по умолчанию для отправки логов. */
   defaultProjectUuid?: string;
   /** Включение отдельных транспортов. */
@@ -233,7 +235,9 @@ export interface ProjectLogEntry {
   message: string;
   tags: string[];
   timestamp: string;
+  clientIP?: string;
   metadata?: ProjectLogMetadata;
+  rateLimitPerMinute?: number;
 }
 
 /**

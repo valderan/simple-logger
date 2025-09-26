@@ -718,6 +718,9 @@ export const LogsPage = (): JSX.Element => {
                   {t('logs.metadata.ip', { value: selectedLog.metadata?.ip ?? t('common.notAvailable') })}
                 </Typography>
                 <Typography variant="body2">
+                  {t('logs.metadata.clientIp', { value: selectedLog.clientIP ?? t('common.notAvailable') })}
+                </Typography>
+                <Typography variant="body2">
                   {t('logs.metadata.service', { value: selectedLog.metadata?.service ?? t('common.notAvailable') })}
                 </Typography>
                 <Typography variant="body2">

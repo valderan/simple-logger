@@ -64,7 +64,8 @@ all protected endpoints.
 
 - `filterLogs(filters)` — `GET /api/logs`. Requires `filters.uuid` and supports every filter from the
   OpenAPI specification.
-- `ingestLog(payload)` — `POST /api/logs`, accepts unauthenticated log submissions.
+- `ingestLog(payload)` — `POST /api/logs`, accepts unauthenticated log submissions and returns the stored entry with
+  server-supplied `clientIP` and `rateLimitPerMinute` fields.
 - `deleteLogs(uuid, filters?)` — `DELETE /api/logs/{uuid}`, returns `{ deleted }`.
 
 ### IP whitelist

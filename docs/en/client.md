@@ -46,7 +46,7 @@ Routes are defined in `src/App.tsx` and become available after authentication:
 
 1. **Dashboard** – overview of projects, active ping services, and the latest logs using charts and cards.
 2. **Projects** – project table with search, quick navigation to logs, and create/edit forms (`AddProjectPage`, `EditProjectPage`).
-3. **Ping services** – manage HTTP checks, edit or delete entries, trigger a single service or the whole project on demand, and observe background refresh every two minutes while the page stays active.
+3. **Ping services** – manage HTTP checks, edit or delete entries, trigger a single service or the whole project on demand, open a per-service detail dialog (tags, status, schedule) by clicking any row, and observe background refresh every two minutes while the page stays active.
 4. **Logs** – powerful log filter with URL state sharing, detailed view, JSON copy, and bulk deletion.
 5. **Telegram** – manage bot recipients, enable/disable notifications, and configure tags.
 6. **Settings** – IP whitelist, the API rate limit editor with confirmation warnings, and security options with instant API updates.
@@ -94,6 +94,7 @@ The container builds the static bundle and serves it through Nginx on port `80`.
 - Data grid components rely on `@mui/x-data-grid` for virtualization and custom row actions.
 - Telegram page displays the bot status (connected/token missing) based on `/api/settings/telegram-status` and shows the invite link from `/api/settings/telegram-url` when available.
 - Ping services page refreshes check timestamps in the background every two minutes to keep the UI fresh without exceeding rate limits.
+- Ping services data grid now uses icon-only action buttons and row clicks to surface a detailed view with tags, status history, and timestamps.
 - Rate limit changes require confirmation and log a warning to the `logger-system` project for auditability.
 
 Keep these principles in mind when extending the app: new pages should plug into `AppLayout`, call the API via existing hooks, and respect theming/localization.

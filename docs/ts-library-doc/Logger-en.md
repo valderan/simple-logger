@@ -38,6 +38,7 @@ logger.info('Application started');
 - Log levels `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.
 - Independent toggles for every transport.
 - Rate limited API queue (120 messages/minute by default) with on-demand status checks.
+- Automatic rate-limit sync with API responses (can be disabled).
 - File queue with batching, disk access throttling, and automatic file rotation under 2 MB.
 - Custom JSON templates with runtime switching.
 - Automatic metadata enrichment for the default template (`timestamp`, `metadata.ip`).
@@ -49,7 +50,8 @@ logger.info('Application started');
 | --- | --- | --- |
 | `apiBaseUrl` | `string` | Base URL of the Simple Logger API. |
 | `defaultProjectUuid` | `string` | Default project UUID for API transport. |
-| `rateLimitPerMinute` | `number` | Messages per minute for the API queue. |
+| `rateLimitPerMinute` | `number` | Messages per minute for the API queue. `0` disables throttling when auto-sync is off. |
+| `rateLimitAuto` | `boolean` | Toggle automatic rate-limit synchronization with API responses (defaults to `true`). |
 | `transports` | `{ api?: boolean; console?: boolean; file?: boolean; }` | Transport toggles. |
 | `templates` | `Record<string, LogTemplate>` | Custom JSON templates. |
 | `activeTemplate` | `string` | Default template name. |
@@ -57,6 +59,9 @@ logger.info('Application started');
 | `fileTransport` | `FileTransportOptions` | File transport configuration. |
 | `environment` | `string` | When set to `production`, the `DEBUG` level is disabled. |
 | `defaultMetadata` | `LogMetadata` | Metadata injected by the default template. |
+
+With `rateLimitAuto` enabled (default) the logger inspects `POST /api/logs` responses and adjusts its queue automatically.
+When `rateLimitAuto` is set to `false`, the queue uses the provided `rateLimitPerMinute`; setting it to `0` removes all pacing.
 
 ### FileTransportOptions
 
@@ -110,7 +115,7 @@ logger.critical('Unhandled exception', {
 
 - `setTransportEnabled('api' | 'console' | 'file', enabled)` — toggle a transport.
 - `setLevelEnabled(level, enabled)` — enable or disable a level.
-- `setRateLimit(value)` — change the API rate limit.
+- `setRateLimit(value)` — change the API rate limit (`0` disables throttling).
 - `getApiQueueStatus()` — inspect `{ pending, estimatedMs, rateLimitPerMinute }`.
 - `clearApiQueue()` and `waitForApiQueue()` — manage the API queue.
 - `getFileQueueStatus()` and `flushFileQueue()` — control the file queue.

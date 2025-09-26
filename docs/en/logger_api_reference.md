@@ -172,6 +172,29 @@ Content-Type: application/json
 }
 ```
 
+The service always records the originating IP in the `clientIP` field, regardless of the metadata supplied by the client. The
+`201 Created` response also echoes the current per-project rate limit so SDKs can adjust automatically.
+
+**Response `201 Created`**
+```json
+{
+  "_id": "6650f1c79b9af0001b0d1234",
+  "projectUuid": "<uuid>",
+  "level": "ERROR",
+  "message": "Payment failed",
+  "tags": ["PAYMENT"],
+  "timestamp": "2024-05-20T10:00:00.000Z",
+  "metadata": {
+    "ip": "10.0.0.5",
+    "service": "billing",
+    "user": "user-1",
+    "extra": {"orderId": "A-42"}
+  },
+  "clientIP": "203.0.113.10",
+  "rateLimitPerMinute": 120
+}
+```
+
 Invalid payloads are recorded inside the `logger-system` project.
 
 ### 5.2 GET `/`

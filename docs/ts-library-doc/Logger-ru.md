@@ -39,6 +39,7 @@ logger.info('Приложение стартовало');
 - Поддержка уровней `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`.
 - Независимое включение и отключение транспортов.
 - Очередь с ограничением скорости отправки в API (по умолчанию 120 сообщений в минуту).
+- Автоматическая синхронизация лимита отправки с ответами API (можно отключить).
 - Очередь сохранения на диск с ограничением количества записей и контролем размера файлов (до 2 МБ).
 - Пользовательские шаблоны для формирования JSON лога.
 - Автоматическое дополнение стандартного шаблона метаданными (`timestamp`, `metadata.ip`).
@@ -52,7 +53,8 @@ logger.info('Приложение стартовало');
 | --- | --- | --- |
 | `apiBaseUrl` | `string` | Базовый URL Simple Logger API. |
 | `defaultProjectUuid` | `string` | UUID проекта для отправки логов. |
-| `rateLimitPerMinute` | `number` | Лимит сообщений в минуту для API. |
+| `rateLimitPerMinute` | `number` | Лимит сообщений в минуту для API. Значение `0` отключает задержки при выключенном авто-режиме. |
+| `rateLimitAuto` | `boolean` | Управление автоматической подстройкой лимита по ответам API (по умолчанию `true`). |
 | `transports` | `{ api?: boolean; console?: boolean; file?: boolean; }` | Включение транспортов. |
 | `templates` | `Record<string, LogTemplate>` | Пользовательские шаблоны. |
 | `activeTemplate` | `string` | Имя шаблона по умолчанию. |
@@ -60,6 +62,10 @@ logger.info('Приложение стартовало');
 | `fileTransport` | `FileTransportOptions` | Настройки файлового транспорта. |
 | `environment` | `string` | При значении `production` уровень `DEBUG` отключается. |
 | `defaultMetadata` | `LogMetadata` | Метаданные для стандартного шаблона. |
+
+По умолчанию `rateLimitAuto` включён: логгер анализирует ответы `POST /api/logs` и обновляет внутренний лимит.
+При `rateLimitAuto: false` используется значение `rateLimitPerMinute`, при этом `0` полностью снимает ограничения и очередь
+отправляет записи без задержек.
 
 ### Настройки файлового транспорта
 
@@ -113,7 +119,7 @@ logger.critical('Необработанное исключение', {
 
 - `setTransportEnabled('api' \| 'console' \| 'file', enabled)` — переключение транспорта.
 - `setLevelEnabled(level, enabled)` — включение/выключение уровня.
-- `setRateLimit(value)` — смена лимита сообщений в минуту (применяется сразу).
+- `setRateLimit(value)` — смена лимита сообщений в минуту (применяется сразу, `0` отключает throttling).
 - `getApiQueueStatus()` — вернуть объект `{ pending, estimatedMs, rateLimitPerMinute }`.
 - `clearApiQueue()` и `waitForApiQueue()` — управление очередью API.
 - `getFileQueueStatus()` и `flushFileQueue()` — контроль очереди файлов.

@@ -27,10 +27,15 @@ export class RateLimitedQueue {
   private serverAvailable = false;
   /** Пользовательская функция проверки доступности сервера. */
   private availabilityCheck?: () => Promise<boolean>;
+  /** Признак отключенного ограничения скорости. */
+  private unlimited: boolean;
+  /** Флаг выполнения обработки, предотвращающий конкурентные запуски. */
+  private processing = false;
 
   constructor(rateLimitPerMinute: number, dispatcher: ApiDispatchFn, availabilityCheck?: () => Promise<boolean>) {
     this.rateLimitPerMinute = rateLimitPerMinute;
-    this.intervalMs = RateLimitedQueue.calculateInterval(rateLimitPerMinute);
+    this.unlimited = rateLimitPerMinute <= 0;
+    this.intervalMs = this.unlimited ? 0 : RateLimitedQueue.calculateInterval(rateLimitPerMinute);
     this.dispatcher = dispatcher;
     this.availabilityCheck = availabilityCheck;
   }
@@ -52,6 +57,7 @@ export class RateLimitedQueue {
       clearInterval(this.timer);
       this.timer = undefined;
     }
+    this.processing = false;
   }
 
   /**
@@ -60,7 +66,7 @@ export class RateLimitedQueue {
   getStatus(): ApiQueueStatus {
     return {
       pending: this.queue.length,
-      estimatedMs: this.queue.length * this.intervalMs,
+      estimatedMs: this.unlimited ? 0 : this.queue.length * this.intervalMs,
       rateLimitPerMinute: this.rateLimitPerMinute
     };
   }
@@ -70,10 +76,13 @@ export class RateLimitedQueue {
    */
   updateRateLimit(rateLimitPerMinute: number): void {
     this.rateLimitPerMinute = rateLimitPerMinute;
-    this.intervalMs = RateLimitedQueue.calculateInterval(rateLimitPerMinute);
+    this.unlimited = rateLimitPerMinute <= 0;
+    this.intervalMs = this.unlimited ? 0 : RateLimitedQueue.calculateInterval(rateLimitPerMinute);
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
+    }
+    if (this.queue.length > 0) {
       this.ensureProcessing();
     }
   }
@@ -82,7 +91,16 @@ export class RateLimitedQueue {
    * Запускает обработку очереди, если она ещё не запущена.
    */
   private ensureProcessing(): void {
-    if (!this.timer && this.queue.length > 0) {
+    if (this.queue.length === 0) {
+      return;
+    }
+
+    if (this.unlimited) {
+      void this.processNext();
+      return;
+    }
+
+    if (!this.timer) {
       this.timer = setInterval(() => {
         void this.processNext();
       }, this.intervalMs);
@@ -93,33 +111,43 @@ export class RateLimitedQueue {
    * Проверяет доступность сервера (если необходимо) и отправляет следующий элемент очереди.
    */
   private async processNext(): Promise<void> {
-    const item = this.queue.shift();
-    if (!item) {
-      if (this.timer) {
-        clearInterval(this.timer);
-        this.timer = undefined;
-      }
+    if (this.processing) {
       return;
     }
-
-    if (!this.serverAvailable) {
-      if (this.availabilityCheck) {
-        this.serverAvailable = await this.availabilityCheck();
-      } else {
-        this.serverAvailable = true;
-      }
-    }
-
-    if (!this.serverAvailable) {
-      console.error('Simple Logger API недоступен. Отправка логов остановлена.');
-      this.clear();
-      return;
-    }
+    this.processing = true;
 
     try {
-      await this.dispatcher(item);
-    } catch (error) {
-      console.error('Не удалось отправить лог в API:', error);
+      if (this.unlimited) {
+        await this.processAllImmediately();
+        return;
+      }
+
+      const item = this.queue.shift();
+      if (!item) {
+        if (this.timer) {
+          clearInterval(this.timer);
+          this.timer = undefined;
+        }
+        return;
+      }
+
+      const available = await this.ensureServerAvailable();
+      if (!available) {
+        console.error('Simple Logger API недоступен. Отправка логов остановлена.');
+        this.clear();
+        return;
+      }
+
+      try {
+        await this.dispatcher(item);
+      } catch (error) {
+        console.error('Не удалось отправить лог в API:', error);
+      }
+    } finally {
+      this.processing = false;
+      if (this.unlimited && this.queue.length > 0) {
+        this.ensureProcessing();
+      }
     }
   }
 
@@ -127,8 +155,9 @@ export class RateLimitedQueue {
    * Выполняет асинхронное ожидание опустошения очереди.
    */
   async drain(): Promise<void> {
-    while (this.queue.length > 0) {
-      await new Promise((resolve) => setTimeout(resolve, this.intervalMs));
+    while (this.queue.length > 0 || this.processing) {
+      const delay = this.unlimited ? 10 : this.intervalMs;
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 
@@ -145,5 +174,48 @@ export class RateLimitedQueue {
   private static calculateInterval(rateLimitPerMinute: number): number {
     const safeLimit = Math.max(rateLimitPerMinute, 1);
     return Math.floor(60000 / safeLimit);
+  }
+
+  /**
+   * Убеждается в доступности сервера и кеширует результат.
+   */
+  private async ensureServerAvailable(): Promise<boolean> {
+    if (!this.serverAvailable) {
+      if (this.availabilityCheck) {
+        try {
+          this.serverAvailable = await this.availabilityCheck();
+        } catch (error) {
+          console.error('Не удалось выполнить проверку доступности API:', error);
+          this.serverAvailable = false;
+        }
+      } else {
+        this.serverAvailable = true;
+      }
+    }
+    return this.serverAvailable;
+  }
+
+  /**
+   * Обрабатывает очередь без ограничений, отправляя все элементы последовательно.
+   */
+  private async processAllImmediately(): Promise<void> {
+    const available = await this.ensureServerAvailable();
+    if (!available) {
+      console.error('Simple Logger API недоступен. Отправка логов остановлена.');
+      this.clear();
+      return;
+    }
+
+    while (this.queue.length > 0) {
+      const item = this.queue.shift();
+      if (!item) {
+        break;
+      }
+      try {
+        await this.dispatcher(item);
+      } catch (error) {
+        console.error('Не удалось отправить лог в API:', error);
+      }
+    }
   }
 }

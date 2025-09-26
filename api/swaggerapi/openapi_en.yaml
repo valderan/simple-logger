@@ -438,7 +438,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LogEntry'
+                $ref: '#/components/schemas/LogIngestResponse'
         '400':
           description: The request body does not match the schema.
           content:
@@ -1057,6 +1057,18 @@ paths:
           format: date-time
         metadata:
           $ref: '#/components/schemas/LogMetadata'
+        clientIP:
+          type: string
+          description: Client IP address captured by the server.
+    LogIngestResponse:
+      allOf:
+        - $ref: '#/components/schemas/LogEntry'
+        - type: object
+          properties:
+            rateLimitPerMinute:
+              type: integer
+              minimum: 0
+              description: Current per-minute rate limit for the project.
     LogIngestRequest:
       type: object
       required: [uuid, log]

@@ -438,7 +438,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LogEntry'
+                $ref: '#/components/schemas/LogIngestResponse'
         '400':
           description: Тело запроса не соответствует схеме.
           content:
@@ -1057,6 +1057,18 @@ components:
           format: date-time
         metadata:
           $ref: '#/components/schemas/LogMetadata'
+        clientIP:
+          type: string
+          description: IP-адрес клиента, с которого получен лог.
+    LogIngestResponse:
+      allOf:
+        - $ref: '#/components/schemas/LogEntry'
+        - type: object
+          properties:
+            rateLimitPerMinute:
+              type: integer
+              minimum: 0
+              description: Актуальный лимит запросов в минуту для проекта.
     LogIngestRequest:
       type: object
       required: [uuid, log]

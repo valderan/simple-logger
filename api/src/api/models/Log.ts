@@ -17,6 +17,8 @@ export interface LogAttributes {
   message: string;
   tags: string[];
   timestamp: Date;
+  /** IP-адрес клиента, с которого поступил запрос на приём лога. */
+  clientIP?: string;
   metadata: LogMetadata;
 }
 
@@ -28,6 +30,7 @@ const LogSchema = new Schema<LogDocument>({
   message: { type: String, required: true },
   tags: { type: [String], default: [] },
   timestamp: { type: Date, default: () => new Date(), index: true },
+  clientIP: { type: String },
   metadata: {
     ip: { type: String },
     service: { type: String },
