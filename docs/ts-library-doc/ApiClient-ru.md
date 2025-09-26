@@ -68,7 +68,8 @@ await client.login({ username: 'admin', password: 'secret' });
 
 - `filterLogs(filters)` — `GET /api/logs`, требует `filters.uuid` и поддерживает остальные параметры
   фильтрации из спецификации.
-- `ingestLog(payload)` — `POST /api/logs`, отправка лога от клиента (без авторизации).
+- `ingestLog(payload)` — `POST /api/logs`, отправка лога от клиента (без авторизации). Возвращает созданную запись с полями
+  `clientIP` и `rateLimitPerMinute`, которые сервер подставляет автоматически.
 - `deleteLogs(uuid, filters?)` — `DELETE /api/logs/{uuid}`, возвращает `{ deleted }`.
 
 ### Белый список IP

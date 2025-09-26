@@ -60,6 +60,8 @@ export class Logger {
   private consoleTemplate: (level: LogLevel, record: LogRecordInput) => string;
   /** Лимит отправки сообщений в минуту. */
   private rateLimitPerMinute: number;
+  /** Автоматическая синхронизация лимита по ответам API. */
+  private rateLimitAuto: boolean;
   /** Метаданные по умолчанию для стандартного шаблона. */
   private defaultMetadata: LogRecordInput['metadata'];
   /** Состояние включённости уровней логирования. */
@@ -69,6 +71,7 @@ export class Logger {
 
   private constructor(options: LoggerOptions = {}) {
     this.apiBaseUrl = options.apiBaseUrl ?? 'http://localhost:3000';
+    this.rateLimitAuto = options.rateLimitAuto ?? true;
     this.rateLimitPerMinute = options.rateLimitPerMinute ?? 120;
     this.defaultProjectUuid = options.defaultProjectUuid;
     this.defaultMetadata = options.defaultMetadata ?? { ip: 'unknown' };
@@ -134,7 +137,11 @@ export class Logger {
     if (baseChanged) {
       this.apiQueue.resetAvailability();
     }
-    this.rateLimitPerMinute = options.rateLimitPerMinute ?? this.rateLimitPerMinute;
+    if (typeof options.rateLimitAuto === 'boolean') {
+      this.rateLimitAuto = options.rateLimitAuto;
+    }
+    const newRateLimit = options.rateLimitPerMinute ?? this.rateLimitPerMinute;
+    this.applyRateLimit(newRateLimit);
     this.defaultProjectUuid = options.defaultProjectUuid ?? this.defaultProjectUuid;
     if (options.defaultMetadata) {
       this.defaultMetadata = options.defaultMetadata;
@@ -163,7 +170,6 @@ export class Logger {
     if (options.activeTemplate) {
       this.activeTemplate = options.activeTemplate;
     }
-    this.apiQueue.updateRateLimit(this.rateLimitPerMinute);
     if (options.fileTransport) {
       const fileOptions = { ...DEFAULT_FILE_OPTIONS, ...options.fileTransport };
       if (fileOptions.enabled) {
@@ -251,8 +257,7 @@ export class Logger {
    * Изменяет лимит отправки сообщений в API.
    */
   setRateLimit(rateLimitPerMinute: number): void {
-    this.rateLimitPerMinute = rateLimitPerMinute;
-    this.apiQueue.updateRateLimit(rateLimitPerMinute);
+    this.applyRateLimit(rateLimitPerMinute);
   }
 
   /**
@@ -394,6 +399,31 @@ export class Logger {
     if (!response.ok) {
       throw new Error(`Ошибка API: ${response.status}`);
     }
+
+    if (this.rateLimitAuto) {
+      const canReadJson = (() => {
+        const headers = response.headers;
+        if (headers && typeof headers.get === 'function') {
+          const contentType = headers.get('content-type') ?? '';
+          return contentType.includes('application/json');
+        }
+        return typeof (response as { json?: unknown }).json === 'function';
+      })();
+
+      if (canReadJson && typeof response.json === 'function') {
+        try {
+          const data = await response.json();
+          const nextRateLimit = this.parseRateLimitFromResponse(data);
+          if (typeof nextRateLimit === 'number') {
+            this.applyRateLimit(nextRateLimit);
+          }
+        } catch (error) {
+          console.error('Не удалось разобрать ответ API при обновлении rate limit:', error);
+        }
+      }
+    } else if (this.rateLimitPerMinute <= 0) {
+      this.apiQueue.updateRateLimit(0);
+    }
   }
 
   /**
@@ -407,5 +437,28 @@ export class Logger {
       console.error('Не удалось проверить доступность API:', error);
       return false;
     }
+  }
+
+  /**
+   * Применяет новый лимит отправки, поддерживая режим "без ограничений".
+   */
+  private applyRateLimit(rateLimitPerMinute: number): void {
+    this.rateLimitPerMinute = rateLimitPerMinute;
+    this.apiQueue.updateRateLimit(rateLimitPerMinute);
+  }
+
+  /**
+   * Извлекает значение rate limit из ответа API.
+   */
+  private parseRateLimitFromResponse(data: unknown): number | undefined {
+    if (!data || typeof data !== 'object') {
+      return undefined;
+    }
+    const payload = data as Record<string, unknown>;
+    const candidate = payload.rateLimitPerMinute ?? payload.rateLimit;
+    if (typeof candidate === 'number' && Number.isFinite(candidate)) {
+      return candidate;
+    }
+    return undefined;
   }
 }

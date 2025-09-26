@@ -1,4 +1,4 @@
-import { ChangeEvent, useCallback, useEffect, useMemo, useState } from 'react';
+import { ChangeEvent, type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -13,17 +13,22 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
+  IconButton,
   InputLabel,
   MenuItem,
   Select,
   SelectChangeEvent,
   Stack,
   TextField,
+  Tooltip,
   Typography,
   useMediaQuery,
   useTheme
 } from '@mui/material';
-import { DataGrid, GridColDef } from '@mui/x-data-grid';
+import { DataGrid, type GridCellParams, type GridColDef } from '@mui/x-data-grid';
+import AutorenewIcon from '@mui/icons-material/Autorenew';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   createPingService,
   deletePingService,
@@ -58,6 +63,7 @@ export const PingServicesPage = (): JSX.Element => {
     null
   );
   const [deleteTarget, setDeleteTarget] = useState<PingService | null>(null);
+  const [detailService, setDetailService] = useState<PingService | null>(null);
   const { t } = useTranslation();
   const theme = useTheme();
   const isMdDown = useMediaQuery(theme.breakpoints.down('md'));
@@ -122,6 +128,41 @@ export const PingServicesPage = (): JSX.Element => {
       .map((tag) => tag.trim())
       .filter(Boolean);
   }, []);
+
+  const getStatusMeta = useCallback(
+    (status: PingService['lastStatus']) => {
+      const resolved = status ?? 'unknown';
+      const color: 'success' | 'warning' | 'error' | 'info' =
+        resolved === 'ok' ? 'success' : resolved === 'degraded' ? 'warning' : resolved === 'down' ? 'error' : 'info';
+      const label =
+        resolved === 'ok'
+          ? t('ping.status.ok')
+          : resolved === 'degraded'
+            ? t('ping.status.degraded')
+            : resolved === 'down'
+              ? t('ping.status.down')
+              : t('ping.status.unknown');
+      return { color, label };
+    },
+    [t]
+  );
+
+  const handleCellClick = useCallback(
+    (params: GridCellParams<PingService>, _event: MouseEvent) => {
+      void _event;
+      if (params.field === 'actions') {
+        return;
+      }
+      setDetailService(params.row);
+    },
+    []
+  );
+
+  const handleCloseDetails = useCallback(() => {
+    setDetailService(null);
+  }, []);
+
+  const detailStatus = detailService ? getStatusMeta(detailService.lastStatus) : null;
 
   const resetForm = useCallback(() => {
     setFormData({ name: '', url: '', interval: MIN_INTERVAL, telegramTags: '' });
@@ -294,13 +335,14 @@ export const PingServicesPage = (): JSX.Element => {
 
   const columns = useMemo<GridColDef<PingService>[]>(
     () => [
-      { field: 'name', headerName: t('ping.name'), flex: 1 },
+      { field: 'name', headerName: t('ping.name'), flex: 1, minWidth: 160 },
       {
         field: 'url',
         headerName: t('ping.url'),
         flex: 1.4,
+        minWidth: 220,
         renderCell: (params) => (
-          <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+          <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
             {params.row.url}
           </Typography>
         )
@@ -317,16 +359,7 @@ export const PingServicesPage = (): JSX.Element => {
         minWidth: isSmDown ? 140 : 160,
         flex: isMdDown ? 0.9 : 0.6,
         renderCell: (params) => {
-          const status = params.row.lastStatus ?? 'unknown';
-          const color = status === 'ok' ? 'success' : status === 'degraded' ? 'warning' : status === 'down' ? 'error' : 'info';
-          const label =
-            status === 'ok'
-              ? t('ping.status.ok')
-              : status === 'degraded'
-                ? t('ping.status.degraded')
-                : status === 'down'
-                  ? t('ping.status.down')
-                  : t('ping.status.unknown');
+          const { color, label } = getStatusMeta(params.row.lastStatus);
           return (
             <Alert severity={color} sx={{ width: '100%', px: 1.5, py: 1 }}>
               {label}
@@ -351,77 +384,78 @@ export const PingServicesPage = (): JSX.Element => {
         )
       },
       {
-        field: 'telegramTags',
-        headerName: t('ping.telegramTagsHeader'),
-        flex: 1,
-        renderCell: (params) => (
-          <Stack direction="row" spacing={1} flexWrap="wrap">
-            {params.row.telegramTags.length === 0 ? (
-              <Typography variant="caption" color="text.secondary">
-                {t('ping.noTags')}
-              </Typography>
-            ) : (
-              params.row.telegramTags.map((tag) => <Chip key={tag} label={tag} size="small" />)
-            )}
-          </Stack>
-        )
-      },
-      {
         field: 'actions',
         headerName: t('ping.actionsHeader'),
-        minWidth: isSmDown ? 220 : 260,
+        minWidth: isSmDown ? 180 : 200,
+        flex: isMdDown ? 0.8 : 0.5,
         sortable: false,
         filterable: false,
         renderCell: (params) => {
           const isServicePending = singleCheckMutation.isPending && pendingSingleCheckId === params.row._id;
+          const isDeleting = deleteServiceMutation.isPending && pendingDeleteId === params.row._id;
           return (
             <Stack
-              direction={{ xs: 'column', md: 'row' }}
+              direction="row"
               spacing={1}
-              flexWrap="wrap"
               useFlexGap
               sx={{ width: '100%' }}
+              justifyContent="center"
+              onClick={(event) => event.stopPropagation()}
             >
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => singleCheckMutation.mutate(params.row._id)}
-                disabled={!selectedUuid || isServicePending}
-                fullWidth={isSmDown}
-              >
-                {isServicePending ? t('ping.triggering') : t('ping.checkAction')}
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                onClick={() => {
-                  setDialogMode('edit');
-                  setEditingService(params.row);
-                  setFormData({
-                    name: params.row.name,
-                    url: params.row.url,
-                    interval: Math.max(MIN_INTERVAL, params.row.interval),
-                    telegramTags: params.row.telegramTags.join(', ')
-                  });
-                  setDialogOpen(true);
-                }}
-                fullWidth={isSmDown}
-              >
-                {t('ping.editService')}
-              </Button>
-              <Button
-                size="small"
-                variant="outlined"
-                color="error"
-                onClick={() => setDeleteTarget(params.row)}
-                disabled={deleteServiceMutation.isPending && pendingDeleteId === params.row._id}
-                fullWidth={isSmDown}
-                aria-label={t('ping.deleteService')}
-              >
-                {deleteServiceMutation.isPending && pendingDeleteId === params.row._id
-                  ? t('ping.deleting')
-                  : 'X'}
-              </Button>
+              <Tooltip title={isServicePending ? t('ping.triggering') : t('ping.checkAction')}>
+                <span>
+                  <IconButton
+                    size="small"
+                    color="primary"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      singleCheckMutation.mutate(params.row._id);
+                    }}
+                    disabled={!selectedUuid || isServicePending}
+                    aria-label={t('ping.checkAction')}
+                  >
+                    <AutorenewIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title={t('ping.editService')}>
+                <span>
+                  <IconButton
+                    size="small"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDialogMode('edit');
+                      setEditingService(params.row);
+                      setFormData({
+                        name: params.row.name,
+                        url: params.row.url,
+                        interval: Math.max(MIN_INTERVAL, params.row.interval),
+                        telegramTags: params.row.telegramTags.join(', ')
+                      });
+                      setDialogOpen(true);
+                    }}
+                    aria-label={t('ping.editService')}
+                  >
+                    <EditIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title={isDeleting ? t('ping.deleting') : t('ping.deleteService')}>
+                <span>
+                  <IconButton
+                    size="small"
+                    color="error"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setDeleteTarget(params.row);
+                    }}
+                    disabled={isDeleting}
+                    aria-label={t('ping.deleteService')}
+                  >
+                    <DeleteIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
             </Stack>
           );
         }
@@ -429,6 +463,7 @@ export const PingServicesPage = (): JSX.Element => {
     ],
     [
       deleteServiceMutation.isPending,
+      getStatusMeta,
       isMdDown,
       isSmDown,
       pendingDeleteId,
@@ -437,13 +472,6 @@ export const PingServicesPage = (): JSX.Element => {
       singleCheckMutation,
       t
     ]
-  );
-
-  const columnVisibilityModel = useMemo(
-    () => ({
-      telegramTags: !isSmDown
-    }),
-    [isSmDown]
   );
 
   if (projectsLoading || servicesLoading) {
@@ -548,19 +576,26 @@ export const PingServicesPage = (): JSX.Element => {
                 rows={services ?? []}
                 columns={columns}
                 getRowId={(row) => row._id}
-                columnVisibilityModel={columnVisibilityModel}
                 autoHeight={isSmDown}
-                rowHeight={isSmDown ? 96 : 76}
+                rowHeight={isSmDown ? 92 : 72}
                 pageSizeOptions={[5, 10, 25]}
                 initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
                 disableRowSelectionOnClick
                 localeText={{ noRowsLabel: t('ping.noServices') }}
+                onCellClick={handleCellClick}
                 sx={{
                   minWidth: isSmDown ? 560 : undefined,
+                  '& .MuiDataGrid-row': {
+                    cursor: 'pointer'
+                  },
+                  '& .MuiDataGrid-row .MuiDataGrid-cell[data-field="actions"]': {
+                    cursor: 'default'
+                  },
                   '& .MuiDataGrid-cell': {
                     alignItems: 'flex-start',
                     display: 'flex',
-                    py: 1.5,
+                    pt: 1,
+                    pb: 1.25,
                     fontSize: { xs: '0.875rem', sm: '0.95rem' }
                   },
                   '& .MuiDataGrid-cellContent': {
@@ -644,6 +679,91 @@ export const PingServicesPage = (): JSX.Element => {
                 ? t('ping.saving')
                 : t('ping.update')}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={Boolean(detailService)} onClose={handleCloseDetails} fullWidth maxWidth="sm">
+        <DialogTitle>{t('ping.detailsTitle')}</DialogTitle>
+        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          {detailService && (
+            <Stack spacing={2}>
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2">{t('ping.name')}</Typography>
+                <Typography variant="body2">{detailService.name}</Typography>
+              </Stack>
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2">{t('ping.detailsUrl')}</Typography>
+                <Typography variant="body2" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                  {detailService.url}
+                </Typography>
+              </Stack>
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2">
+                  {t('ping.detailsInterval', { value: detailService.interval })}
+                </Typography>
+              </Stack>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">{t('ping.detailsTags')}</Typography>
+                {detailService.telegramTags.length > 0 ? (
+                  <Stack direction="row" spacing={1} flexWrap="wrap">
+                    {detailService.telegramTags.map((tag) => (
+                      <Chip key={tag} label={tag} size="small" />
+                    ))}
+                  </Stack>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('ping.detailsNoTags')}
+                  </Typography>
+                )}
+              </Stack>
+              <Stack spacing={1}>
+                <Typography variant="subtitle2">{t('ping.detailsStatus')}</Typography>
+                <Alert severity={detailStatus?.color ?? 'info'} sx={{ width: 'fit-content', px: 1.5, py: 1 }}>
+                  {detailStatus?.label ?? t('ping.status.unknown')}
+                </Alert>
+              </Stack>
+              <Stack spacing={0.5}>
+                <Typography variant="subtitle2">{t('ping.detailsLastCheck')}</Typography>
+                {detailService.lastCheckedAt ? (
+                  <>
+                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                      {formatDateTime(detailService.lastCheckedAt)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatRelative(detailService.lastCheckedAt)}
+                    </Typography>
+                  </>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {t('ping.detailsNotChecked')}
+                  </Typography>
+                )}
+              </Stack>
+              {(detailService.createdAt || detailService.updatedAt) && (
+                <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
+                  {detailService.createdAt && (
+                    <Stack spacing={0.5} flex={1}>
+                      <Typography variant="subtitle2">{t('ping.detailsCreated')}</Typography>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                        {formatDateTime(detailService.createdAt)}
+                      </Typography>
+                    </Stack>
+                  )}
+                  {detailService.updatedAt && (
+                    <Stack spacing={0.5} flex={1}>
+                      <Typography variant="subtitle2">{t('ping.detailsUpdated')}</Typography>
+                      <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                        {formatDateTime(detailService.updatedAt)}
+                      </Typography>
+                    </Stack>
+                  )}
+                </Stack>
+              )}
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDetails}>{t('common.close')}</Button>
         </DialogActions>
       </Dialog>
 

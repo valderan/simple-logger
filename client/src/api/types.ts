@@ -41,6 +41,8 @@ export interface LogEntry {
   tags: string[];
   timestamp: string;
   metadata?: LogMetadata;
+  clientIP?: string;
+  rateLimitPerMinute?: number;
 }
 
 export interface ProjectLogResponse {

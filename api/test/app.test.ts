@@ -82,6 +82,8 @@ describe('Logger API', () => {
       }
     });
     expect(logResponse.status).toBe(201);
+    expect(logResponse.body.clientIP).toBe('127.0.0.1');
+    expect(logResponse.body.rateLimitPerMinute).toBeGreaterThan(0);
 
     const filterResponse = await request(app)
       .get('/api/logs')
@@ -90,6 +92,7 @@ describe('Logger API', () => {
     expect(filterResponse.status).toBe(200);
     expect(filterResponse.body.logs).toHaveLength(1);
     expect(filterResponse.body.logs[0].message).toBe('Ошибка оплаты');
+    expect(filterResponse.body.logs[0].clientIP).toBe('127.0.0.1');
   });
 
   it('управляет белым списком IP', async () => {

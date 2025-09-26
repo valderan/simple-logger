@@ -249,6 +249,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       actionsHeader: 'Actions',
       metadata: {
         ip: 'IP: {{value}}',
+        clientIp: 'Client IP: {{value}}',
         service: 'Service: {{value}}',
         user: 'User: {{value}}'
       },
@@ -279,6 +280,16 @@ export const translations: Record<Locale, TranslationRecord> = {
       noServices: 'No services configured',
       loadProjectsError: 'Failed to load projects list',
       loadServicesError: 'Failed to load ping services',
+      detailsTitle: 'Service details',
+      detailsUrl: 'URL',
+      detailsInterval: 'Interval: {{value}} seconds',
+      detailsTags: 'Tags',
+      detailsNoTags: 'No tags configured',
+      detailsStatus: 'Status',
+      detailsLastCheck: 'Last check',
+      detailsNotChecked: 'No checks performed yet',
+      detailsCreated: 'Created',
+      detailsUpdated: 'Updated',
       status: {
         ok: 'OK',
         degraded: 'Degraded',
@@ -702,6 +713,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       actionsHeader: 'Действия',
       metadata: {
         ip: 'IP: {{value}}',
+        clientIp: 'IP клиента: {{value}}',
         service: 'Сервис: {{value}}',
         user: 'Пользователь: {{value}}'
       },
@@ -732,6 +744,16 @@ export const translations: Record<Locale, TranslationRecord> = {
       noServices: 'Сервисы не настроены',
       loadProjectsError: 'Не удалось загрузить список проектов',
       loadServicesError: 'Не удалось загрузить ping-сервисы',
+      detailsTitle: 'Подробности сервиса',
+      detailsUrl: 'URL',
+      detailsInterval: 'Интервал: {{value}} секунд',
+      detailsTags: 'Теги',
+      detailsNoTags: 'Теги не заданы',
+      detailsStatus: 'Статус',
+      detailsLastCheck: 'Последняя проверка',
+      detailsNotChecked: 'Проверки ещё не выполнялись',
+      detailsCreated: 'Создан',
+      detailsUpdated: 'Обновлён',
       status: {
         ok: 'OK',
         degraded: 'Проблемы',

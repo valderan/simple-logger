@@ -172,6 +172,29 @@ Content-Type: application/json
 }
 ```
 
+Simple Logger автоматически сохраняет IP-адрес источника запроса в поле `clientIP`, независимо от переданных в `metadata` данных.
+В ответе `201 Created` дополнительно возвращается актуальный лимит запросов для проекта.
+
+**Ответ `201 Created`**
+```json
+{
+  "_id": "6650f1c79b9af0001b0d1234",
+  "projectUuid": "<uuid>",
+  "level": "ERROR",
+  "message": "Ошибка оплаты",
+  "tags": ["PAYMENT"],
+  "timestamp": "2024-05-20T10:00:00.000Z",
+  "metadata": {
+    "ip": "10.0.0.5",
+    "service": "billing",
+    "user": "user-1",
+    "extra": {"orderId": "A-42"}
+  },
+  "clientIP": "203.0.113.10",
+  "rateLimitPerMinute": 120
+}
+```
+
 При ошибке структуры событие записывается в `logger-system`.
 
 ### 5.2 GET `/`
