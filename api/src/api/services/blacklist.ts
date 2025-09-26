@@ -39,21 +39,25 @@ async function refreshCache(force = false): Promise<void> {
   }
   if (expiredRecords.length > 0) {
     const ids = expiredRecords.map((record) => record._id);
-    await BlacklistModel.deleteMany({ _id: { $in: ids } });
-    await Promise.all(expiredRecords.map((record) =>
-      writeSystemLog(`Автоматически снята блокировка IP ${record.ip}`, {
-        level: 'SECURITY',
-        tags: ['BLACKLIST', 'SECURITY'],
-        metadata: {
-          ip: record.ip,
-          service: 'blacklist-cleanup',
-          extra: {
-            reason: record.reason,
-            expiredAt: record.expiresAt ? record.expiresAt.toISOString() : null
-          }
-        }
-      })
-    ));
+    const { deletedCount = 0 } = await BlacklistModel.deleteMany({ _id: { $in: ids } });
+    if (deletedCount > 0) {
+      await Promise.all(
+        expiredRecords.map((record) =>
+          writeSystemLog(`Automatically lifted IP block ${record.ip}`, {
+            level: 'SECURITY',
+            tags: ['BLACKLIST', 'SECURITY'],
+            metadata: {
+              ip: record.ip,
+              service: 'blacklist-cleanup',
+              extra: {
+                reason: record.reason,
+                expiredAt: record.expiresAt ? record.expiresAt.toISOString() : null
+              }
+            }
+          })
+        )
+      );
+    }
   }
   cache = new Map(activeRecords.map((record) => [record.ip, { reason: record.reason, expiresAt: record.expiresAt ?? null }]));
   cachedAt = Date.now();
@@ -85,7 +89,7 @@ export async function createBlacklistEntry(payload: BlacklistInput): Promise<Bla
     expiresAt
   });
   await invalidateBlacklistCache();
-  await writeSystemLog(`Добавлена блокировка IP ${record.ip}`, {
+  await writeSystemLog(`Added IP block ${record.ip}`, {
     level: 'SECURITY',
     tags: ['BLACKLIST', 'SETTINGS'],
     metadata: {
@@ -120,7 +124,7 @@ export async function updateBlacklistEntry(id: string, payload: BlacklistUpdateI
     return null;
   }
   await invalidateBlacklistCache();
-  await writeSystemLog(`Обновлена блокировка IP ${record.ip}`, {
+  await writeSystemLog(`Updated IP block ${record.ip}`, {
     level: 'SECURITY',
     tags: ['BLACKLIST', 'SETTINGS'],
     metadata: {
@@ -141,7 +145,7 @@ export async function deleteBlacklistEntry(id: string): Promise<BlacklistDocumen
     return null;
   }
   await invalidateBlacklistCache();
-  await writeSystemLog(`Удалена блокировка IP ${record.ip}`, {
+  await writeSystemLog(`Removed IP block ${record.ip}`, {
     level: 'SECURITY',
     tags: ['BLACKLIST', 'SETTINGS'],
     metadata: {

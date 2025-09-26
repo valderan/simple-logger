@@ -11,8 +11,10 @@
 > ℹ️ **Quick documentation guide**
 > 
 > • 🇬🇧 Core guides: [docs/en/api.md](docs/en/api.md), [docs/en/api_security.md](docs/en/api_security.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md)
-> 
+>
 > • 🇷🇺 Russian resources: [docs/ru/api.md](docs/ru/api.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md)
+>
+> • ⚙️ Environment variables: [docs/en/env_variables.md](docs/en/env_variables.md) · [docs/ru/env_variables.md](docs/ru/env_variables.md)
 > 
 > • 📘 OpenAPI specs: [api/swaggerapi/openapi.yaml](api/swaggerapi/openapi.yaml) · [api/swaggerapi/openapi_en.yaml](api/swaggerapi/openapi_en.yaml)
 > 
@@ -138,7 +140,7 @@ npm install
 npm run dev
 ```
 
-Vite serves the app on `http://localhost:5173` by default. Configure the API URL via `VITE_API_URL` (for example `http://localhost:3000/api`). Optional variables: `LOGGER_VERSION`, `LOGGER_PAGE_URL`.
+Vite serves the app on `http://localhost:5173` by default. Configure the API URL via `VITE_API_URL` (for example `http://localhost:3000/api`). Optional variables: `VITE_LOGGER_VERSION`, `VITE_LOGGER_PAGE_URL`.
 
 ### Docker
 
@@ -147,12 +149,13 @@ cd client
 docker compose up --build
 ```
 
-The container builds the production bundle and serves it with Nginx on port `80`. Values for `API_URL`, `LOGGER_VERSION`, `LOGGER_PAGE_URL` are passed during build time.
+The container builds the production bundle and serves it with Nginx on port `80`. Provide `VITE_API_URL`, `VITE_LOGGER_VERSION`, `VITE_LOGGER_PAGE_URL` during the build (legacy keys without the prefix can still be set for third-party scripts).
 
 ## Documentation
 
 - Russian: [docs/ru/about.md](docs/ru/about.md), [docs/ru/architecture.md](docs/ru/architecture.md), [docs/ru/database.md](docs/ru/database.md), [docs/ru/api.md](docs/ru/api.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md), [docs/ru/client.md](docs/ru/client.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/api_security_improvements.md](docs/api_security_improvements.md).
 - [Client screenshots](docs/screenshots/) - docs/screenshots
+- Environment variables: [docs/en/env_variables.md](docs/en/env_variables.md) · [docs/ru/env_variables.md](docs/ru/env_variables.md)
 - English: [docs/en/about.md](docs/en/about.md), [docs/en/architecture.md](docs/en/architecture.md), [docs/en/database.md](docs/en/database.md), [docs/en/api.md](docs/en/api.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md), [docs/en/client.md](docs/en/client.md), [docs/en/api_security.md](docs/en/api_security.md).
 
 ## Integration examples

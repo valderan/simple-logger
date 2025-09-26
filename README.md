@@ -16,6 +16,7 @@
 > • 🇷🇺 Основные материалы: [docs/ru/api.md](docs/ru/api.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md)
 > 
 > • 🇬🇧 English guides: [docs/en/api.md](docs/en/api.md), [docs/en/api_security.md](docs/en/api_security.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md)
+> • ⚙️ Переменные окружения: [docs/ru/env_variables.md](docs/ru/env_variables.md) · [docs/en/env_variables.md](docs/en/env_variables.md)
 > 
 > • 📘 OpenAPI спецификация: [api/swaggerapi/openapi.yaml](api/swaggerapi/openapi.yaml) · [api/swaggerapi/openapi_en.yaml](api/swaggerapi/openapi_en.yaml)
 > 
@@ -141,7 +142,7 @@ npm install
 npm run dev
 ```
 
-По умолчанию Vite поднимает dev-сервер на `http://localhost:5173`. Настройте URL API через `VITE_API_URL` (например, `http://localhost:3000/api`). Дополнительные переменные: `LOGGER_VERSION`, `LOGGER_PAGE_URL`.
+По умолчанию Vite поднимает dev-сервер на `http://localhost:5173`. Настройте URL API через `VITE_API_URL` (например, `http://localhost:3000/api`). Дополнительные переменные: `VITE_LOGGER_VERSION`, `VITE_LOGGER_PAGE_URL`.
 
 ### В Docker
 
@@ -150,12 +151,13 @@ cd client
 docker compose up --build
 ```
 
-Контейнер соберёт production-бандл и раздаст его через Nginx на порту `80`. Значения `API_URL`, `LOGGER_VERSION`, `LOGGER_PAGE_URL` передаются в процессе сборки.
+Контейнер соберёт production-бандл и раздаст его через Nginx на порту `80`. Значения `VITE_API_URL`, `VITE_LOGGER_VERSION`, `VITE_LOGGER_PAGE_URL` передаются в процессе сборки (при необходимости можно задать и старые ключи без префикса для совместимости скриптов).
 
 ## Документация
 
 - Русская версия: [docs/ru/about.md](docs/ru/about.md), [docs/ru/architecture.md](docs/ru/architecture.md), [docs/ru/database.md](docs/ru/database.md), [docs/ru/api.md](docs/ru/api.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md), [docs/ru/client.md](docs/ru/client.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/api_security_improvements.md](docs/api_security_improvements.md).
 - [Скриншоты клиента](docs/screenshots/) - docs/screenshots
+- Переменные окружения: [docs/ru/env_variables.md](docs/ru/env_variables.md) · [docs/en/env_variables.md](docs/en/env_variables.md)
 - Английская версия: [docs/en/about.md](docs/en/about.md), [docs/en/architecture.md](docs/en/architecture.md), [docs/en/database.md](docs/en/database.md), [docs/en/api.md](docs/en/api.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md), [docs/en/client.md](docs/en/client.md), [docs/en/api_security.md](docs/en/api_security.md).
 
 ## Примеры интеграции
