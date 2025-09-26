@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Button, Card, CardContent, Stack, Typography } from '@mui/material';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { createProject } from '../api';
+import { createProject, fetchRateLimitSettings } from '../api';
 import { CreateProjectPayload } from '../api/types';
 import { ProjectForm } from '../components/projects/ProjectForm';
 import { LoadingState } from '../components/common/LoadingState';
@@ -41,6 +41,7 @@ export const AddProjectPage = (): JSX.Element => {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const [formError, setFormError] = useState<string | null>(null);
+  const rateLimitQuery = useQuery({ queryKey: ['rate-limit'], queryFn: fetchRateLimitSettings });
   const mutation = useMutation({
     mutationFn: (payload: CreateProjectPayload) => createProject(payload),
     onSuccess: () => {
@@ -70,6 +71,7 @@ export const AddProjectPage = (): JSX.Element => {
             isSubmitting={mutation.isPending}
             onSubmit={handleSubmit}
             error={formError}
+            rateLimitPerMinute={rateLimitQuery.data?.rateLimitPerMinute}
             secondaryActions={[
               <Button key="cancel" variant="text" onClick={() => navigate('/projects')}>
                 {t('addProject.cancel')}

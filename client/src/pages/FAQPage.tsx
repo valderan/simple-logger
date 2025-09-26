@@ -155,6 +155,8 @@ const addProjectKeys = [
   'debugMode'
 ] as const;
 
+const securityKeys = ['overview', 'whitelistUsage', 'blacklistUsage', 'accessLevels', 'maintenance'] as const;
+
 const apiExamples = [
   { titleKey: 'faq.apiExamples.ingestLogPython', code: pythonIngestLogExample },
   { titleKey: 'faq.apiExamples.ingestLogTypeScript', code: typescriptIngestLogExample },
@@ -201,6 +203,23 @@ export const FAQPage = (): JSX.Element => {
               {addProjectKeys.map((key) => (
                 <Typography key={key} variant="body1">
                   {t(`faq.addProjectDetails.${key}`)}
+                </Typography>
+              ))}
+            </Stack>
+          </Stack>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
+          <Stack spacing={2}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {t('faq.security.title')}
+            </Typography>
+            <Stack spacing={1.5}>
+              {securityKeys.map((key) => (
+                <Typography key={key} variant="body1">
+                  {t(`faq.security.${key}`)}
                 </Typography>
               ))}
             </Stack>

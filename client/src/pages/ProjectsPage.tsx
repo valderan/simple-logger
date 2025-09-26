@@ -16,7 +16,7 @@ import {
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
-import { deleteProject, fetchProjects } from '../api';
+import { deleteProject, fetchProjects, fetchRateLimitSettings } from '../api';
 import { Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -43,6 +43,7 @@ export const ProjectsPage = (): JSX.Element => {
     isError,
     refetch
   } = useQuery({ queryKey: ['projects'], queryFn: fetchProjects });
+  const rateLimitQuery = useQuery({ queryKey: ['rate-limit'], queryFn: fetchRateLimitSettings });
 
   const deleteMutation = useMutation({
     mutationFn: (uuid: string) => deleteProject(uuid),
@@ -87,6 +88,16 @@ export const ProjectsPage = (): JSX.Element => {
     }
     document.body.removeChild(textarea);
   }, []);
+
+  const rateLimitPerMinute = rateLimitQuery.data?.rateLimitPerMinute;
+  const accessLevelLabels = useMemo(
+    () => ({
+      global: t('projectForm.accessGlobal'),
+      whitelist: t('projectForm.accessWhitelist'),
+      docker: t('projectForm.accessDocker')
+    }),
+    [t]
+  );
 
   const columns = useMemo<GridColDef<Project>[]>(
     () => [
@@ -135,10 +146,27 @@ export const ProjectsPage = (): JSX.Element => {
       {
         field: 'accessLevel',
         headerName: t('projects.columns.access'),
-        minWidth: isSmDown ? 120 : 140,
-        flex: isMdDown ? 0.8 : 0.5,
-        valueGetter: (value) => value,
-        renderCell: (params) => <Chip label={params.row.accessLevel} size="small" color="info" />
+        minWidth: isSmDown ? 160 : 180,
+        flex: isMdDown ? 0.9 : 0.6,
+        sortable: false,
+        renderCell: (params) => {
+          const access = params.row.accessLevel;
+          const label = accessLevelLabels[access] ?? access;
+          const rateLimitLabel =
+            access === 'global'
+              ? rateLimitPerMinute
+                ? t('projects.rateLimit', { value: rateLimitPerMinute })
+                : t('projects.rateLimitUnknown')
+              : t('projects.rateLimitUnlimited');
+          return (
+            <Stack spacing={0.5}>
+              <Chip label={label} size="small" color="info" />
+              <Typography variant="caption" color="text.secondary">
+                {rateLimitLabel}
+              </Typography>
+            </Stack>
+          );
+        }
       },
       {
         field: 'createdAt',
@@ -217,7 +245,7 @@ export const ProjectsPage = (): JSX.Element => {
         )
       }
     ],
-    [handleCopyUuid, isMdDown, isSmDown, navigate, t]
+    [accessLevelLabels, handleCopyUuid, isMdDown, isSmDown, navigate, rateLimitPerMinute, t]
   );
 
   const columnVisibilityModel = useMemo(

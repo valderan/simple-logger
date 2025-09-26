@@ -141,6 +141,9 @@ export const translations: Record<Locale, TranslationRecord> = {
         createdAt: 'Created',
         actions: 'Actions'
       },
+      rateLimit: 'Rate limit: {{value}} req/min',
+      rateLimitUnlimited: 'Rate limit: unlimited',
+      rateLimitUnknown: 'Rate limit: unknown',
       deleteDialogTitle: 'Delete project',
       deleteDialogDescription:
         'This action will delete the project "{{name}}" and all related logs. To confirm, enter the full project name.',
@@ -181,7 +184,10 @@ export const translations: Record<Locale, TranslationRecord> = {
       telegramTagsHelper: 'Example: PING_DOWN,CRITICAL',
       telegramTagsLabel: 'Telegram tags (comma separated)',
       recipientsCount: 'Recipients ({{count}})',
-      antiSpamHint: 'Anti-spam interval: {{interval}} min.'
+      antiSpamHint: 'Anti-spam interval: {{interval}} min.',
+      rateLimitGlobal: 'Rate limit: {{value}} requests/min (configured under Security settings).',
+      rateLimitGlobalUnknown: 'Rate limit follows the global security setting (default 120 requests/min).',
+      rateLimitBypass: 'Whitelist and Docker-only projects bypass the global rate limit.'
     },
     addProject: {
       title: 'Create project',
@@ -327,19 +333,20 @@ export const translations: Record<Locale, TranslationRecord> = {
         'Block suspicious addresses permanently or for a limited time. Entries are applied instantly to all API routes.',
       ipLabel: 'IP address',
       descriptionLabel: 'Description',
-      add: 'Add',
+      add: '+',
       saving: 'Saving...',
       deleting: 'Deleting...',
       whitelistEmpty: 'Whitelist is empty',
       remove: 'Delete',
       actions: 'Actions',
       addedAt: 'Added',
+      invalidIp: 'Enter a valid IP address (IPv4 or IPv6).',
       blacklistReasonLabel: 'Reason',
       blacklistExpiresAtLabel: 'Blocked until',
       blacklistExpiresAtColumn: 'Blocked until',
       blacklistUpdatedAt: 'Updated',
       blacklistExpiresHelper: 'Leave empty for a permanent block.',
-      blacklistAddButton: 'Add block',
+      blacklistAddButton: '+',
       blacklistEmpty: 'Blacklist is empty',
       blacklistPermanent: 'Permanent',
       blacklistEditDialogTitle: 'Edit blacklist entry',
@@ -415,6 +422,19 @@ export const translations: Record<Locale, TranslationRecord> = {
           'Recipients — list of Telegram chat IDs with optional tag filters to receive only relevant alerts.',
         debugMode:
           'Debug mode — disables Telegram notifications for the project but keeps log ingestion active.'
+      },
+      security: {
+        title: 'Whitelist, blacklist & rate limits',
+        overview:
+          'Use the Security settings page to maintain trusted and blocked IP addresses. Changes apply instantly to API requests.',
+        whitelistUsage:
+          'Whitelist — enter an IPv4 or IPv6 address with an optional description and press "+" to allow it. Remove entries to revoke access.',
+        blacklistUsage:
+          'Blacklist — provide an IP, reason and optional expiry. Leave “Blocked until” empty for a permanent block or set a date to automatically unblock.',
+        accessLevels:
+          'Access levels: Global projects obey the configured rate limit, Whitelist and Docker-only projects bypass throttling. Adjust the limit under Security settings.',
+        maintenance:
+          'Review both lists regularly and document the reason for each record to keep integrations transparent and secure.'
       },
       apiExamples: {
         title: 'API usage examples',
@@ -574,6 +594,9 @@ export const translations: Record<Locale, TranslationRecord> = {
         createdAt: 'Создан',
         actions: 'Действия'
       },
+      rateLimit: 'Rate limit: {{value}} запросов/мин',
+      rateLimitUnlimited: 'Rate limit: без ограничений',
+      rateLimitUnknown: 'Rate limit: неизвестно',
       deleteDialogTitle: 'Удалить проект',
       deleteDialogDescription:
         'Это действие удалит проект "{{name}}" и все связанные логи. Для подтверждения введите полное название проекта.',
@@ -614,7 +637,10 @@ export const translations: Record<Locale, TranslationRecord> = {
       telegramTagsHelper: 'Например: PING_DOWN,CRITICAL',
       telegramTagsLabel: 'Telegram теги (через запятую)',
       recipientsCount: 'Получатели ({{count}})',
-      antiSpamHint: 'Анти-спам интервал: {{interval}} мин.'
+      antiSpamHint: 'Анти-спам интервал: {{interval}} мин.',
+      rateLimitGlobal: 'Rate limit: {{value}} запросов/мин (управляется в разделе "Настройки безопасности").',
+      rateLimitGlobalUnknown: 'Rate limit определяется глобальной настройкой безопасности (по умолчанию 120 запросов/мин).',
+      rateLimitBypass: 'Проекты с доступом "Белый список" и "Только Docker" не попадают под глобальный rate limit.'
     },
     addProject: {
       title: 'Добавление проекта',
@@ -763,19 +789,20 @@ export const translations: Record<Locale, TranslationRecord> = {
         'Блокируйте подозрительные адреса навсегда или на ограниченное время. Правила применяются мгновенно ко всем маршрутам API.',
       ipLabel: 'IP адрес',
       descriptionLabel: 'Описание',
-      add: 'Добавить',
+      add: '+',
       saving: 'Сохранение...',
       deleting: 'Удаление...',
       whitelistEmpty: 'Белый список пуст',
       remove: 'Удалить',
       actions: 'Действия',
       addedAt: 'Добавлен',
+      invalidIp: 'Введите корректный IP-адрес (IPv4 или IPv6).',
       blacklistReasonLabel: 'Причина',
       blacklistExpiresAtLabel: 'Блокировка до',
       blacklistExpiresAtColumn: 'Блокировка до',
       blacklistUpdatedAt: 'Обновлено',
       blacklistExpiresHelper: 'Оставьте пустым для бессрочной блокировки.',
-      blacklistAddButton: 'Добавить блокировку',
+      blacklistAddButton: '+',
       blacklistEmpty: 'Чёрный список пуст',
       blacklistPermanent: 'Бессрочно',
       blacklistEditDialogTitle: 'Редактирование блокировки',
@@ -851,6 +878,19 @@ export const translations: Record<Locale, TranslationRecord> = {
           'Получатели — список Telegram chat ID с необязательными фильтрами по тегам, чтобы получать только нужные уведомления.',
         debugMode:
           'Режим отладки — отключает Telegram-уведомления, но позволяет продолжать сбор логов.'
+      },
+      security: {
+        title: 'Белый/чёрный списки и rate limit',
+        overview:
+          'Раздел «Настройки безопасности» позволяет вести белый и чёрный списки. Изменения применяются ко всем запросам API мгновенно.',
+        whitelistUsage:
+          'Белый список — укажите IPv4/IPv6 и при необходимости комментарий, нажмите «+», чтобы выдать доступ. Удаление записи сразу запрещает IP.',
+        blacklistUsage:
+          'Чёрный список — задайте IP, причину и при желании дату окончания. Пустое поле «Блокировка до» делает блокировку бессрочной.',
+        accessLevels:
+          'Уровни доступа: проекты в режиме «Глобальный» ограничены текущим rate limit, режимы «Белый список» и «Только Docker» обходят ограничение. Лимит настраивается в разделе безопасности.',
+        maintenance:
+          'Регулярно пересматривайте оба списка и фиксируйте причины блокировок, чтобы сохранять прозрачность и безопасность интеграций.'
       },
       apiExamples: {
         title: 'Примеры работы с API',

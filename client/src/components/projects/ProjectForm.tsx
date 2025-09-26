@@ -27,6 +27,7 @@ export interface ProjectFormProps {
   onSubmit: (values: CreateProjectPayload) => void;
   error?: string | null;
   secondaryActions?: ReactNode[];
+  rateLimitPerMinute?: number;
 }
 
 const cloneInitialValues = (values: CreateProjectPayload): CreateProjectPayload => ({
@@ -48,13 +49,23 @@ export const ProjectForm = ({
   isSubmitting,
   onSubmit,
   error,
-  secondaryActions = []
+  secondaryActions = [],
+  rateLimitPerMinute
 }: ProjectFormProps): JSX.Element => {
   const [formState, setFormState] = useState<CreateProjectPayload>(() => cloneInitialValues(initialValues));
   const [customTagInput, setCustomTagInput] = useState('');
   const [recipientInput, setRecipientInput] = useState({ chatId: '', tags: '' });
   const [validationError, setValidationError] = useState<string | null>(null);
   const { t } = useTranslation();
+
+  const accessLevelRateLimitMessage = useMemo(() => {
+    if (formState.accessLevel === 'global') {
+      return typeof rateLimitPerMinute === 'number'
+        ? t('projectForm.rateLimitGlobal', { value: rateLimitPerMinute })
+        : t('projectForm.rateLimitGlobalUnknown');
+    }
+    return t('projectForm.rateLimitBypass');
+  }, [formState.accessLevel, rateLimitPerMinute, t]);
 
   useEffect(() => {
     setFormState(cloneInitialValues(initialValues));
@@ -178,6 +189,9 @@ export const ProjectForm = ({
               label={t('projectForm.debugMode')}
             />
           </Stack>
+          <Typography variant="body2" color="text.secondary">
+            {accessLevelRateLimitMessage}
+          </Typography>
           <Stack spacing={1}>
             <Typography variant="subtitle1">{t('projectForm.customTags')}</Typography>
             <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
