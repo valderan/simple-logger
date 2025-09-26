@@ -1,13 +1,10 @@
 import { NextFunction, Request, Response } from 'express';
 import { WhitelistModel } from '../models/Whitelist';
+import { isLoopback, normalizeIp } from '../utils/ipUtils';
 
 let cachedIps = new Set<string>();
 let lastLoaded = 0;
 const CACHE_TTL_MS = 60 * 1000;
-
-function normalizeIp(ip: string): string {
-  return ip.replace('::ffff:', '');
-}
 
 async function refreshCache(): Promise<void> {
   const now = Date.now();
@@ -24,15 +21,20 @@ async function refreshCache(): Promise<void> {
  */
 export async function ipWhitelist(req: Request, res: Response, next: NextFunction): Promise<void> {
   await refreshCache();
-  const ip = normalizeIp(req.ip ?? '');
+  const ip = normalizeIp(req.ip);
   if (cachedIps.size === 0) {
     return next();
   }
-  if (ip === '127.0.0.1' || ip === '::1') {
+  if (isLoopback(ip)) {
     return next();
   }
   if (cachedIps.has(ip)) {
     return next();
   }
   res.status(403).json({ message: 'IP не входит в белый список' });
+}
+
+export function invalidateWhitelistCache(): void {
+  cachedIps = new Set();
+  lastLoaded = 0;
 }

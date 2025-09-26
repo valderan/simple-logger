@@ -5,7 +5,7 @@
 ## 1. Общие сведения
 
 - Аутентификация: заголовок `Authorization: Bearer <token>` (кроме публичного приёма логов и `/health`).
-- Лимиты: rate limiting и IP whitelist подключены глобально (значение лимита по умолчанию 120 запросов/минуту и изменяется через `/api/settings/rate-limit`).
+- Лимиты: rate limiting и IP whitelist подключены глобально (значение лимита по умолчанию 120 запросов/минуту и изменяется через `/api/settings/rate-limit`). Проекты с уровнями доступа `whitelist` и `docker` не подпадают под ограничение, а IP из чёрного списка блокируются до удаления записи.
 - Формат даты: ISO 8601 (UTC).
 - Swagger: `api/swaggerapi/openapi.yaml` или Swagger UI из `docker-compose.dev.yml`.
 
@@ -182,11 +182,11 @@ Content-Type: application/json
 
 ## 6. Настройки `/settings`
 
-### 6.1 GET `/`
-Получить белый список IP.
+### 6.1 GET `/whitelist`
+Возвращает массив IP-адресов, которым разрешён доступ к административным эндпоинтам.
 
-### 6.2 POST `/`
-Добавить IP-адрес.
+### 6.2 POST `/whitelist`
+Создаёт или обновляет запись белого списка.
 
 ```http
 POST /api/settings/whitelist
@@ -199,10 +199,36 @@ Content-Type: application/json
 }
 ```
 
-### 6.3 DELETE `/:ip`
-Удалить IP-адрес из белого списка.
+### 6.3 DELETE `/whitelist/:ip`
+Удаляет IP-адрес из белого списка.
 
-### 6.4 GET `/rate-limit`
+### 6.4 GET `/blacklist`
+Возвращает действующие и запланированные блокировки IP.
+
+**Ответ `200 OK`**
+```json
+[
+  {
+    "_id": "6650f669d4b5c00017da5678",
+    "ip": "203.0.113.10",
+    "reason": "Подозрительная активность",
+    "expiresAt": "2024-09-01T12:00:00.000Z",
+    "createdAt": "2024-08-01T08:15:00.000Z",
+    "updatedAt": "2024-08-15T08:15:00.000Z"
+  }
+]
+```
+
+### 6.5 POST `/blacklist`
+Создаёт новую блокировку IP. Обязательна причина, `expiresAt` можно передать `null` для бессрочного бана.
+
+### 6.6 PUT `/blacklist/:id`
+Обновляет существующую блокировку: можно изменить IP, причину или дату окончания.
+
+### 6.7 DELETE `/blacklist/:id`
+Удаляет блокировку и моментально снимает запрет для IP.
+
+### 6.8 GET `/rate-limit`
 Возвращает текущее значение лимита запросов в минуту (по умолчанию 120).
 
 **Ответ `200 OK`**
@@ -212,8 +238,8 @@ Content-Type: application/json
 }
 ```
 
-### 6.5 PUT `/rate-limit`
-Изменяет лимит запросов в минуту для всего API.
+### 6.9 PUT `/rate-limit`
+Изменяет лимит запросов в минуту для всего API. Проекты с доступом `whitelist` и `docker` не подпадают под ограничение.
 
 ```http
 PUT /api/settings/rate-limit
@@ -227,7 +253,7 @@ Content-Type: application/json
 
 Успешный ответ повторяет новое значение лимита.
 
-### 6.6 GET `/telegram-status`
+### 6.10 GET `/telegram-status`
 Проверяет, настроен ли Telegram-бот и запущен ли polling.
 
 ```http
@@ -244,7 +270,7 @@ Authorization: Bearer <token>
 }
 ```
 
-### 6.7 GET `/telegram-url`
+### 6.11 GET `/telegram-url`
 Возвращает публичную ссылку на Telegram-бота и источник данных.
 
 ```http

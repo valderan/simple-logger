@@ -142,3 +142,24 @@ export interface WhitelistPayload {
   ip: string;
   description?: string;
 }
+
+export interface BlacklistPayload {
+  ip: string;
+  reason: string;
+  expiresAt?: string | null;
+}
+
+export interface BlacklistUpdatePayload {
+  ip?: string;
+  reason?: string;
+  expiresAt?: string | null;
+}
+
+export interface BlacklistEntry {
+  _id: string;
+  ip: string;
+  reason: string;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

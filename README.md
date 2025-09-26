@@ -11,6 +11,16 @@
 
 ## Документация Simple Logger
 
+> ℹ️ **Быстрый путеводитель по документации**
+> 
+> • 🇷🇺 Основные материалы: [docs/ru/api.md](docs/ru/api.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md)
+> 
+> • 🇬🇧 English guides: [docs/en/api.md](docs/en/api.md), [docs/en/api_security.md](docs/en/api_security.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md)
+> 
+> • 📘 OpenAPI спецификация: [api/swaggerapi/openapi.yaml](api/swaggerapi/openapi.yaml) · [api/swaggerapi/openapi_en.yaml](api/swaggerapi/openapi_en.yaml)
+> 
+> • 📦 TypeScript SDK: [docs/ts-library-doc/Logger-ru.md](docs/ts-library-doc/Logger-ru.md), [docs/ts-library-doc/Logger-en.md](docs/ts-library-doc/Logger-en.md)
+
 Сервис собирает структурированные логи, отслеживает доступность сервисов и рассылает уведомления в Telegram. В репозитории есть подробные материалы по архитектуре, API, безопасности и клиентским инструментам:
 
 - Обзор и архитектура: [docs/ru/about.md](docs/ru/about.md) · [docs/en/about.md](docs/en/about.md), [docs/ru/architecture.md](docs/ru/architecture.md) · [docs/en/architecture.md](docs/en/architecture.md)

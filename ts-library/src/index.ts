@@ -22,7 +22,11 @@ export type {
   DeleteLogsResponse,
   DeleteProjectResponse,
   DeletePingServiceResponse,
+  DeleteBlacklistResponse,
   DeleteWhitelistResponse,
+  BlacklistEntry,
+  BlacklistPayload,
+  BlacklistUpdatePayload,
   WhitelistEntry,
   WhitelistPayload,
   RateLimitSettings

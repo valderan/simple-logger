@@ -14,20 +14,25 @@ import {
   TextField,
   Typography,
   useMediaQuery,
-  useTheme
+  useTheme,
+  type AlertColor
 } from '@mui/material';
 import { DataGrid, GridColDef } from '@mui/x-data-grid';
 import {
   addWhitelistEntry,
+  createBlacklistEntry,
+  deleteBlacklistEntry,
   fetchProjects,
   fetchRateLimitSettings,
+  fetchBlacklist,
   fetchWhitelist,
   filterLogs,
   logSystemEvent,
+  updateBlacklistEntry,
   removeWhitelistEntry,
   updateRateLimitSettings
 } from '../api';
-import { WhitelistEntry } from '../api/types';
+import { BlacklistEntry, WhitelistEntry } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
 import { formatDateTime } from '../utils/formatters';
@@ -44,9 +49,17 @@ export const SettingsPage = (): JSX.Element => {
     severity: 'success' | 'error' | 'info' | 'warning';
     message: string;
   } | null>(null);
+  const [blacklistForm, setBlacklistForm] = useState({ ip: '', reason: '', expiresAt: '' });
+  const [blacklistFeedback, setBlacklistFeedback] = useState<{ severity: AlertColor; message: string } | null>(null);
+  const [editBlacklistDialogOpen, setEditBlacklistDialogOpen] = useState(false);
+  const [editingBlacklist, setEditingBlacklist] = useState<BlacklistEntry | null>(null);
+  const [editBlacklistForm, setEditBlacklistForm] = useState({ ip: '', reason: '', expiresAt: '' });
+  const [deletingBlacklistId, setDeletingBlacklistId] = useState<string | null>(null);
   const whitelistQuery = useQuery({ queryKey: ['whitelist'], queryFn: fetchWhitelist });
+  const blacklistQuery = useQuery({ queryKey: ['blacklist'], queryFn: fetchBlacklist });
   const projectsQuery = useQuery({ queryKey: ['projects'], queryFn: fetchProjects });
   const rateLimitQuery = useQuery({ queryKey: ['rate-limit'], queryFn: fetchRateLimitSettings });
+  const { t } = useTranslation();
   const systemLogsQuery = useQuery({
     queryKey: ['logs', 'system'],
     queryFn: () => filterLogs({ uuid: 'logger-system' }),
@@ -58,6 +71,23 @@ export const SettingsPage = (): JSX.Element => {
       setRateLimitInput(String(rateLimitQuery.data.rateLimitPerMinute));
     }
   }, [rateLimitQuery.data]);
+
+  const toIsoString = (value: string): string | null => {
+    if (!value) {
+      return null;
+    }
+    return new Date(value).toISOString();
+  };
+
+  const toInputValue = (iso: string | null): string => {
+    if (!iso) {
+      return '';
+    }
+    const date = new Date(iso);
+    const offset = date.getTimezoneOffset();
+    const local = new Date(date.getTime() - offset * 60_000);
+    return local.toISOString().slice(0, 16);
+  };
 
   const addMutation = useMutation({
     mutationFn: () => addWhitelistEntry(ipInput),
@@ -100,7 +130,51 @@ export const SettingsPage = (): JSX.Element => {
     }
   });
 
-  const { t } = useTranslation();
+  const createBlacklistMutation = useMutation({
+    mutationFn: (payload: { ip: string; reason: string; expiresAt: string | null }) =>
+      createBlacklistEntry(payload),
+    onSuccess: () => {
+      setBlacklistFeedback({ severity: 'success', message: t('settings.blacklistCreateSuccess') });
+      setBlacklistForm({ ip: '', reason: '', expiresAt: '' });
+      queryClient.invalidateQueries({ queryKey: ['blacklist'] });
+    },
+    onError: () => {
+      setBlacklistFeedback({ severity: 'error', message: t('settings.blacklistOperationError') });
+    }
+  });
+
+  const updateBlacklistMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: { ip: string; reason: string; expiresAt: string | null } }) =>
+      updateBlacklistEntry(id, payload),
+    onSuccess: () => {
+      setBlacklistFeedback({ severity: 'success', message: t('settings.blacklistUpdateSuccess') });
+      setEditBlacklistDialogOpen(false);
+      setEditingBlacklist(null);
+      setEditBlacklistForm({ ip: '', reason: '', expiresAt: '' });
+      queryClient.invalidateQueries({ queryKey: ['blacklist'] });
+    },
+    onError: () => {
+      setBlacklistFeedback({ severity: 'error', message: t('settings.blacklistOperationError') });
+    }
+  });
+
+  const deleteBlacklistMutation = useMutation({
+    mutationFn: (id: string) => deleteBlacklistEntry(id),
+    onMutate: (id) => {
+      setDeletingBlacklistId(id);
+    },
+    onSuccess: () => {
+      setBlacklistFeedback({ severity: 'success', message: t('settings.blacklistDeleteSuccess') });
+      queryClient.invalidateQueries({ queryKey: ['blacklist'] });
+    },
+    onError: () => {
+      setBlacklistFeedback({ severity: 'error', message: t('settings.blacklistOperationError') });
+    },
+    onSettled: () => {
+      setDeletingBlacklistId(null);
+    }
+  });
+
   const theme = useTheme();
   const isSmDown = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -146,16 +220,129 @@ export const SettingsPage = (): JSX.Element => {
     [isSmDown]
   );
 
-  if (whitelistQuery.isLoading || projectsQuery.isLoading || rateLimitQuery.isLoading) {
+  const handleCreateBlacklist = () => {
+    const ip = blacklistForm.ip.trim();
+    const reason = blacklistForm.reason.trim();
+    if (!ip || !reason) {
+      return;
+    }
+    const expiresAt = toIsoString(blacklistForm.expiresAt);
+    createBlacklistMutation.mutate({ ip, reason, expiresAt });
+  };
+
+  const openEditBlacklistDialog = (entry: BlacklistEntry) => {
+    setEditingBlacklist(entry);
+    setEditBlacklistForm({
+      ip: entry.ip,
+      reason: entry.reason,
+      expiresAt: toInputValue(entry.expiresAt)
+    });
+    setEditBlacklistDialogOpen(true);
+  };
+
+  const handleDeleteBlacklist = (id: string) => {
+    deleteBlacklistMutation.mutate(id);
+  };
+
+  const blacklistColumns = useMemo<GridColDef<BlacklistEntry>[]>(
+    () => [
+      { field: 'ip', headerName: t('settings.ipLabel'), flex: 1 },
+      {
+        field: 'reason',
+        headerName: t('settings.blacklistReasonLabel'),
+        flex: 1.5,
+        renderCell: (params) => params.row.reason
+      },
+      {
+        field: 'expiresAt',
+        headerName: t('settings.blacklistExpiresAtColumn'),
+        minWidth: 190,
+        renderCell: (params) =>
+          params.row.expiresAt ? formatDateTime(params.row.expiresAt) : t('settings.blacklistPermanent')
+      },
+      {
+        field: 'updatedAt',
+        headerName: t('settings.blacklistUpdatedAt'),
+        minWidth: 180,
+        renderCell: (params) => formatDateTime(params.row.updatedAt)
+      },
+      {
+        field: 'actions',
+        headerName: t('settings.actions'),
+        minWidth: isSmDown ? 180 : 220,
+        sortable: false,
+        renderCell: (params) => {
+          const deleting = deletingBlacklistId === params.row._id && deleteBlacklistMutation.isPending;
+          return (
+            <Stack direction={isSmDown ? 'column' : 'row'} spacing={1} width="100%">
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={() => {
+                  openEditBlacklistDialog(params.row);
+                }}
+                fullWidth={isSmDown}
+              >
+                {t('common.edit')}
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                onClick={() => handleDeleteBlacklist(params.row._id)}
+                disabled={deleting}
+                fullWidth={isSmDown}
+              >
+                {deleting ? t('settings.deleting') : t('settings.remove')}
+              </Button>
+            </Stack>
+          );
+        }
+      }
+    ],
+    [deleteBlacklistMutation.isPending, deletingBlacklistId, handleDeleteBlacklist, isSmDown, openEditBlacklistDialog, t]
+  );
+
+  const blacklistColumnVisibilityModel = useMemo(
+    () => ({
+      updatedAt: !isSmDown
+    }),
+    [isSmDown]
+  );
+
+  const closeEditBlacklistDialog = () => {
+    if (updateBlacklistMutation.isPending) {
+      return;
+    }
+    setEditBlacklistDialogOpen(false);
+    setEditingBlacklist(null);
+    setEditBlacklistForm({ ip: '', reason: '', expiresAt: '' });
+  };
+
+  const handleUpdateBlacklist = () => {
+    if (!editingBlacklist) {
+      return;
+    }
+    const ip = editBlacklistForm.ip.trim();
+    const reason = editBlacklistForm.reason.trim();
+    if (!ip || !reason) {
+      return;
+    }
+    const expiresAt = toIsoString(editBlacklistForm.expiresAt);
+    updateBlacklistMutation.mutate({ id: editingBlacklist._id, payload: { ip, reason, expiresAt } });
+  };
+
+  if (whitelistQuery.isLoading || blacklistQuery.isLoading || projectsQuery.isLoading || rateLimitQuery.isLoading) {
     return <LoadingState />;
   }
 
-  if (whitelistQuery.isError || projectsQuery.isError || rateLimitQuery.isError) {
+  if (whitelistQuery.isError || blacklistQuery.isError || projectsQuery.isError || rateLimitQuery.isError) {
     return (
       <ErrorState
         message={t('settings.loadError')}
         onRetry={() => {
           whitelistQuery.refetch();
+          blacklistQuery.refetch();
           projectsQuery.refetch();
           rateLimitQuery.refetch();
         }}
@@ -166,6 +353,9 @@ export const SettingsPage = (): JSX.Element => {
   const currentRateLimit = rateLimitQuery.data?.rateLimitPerMinute ?? 120;
   const parsedRateLimit = Number(rateLimitInput);
   const rateLimitInvalid = !rateLimitInput || Number.isNaN(parsedRateLimit) || parsedRateLimit <= 0;
+  const blacklistCreateDisabled =
+    !blacklistForm.ip.trim() || !blacklistForm.reason.trim() || createBlacklistMutation.isPending;
+  const blacklistEditInvalid = !editBlacklistForm.ip.trim() || !editBlacklistForm.reason.trim();
 
   const openRateLimitDialog = (action: 'update' | 'reset', value: number) => {
     if (Number.isNaN(value) || value <= 0) {
@@ -225,6 +415,96 @@ export const SettingsPage = (): JSX.Element => {
               </Button>
             </Stack>
             <Alert severity="warning">{t('settings.rateLimitWarning')}</Alert>
+          </Stack>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent>
+          <Stack spacing={3}>
+            <Stack spacing={1}>
+              <Typography variant="h6">{t('settings.blacklistTitle')}</Typography>
+              <Typography variant="body2" color="text.secondary">
+                {t('settings.blacklistDescription')}
+              </Typography>
+            </Stack>
+            {blacklistFeedback && (
+              <Alert severity={blacklistFeedback.severity} onClose={() => setBlacklistFeedback(null)}>
+                {blacklistFeedback.message}
+              </Alert>
+            )}
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+              <TextField
+                label={t('settings.ipLabel')}
+                value={blacklistForm.ip}
+                onChange={(event) => setBlacklistForm((prev) => ({ ...prev, ip: event.target.value }))}
+                fullWidth
+              />
+              <TextField
+                label={t('settings.blacklistReasonLabel')}
+                value={blacklistForm.reason}
+                onChange={(event) => setBlacklistForm((prev) => ({ ...prev, reason: event.target.value }))}
+                fullWidth
+              />
+              <TextField
+                label={t('settings.blacklistExpiresAtLabel')}
+                type="datetime-local"
+                value={blacklistForm.expiresAt}
+                onChange={(event) => setBlacklistForm((prev) => ({ ...prev, expiresAt: event.target.value }))}
+                helperText={t('settings.blacklistExpiresHelper')}
+                InputLabelProps={{ shrink: true }}
+                fullWidth
+              />
+              <Button
+                variant="contained"
+                onClick={handleCreateBlacklist}
+                disabled={blacklistCreateDisabled}
+                fullWidth={isSmDown}
+              >
+                {createBlacklistMutation.isPending ? t('settings.saving') : t('settings.blacklistAddButton')}
+              </Button>
+            </Stack>
+            <Box
+              sx={{
+                width: '100%',
+                height: isSmDown ? 'auto' : 360,
+                overflowX: 'auto'
+              }}
+            >
+              <DataGrid
+                rows={blacklistQuery.data ?? []}
+                columns={blacklistColumns}
+                getRowId={(row) => row._id}
+                columnVisibilityModel={blacklistColumnVisibilityModel}
+                autoHeight={isSmDown}
+                pageSizeOptions={[5, 10, 25]}
+                initialState={{ pagination: { paginationModel: { pageSize: 10, page: 0 } } }}
+                disableRowSelectionOnClick
+                localeText={{ noRowsLabel: t('settings.blacklistEmpty') }}
+                sx={{
+                  minWidth: isSmDown ? 560 : undefined,
+                  '& .MuiDataGrid-cell': {
+                    alignItems: 'center',
+                    py: 1.25,
+                    fontSize: { xs: '0.875rem', sm: '0.95rem' }
+                  },
+                  '& .MuiDataGrid-cellContent': {
+                    whiteSpace: 'normal',
+                    width: '100%'
+                  },
+                  '& .MuiDataGrid-columnHeaderTitle': {
+                    whiteSpace: 'normal',
+                    lineHeight: 1.2,
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  },
+                  '& .MuiDataGrid-footerContainer': {
+                    flexWrap: 'wrap',
+                    gap: 1,
+                    justifyContent: { xs: 'center', sm: 'space-between' }
+                  }
+                }}
+                density={isSmDown ? 'comfortable' : 'standard'}
+              />
+            </Box>
           </Stack>
         </CardContent>
       </Card>
@@ -344,6 +624,46 @@ export const SettingsPage = (): JSX.Element => {
             disabled={updateRateLimitMutation.isPending || pendingRateLimit === null}
           >
             {updateRateLimitMutation.isPending ? t('settings.saving') : t('settings.confirmRateLimit')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={editBlacklistDialogOpen} onClose={closeEditBlacklistDialog} maxWidth="sm" fullWidth>
+        <DialogTitle>{t('settings.blacklistEditDialogTitle')}</DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              label={t('settings.ipLabel')}
+              value={editBlacklistForm.ip}
+              onChange={(event) => setEditBlacklistForm((prev) => ({ ...prev, ip: event.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label={t('settings.blacklistReasonLabel')}
+              value={editBlacklistForm.reason}
+              onChange={(event) => setEditBlacklistForm((prev) => ({ ...prev, reason: event.target.value }))}
+              fullWidth
+            />
+            <TextField
+              label={t('settings.blacklistExpiresAtLabel')}
+              type="datetime-local"
+              value={editBlacklistForm.expiresAt}
+              onChange={(event) => setEditBlacklistForm((prev) => ({ ...prev, expiresAt: event.target.value }))}
+              helperText={t('settings.blacklistExpiresHelper')}
+              InputLabelProps={{ shrink: true }}
+              fullWidth
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeEditBlacklistDialog} disabled={updateBlacklistMutation.isPending}>
+            {t('common.cancel')}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleUpdateBlacklist}
+            disabled={updateBlacklistMutation.isPending || blacklistEditInvalid}
+          >
+            {updateBlacklistMutation.isPending ? t('settings.saving') : t('settings.blacklistSaveChanges')}
           </Button>
         </DialogActions>
       </Dialog>

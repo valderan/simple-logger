@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import apiRouter from './api/routes';
 import { rateLimiter } from './api/middlewares/rateLimiter';
 import { ipWhitelist } from './api/middlewares/ipWhitelist';
+import { blacklistGuard } from './api/middlewares/blacklistGuard';
 import { errorHandler } from './api/middlewares/errorHandler';
 import { connectMongo } from './api/utils/mongo';
 import { ProjectModel } from './api/models/Project';
@@ -18,6 +19,7 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '1mb' }));
 app.use(morgan('combined'));
+app.use(blacklistGuard);
 app.use(rateLimiter);
 app.use(ipWhitelist);
 
