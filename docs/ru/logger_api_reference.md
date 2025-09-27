@@ -103,8 +103,8 @@ Content-Type: application/json
     { "chatId": "123456789", "tags": ["CRITICAL"] }
   ],
   "links": {
-    "subscribe": "https://t.me/loggerbot?start=ADD:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
-    "unsubscribe": "https://t.me/loggerbot?start=DELETE:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
+    "subscribe": "https://t.me/loggerbot?start=ADD_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+    "unsubscribe": "https://t.me/loggerbot?start=DELETE_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
   },
   "bot": {
     "url": "https://t.me/loggerbot",
@@ -128,8 +128,8 @@ Content-Type: application/json
     "uuid": "0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
     "name": "Orders Service",
     "telegramLinks": {
-      "subscribe": "https://t.me/loggerbot?start=ADD:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
-      "unsubscribe": "https://t.me/loggerbot?start=DELETE:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
+      "subscribe": "https://t.me/loggerbot?start=ADD_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+      "unsubscribe": "https://t.me/loggerbot?start=DELETE_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
     },
     "telegramBot": {
       "url": "https://t.me/loggerbot",

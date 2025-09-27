@@ -78,7 +78,7 @@ Content-Type: application/json
 
 The `201 Created` response contains the project with its generated `uuid`.
 
-Every project response also includes a `telegramLinks` block with ready-to-use URLs like `https://t.me/<bot>?start=ADD:<UUID>` and `https://t.me/<bot>?start=DELETE:<UUID>`, as well as the `telegramBot` object with current bot URL information. When the bot is inactive the links are `null`.
+Every project response also includes a `telegramLinks` block with ready-to-use URLs like `https://t.me/<bot>?start=ADD_<UUID>` and `https://t.me/<bot>?start=DELETE_<UUID>`, as well as the `telegramBot` object with current bot URL information. When the bot is inactive the links are `null`.
 
 Deleting a project returns the number of removed records:
 
