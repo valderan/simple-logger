@@ -1,10 +1,39 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import { ProjectModel } from '../models/Project';
+import { ProjectDocument, ProjectModel, TelegramRecipient } from '../models/Project';
 import { LogModel } from '../models/Log';
 import { buildLogFilter } from '../utils/logFilters';
 import { PingServiceModel } from '../models/PingService';
 import { defaultPingMonitor } from '../../ping/monitor';
+import { defaultNotifier } from '../../telegram/notifier';
+
+type BotUrlInfo = Awaited<ReturnType<typeof defaultNotifier.getBotUrlInfo>>;
+
+const extractChatIds = (recipients: TelegramRecipient[]): Set<string> =>
+  new Set(recipients.map((recipient) => recipient.chatId));
+
+async function buildProjectResponse(project: ProjectDocument, botInfo?: BotUrlInfo) {
+  const json = project.toJSON();
+  const info = botInfo ?? (await defaultNotifier.getBotUrlInfo());
+  let links: { subscribe: string | null; unsubscribe: string | null } = {
+    subscribe: null,
+    unsubscribe: null
+  };
+
+  if (json.telegramNotify?.enabled) {
+    const [subscribe, unsubscribe] = await Promise.all([
+      defaultNotifier.buildDeepLink('ADD', json.uuid, info),
+      defaultNotifier.buildDeepLink('DELETE', json.uuid, info)
+    ]);
+    links = { subscribe, unsubscribe };
+  }
+
+  return {
+    ...json,
+    telegramLinks: links,
+    telegramBot: info
+  };
+}
 
 const projectSchema = z.object({
   name: z.string().min(3),
@@ -42,7 +71,14 @@ export async function createProject(req: Request, res: Response): Promise<Respon
   }
   const data = parsed.data;
   const project = await ProjectModel.create(data);
-  return res.status(201).json(project.toJSON());
+  if (project.telegramNotify.enabled) {
+    await defaultNotifier.logAction('telegram_notifications_enabled', {
+      projectUuid: project.uuid,
+      recipients: project.telegramNotify.recipients.length
+    });
+  }
+  const response = await buildProjectResponse(project);
+  return res.status(201).json(response);
 }
 
 /**
@@ -50,7 +86,9 @@ export async function createProject(req: Request, res: Response): Promise<Respon
  */
 export async function listProjects(_req: Request, res: Response): Promise<Response> {
   const projects = await ProjectModel.find().sort({ createdAt: -1 });
-  return res.json(projects);
+  const botInfo = await defaultNotifier.getBotUrlInfo();
+  const result = await Promise.all(projects.map((project) => buildProjectResponse(project, botInfo)));
+  return res.json(result);
 }
 
 /**
@@ -62,7 +100,8 @@ export async function getProject(req: Request, res: Response): Promise<Response>
   if (!project) {
     return res.status(404).json({ message: 'Проект не найден' });
   }
-  return res.json(project);
+  const response = await buildProjectResponse(project);
+  return res.json(response);
 }
 
 /**
@@ -76,7 +115,8 @@ export async function getProjectLogs(req: Request, res: Response): Promise<Respo
   }
   const filter = buildLogFilter(uuid, req.query as Record<string, string>);
   const logs = await LogModel.find(filter).sort({ timestamp: -1 }).limit(5000);
-  return res.json({ project, logs });
+  const responseProject = await buildProjectResponse(project);
+  return res.json({ project: responseProject, logs });
 }
 
 /**
@@ -94,12 +134,68 @@ export async function updateProject(req: Request, res: Response): Promise<Respon
     return res.status(400).json({ message: 'Неверный формат данных', details: parsed.error.flatten() });
   }
 
-  const updated = await ProjectModel.findOneAndUpdate({ uuid }, parsed.data, { new: true });
-  if (!updated) {
+  const project = await ProjectModel.findOne({ uuid });
+  if (!project) {
     return res.status(404).json({ message: 'Проект не найден' });
   }
 
-  return res.json(updated.toJSON());
+  const previousEnabled = project.telegramNotify.enabled;
+  const previousChatIds = extractChatIds(project.telegramNotify.recipients);
+
+  project.set(parsed.data);
+
+  if (!project.telegramNotify.enabled) {
+    project.telegramNotify.recipients = [];
+  }
+
+  const newChatIds = extractChatIds(project.telegramNotify.recipients);
+  const removedChatIds: string[] = [];
+  previousChatIds.forEach((chatId) => {
+    if (!newChatIds.has(chatId)) {
+      removedChatIds.push(chatId);
+    }
+  });
+
+  const addedChatIds: string[] = [];
+  newChatIds.forEach((chatId) => {
+    if (!previousChatIds.has(chatId)) {
+      addedChatIds.push(chatId);
+    }
+  });
+
+  await project.save();
+
+  if (!previousEnabled && project.telegramNotify.enabled) {
+    await defaultNotifier.logAction('telegram_notifications_enabled', {
+      projectUuid: project.uuid,
+      recipients: project.telegramNotify.recipients.length
+    });
+  }
+
+  if (previousEnabled && !project.telegramNotify.enabled) {
+    await defaultNotifier.logAction('telegram_notifications_disabled', {
+      projectUuid: project.uuid,
+      removedRecipients: removedChatIds.length
+    });
+  }
+
+  for (const chatId of addedChatIds) {
+    await defaultNotifier.logAction('telegram_subscription_added_manual', {
+      chatId,
+      projectUuid: project.uuid,
+      userId: chatId
+    });
+  }
+
+  if (removedChatIds.length > 0) {
+    const reason: 'manual' | 'project_disabled' = project.telegramNotify.enabled ? 'manual' : 'project_disabled';
+    for (const chatId of removedChatIds) {
+      await defaultNotifier.notifyUnsubscribed(project, chatId, reason);
+    }
+  }
+
+  const response = await buildProjectResponse(project);
+  return res.json(response);
 }
 
 /**
@@ -115,6 +211,21 @@ export async function deleteProject(req: Request, res: Response): Promise<Respon
   const project = await ProjectModel.findOneAndDelete({ uuid });
   if (!project) {
     return res.status(404).json({ message: 'Проект не найден' });
+  }
+
+  const removedChats = project.telegramNotify.recipients.map((recipient) => recipient.chatId);
+
+  if (removedChats.length > 0) {
+    for (const chatId of removedChats) {
+      await defaultNotifier.notifyUnsubscribed(project, chatId, 'project_deleted');
+    }
+  }
+
+  if (project.telegramNotify.enabled) {
+    await defaultNotifier.logAction('telegram_project_deleted', {
+      projectUuid: project.uuid,
+      removedRecipients: removedChats.length
+    });
   }
 
   const [logsResult, pingResult] = await Promise.all([
@@ -201,4 +312,63 @@ export async function deletePingService(req: Request, res: Response): Promise<Re
   }
 
   return res.json({ message: 'Ping-сервис удален', serviceId: deleted._id });
+}
+
+/**
+ * Возвращает детальную информацию об интеграции проекта с Telegram.
+ */
+export async function getProjectTelegramInfo(req: Request, res: Response): Promise<Response> {
+  const { uuid } = req.params;
+  const project = await ProjectModel.findOne({ uuid });
+  if (!project) {
+    return res.status(404).json({ message: 'Проект не найден' });
+  }
+
+  const botInfo = await defaultNotifier.getBotUrlInfo();
+  const [subscribe, unsubscribe] = project.telegramNotify.enabled
+    ? await Promise.all([
+        defaultNotifier.buildDeepLink('ADD', project.uuid, botInfo),
+        defaultNotifier.buildDeepLink('DELETE', project.uuid, botInfo)
+      ])
+    : [null, null];
+
+  return res.json({
+    projectUuid: project.uuid,
+    enabled: project.telegramNotify.enabled,
+    antiSpamInterval: project.telegramNotify.antiSpamInterval,
+    recipients: project.telegramNotify.recipients,
+    links: { subscribe, unsubscribe },
+    bot: botInfo
+  });
+}
+
+/**
+ * Удаляет подписчика Telegram и уведомляет его об отписке.
+ */
+export async function removeTelegramRecipient(req: Request, res: Response): Promise<Response> {
+  const { uuid, chatId } = req.params as { uuid: string; chatId: string };
+  const project = await ProjectModel.findOne({ uuid });
+  if (!project) {
+    return res.status(404).json({ message: 'Проект не найден' });
+  }
+
+  const exists = project.telegramNotify.recipients.find((recipient) => recipient.chatId === chatId);
+  if (!exists) {
+    return res.status(404).json({ message: 'Подписчик не найден' });
+  }
+
+  project.telegramNotify.recipients = project.telegramNotify.recipients.filter((recipient) => recipient.chatId !== chatId);
+  await project.save();
+
+  const reason: 'manual' | 'project_disabled' = project.telegramNotify.enabled ? 'manual' : 'project_disabled';
+  await defaultNotifier.notifyUnsubscribed(project, chatId, reason);
+  await defaultNotifier.logAction('telegram_recipient_removed_api', {
+    projectUuid: project.uuid,
+    chatId,
+    userId: chatId,
+    reason
+  });
+
+  const response = await buildProjectResponse(project);
+  return res.json({ message: 'Получатель удален', chatId, project: response });
 }

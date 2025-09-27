@@ -201,6 +201,8 @@ export interface Project extends ProjectInput {
   uuid: string;
   createdAt: string;
   updatedAt: string;
+  telegramLinks: TelegramDeepLinks;
+  telegramBot: TelegramBotUrlInfo;
 }
 
 /**
@@ -401,6 +403,35 @@ export interface TelegramBotUrlInfo {
   url: string | null;
   source: 'env' | 'telegram' | 'inactive' | 'unknown';
   botActive: boolean;
+}
+
+/**
+ * Глубокие ссылки Telegram для быстрого подписывания/отписки.
+ */
+export interface TelegramDeepLinks {
+  subscribe: string | null;
+  unsubscribe: string | null;
+}
+
+/**
+ * Детальная информация о Telegram-интеграции проекта.
+ */
+export interface ProjectTelegramInfo {
+  projectUuid: string;
+  enabled: boolean;
+  antiSpamInterval: number;
+  recipients: TelegramRecipient[];
+  links: TelegramDeepLinks;
+  bot: TelegramBotUrlInfo;
+}
+
+/**
+ * Ответ API при удалении подписчика Telegram.
+ */
+export interface RemoveTelegramRecipientResponse {
+  message: string;
+  chatId: string;
+  project: Project;
 }
 
 /**

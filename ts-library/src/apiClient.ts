@@ -24,7 +24,9 @@ import type {
   ProjectInput,
   ProjectLogEntry,
   ProjectLogResponse,
+  ProjectTelegramInfo,
   RateLimitSettings,
+  RemoveTelegramRecipientResponse,
   TelegramBotUrlInfo,
   TelegramStatus,
   WhitelistEntry,
@@ -198,6 +200,23 @@ export class ApiClient {
    */
   async deletePingService(uuid: string, serviceId: string): Promise<DeletePingServiceResponse> {
     return this.request<DeletePingServiceResponse>(`/api/projects/${uuid}/ping-services/${serviceId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Возвращает информацию о Telegram-интеграции проекта.
+   */
+  async getProjectTelegramInfo(uuid: string): Promise<ProjectTelegramInfo> {
+    return this.request<ProjectTelegramInfo>(`/api/projects/${uuid}/telegram`);
+  }
+
+  /**
+   * Удаляет подписчика Telegram из проекта.
+   */
+  async removeTelegramRecipient(uuid: string, chatId: string): Promise<RemoveTelegramRecipientResponse> {
+    const encodedChatId = encodeURIComponent(chatId);
+    return this.request<RemoveTelegramRecipientResponse>(`/api/projects/${uuid}/telegram/recipients/${encodedChatId}`, {
       method: 'DELETE'
     });
   }

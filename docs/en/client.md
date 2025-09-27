@@ -58,7 +58,7 @@ A separate **Login** page handles token retrieval (`/api/auth/login`) and stores
 
 All requests live in the `src/api` module. Each helper uses `axios` with the base URL from `config.ts` and automatically injects the token from `AuthContext`. Key operations include:
 
-- `fetchProjects`, `createProject`, `updateProject`, `deleteProject` – project CRUD.
+- `fetchProjects`, `createProject`, `updateProject`, `deleteProject`, `fetchProjectTelegramInfo`, `removeProjectTelegramRecipient` – project CRUD and Telegram recipient management.
 - `filterLogs`, `deleteLogs`, `ingestLog` – log retrieval and cleanup.
 - `createPingService`, `updatePingService`, `deletePingService`, `triggerPingCheck` – uptime monitoring with on-demand checks.
 - `fetchRateLimitSettings`, `updateRateLimitSettings`, `fetchTelegramStatus`, `fetchTelegramBotUrl` – security controls and Telegram diagnostics.
@@ -93,6 +93,7 @@ The container builds the static bundle and serves it through Nginx on port `80`.
 - Log filter state is stored in query parameters so you can share links.
 - Data grid components rely on `@mui/x-data-grid` for virtualization and custom row actions.
 - Telegram page displays the bot status (connected/token missing) based on `/api/settings/telegram-status` and shows the invite link from `/api/settings/telegram-url` when available.
+- When notifications are enabled, the project form renders deep links for subscription/unsubscription with a copy button; the block disappears automatically once the toggle is turned off.
 - Ping services page refreshes check timestamps in the background every two minutes to keep the UI fresh without exceeding rate limits.
 - Ping services data grid now uses icon-only action buttons and row clicks to surface a detailed view with tags, status history, and timestamps.
 - Rate limit changes require confirmation and log a warning to the `logger-system` project for auditability.

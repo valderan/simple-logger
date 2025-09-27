@@ -11,6 +11,8 @@ import {
   SystemLogPayload,
   TelegramBotUrlInfo,
   TelegramStatus,
+  ProjectTelegramInfo,
+  RemoveTelegramRecipientResponse,
   UpdatePingServicePayload,
   BlacklistEntry,
   BlacklistPayload,
@@ -133,6 +135,18 @@ export const deletePingService = async (uuid: string, serviceId: string) => {
 
 export const triggerPingCheck = async (uuid: string) => {
   const { data } = await apiClient.post<PingService[]>(`/api/projects/${uuid}/ping-services/check`, {});
+  return data;
+};
+
+export const fetchProjectTelegramInfo = async (uuid: string) => {
+  const { data } = await apiClient.get<ProjectTelegramInfo>(`/api/projects/${uuid}/telegram`);
+  return data;
+};
+
+export const removeProjectTelegramRecipient = async (uuid: string, chatId: string) => {
+  const { data } = await apiClient.delete<RemoveTelegramRecipientResponse>(
+    `/api/projects/${uuid}/telegram/recipients/${encodeURIComponent(chatId)}`
+  );
   return data;
 };
 
