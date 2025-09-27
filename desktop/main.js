@@ -1,4 +1,8 @@
-const { app, BrowserWindow, shell, dialog } = require('electron');
+const { app, BrowserWindow, shell, dialog, protocol } = require('electron');
+
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'app', privileges: { secure: true, standard: true } }
+]);
 const path = require('path');
 const fs = require('fs');
 
@@ -31,6 +35,53 @@ function resolveWebDistDir() {
   );
 }
 
+let productionProtocolRegistered = false;
+
+function registerProductionProtocol(webDistDir) {
+  if (productionProtocolRegistered) {
+    return;
+  }
+
+  const normalizedRoot = path.normalize(webDistDir);
+  const rootWithSep = normalizedRoot.endsWith(path.sep)
+    ? normalizedRoot
+    : normalizedRoot + path.sep;
+
+  protocol.registerFileProtocol(
+    'app',
+    (request, callback) => {
+      try {
+        const url = new URL(request.url);
+        let relativePath = decodeURIComponent(url.pathname);
+
+        if (!relativePath || relativePath === '/') {
+          relativePath = 'index.html';
+        } else {
+          relativePath = relativePath.replace(/^\/+/, '');
+        }
+
+        const resolvedPath = path.normalize(path.join(normalizedRoot, relativePath));
+
+        if (!resolvedPath.startsWith(rootWithSep)) {
+          callback({ error: -6 });
+          return;
+        }
+
+        callback({ path: resolvedPath });
+      } catch (error) {
+        callback({ error: -2 });
+      }
+    },
+    (error) => {
+      if (error) {
+        throw new Error(`Не удалось зарегистрировать файловый протокол для desktop-клиента: ${error.message}`);
+      }
+    }
+  );
+
+  productionProtocolRegistered = true;
+}
+
 function loadContent(win) {
   const devServerUrl = process.env.DEV_SERVER_URL;
 
@@ -49,7 +100,8 @@ function loadContent(win) {
     );
   }
 
-  win.loadFile(indexPath);
+  registerProductionProtocol(webDistDir);
+  win.loadURL('app://simple-logger/index.html');
 }
 
 function createWindow() {
