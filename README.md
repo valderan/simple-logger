@@ -16,6 +16,7 @@
 > • 🇷🇺 Основные материалы: [docs/ru/api.md](docs/ru/api.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md)
 > 
 > • 🇬🇧 English guides: [docs/en/api.md](docs/en/api.md), [docs/en/api_security.md](docs/en/api_security.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md)
+> • 🖥️ Desktop: [docs/ru/desktop.md](docs/ru/desktop.md) · [docs/en/desktop.md](docs/en/desktop.md)
 > • ⚙️ Переменные окружения: [docs/ru/env_variables.md](docs/ru/env_variables.md) · [docs/en/env_variables.md](docs/en/env_variables.md)
 > 
 > • 📘 OpenAPI спецификация: [api/swaggerapi/openapi.yaml](api/swaggerapi/openapi.yaml) · [api/swaggerapi/openapi_en.yaml](api/swaggerapi/openapi_en.yaml)
@@ -67,6 +68,7 @@
 | `docs/` | Документация на русском и английском языках, структура БД и руководство по клиенту. |
 | `docs/examples/` | Готовые скрипты для интеграции с API на Bash, Go, Python и TypeScript. |
 | `ts-library/` | TypeScript библиотека для работы с API и логированием, готовая к публикации в npm. |
+| `desktop/` | Electron-приложение, использующее готовую веб-сборку клиента для десктопных платформ. |
 
 ## Кратко о библиотеке ts-library
 
@@ -153,11 +155,57 @@ docker compose up --build
 
 Контейнер соберёт production-бандл и раздаст его через Nginx на порту `80`. Значения `VITE_API_URL`, `VITE_LOGGER_VERSION`, `VITE_LOGGER_PAGE_URL` передаются в процессе сборки (при необходимости можно задать и старые ключи без префикса для совместимости скриптов).
 
+## Как запустить desktop-клиент
+
+### Подготовка
+
+1. Установите зависимости в каталоге `desktop`:
+
+   ```bash
+   cd desktop
+   npm install
+   ```
+
+2. Соберите веб-клиент и перенесите файлы в `desktop/web-dist`:
+
+   ```bash
+   cd ../client
+   npm install
+   npm run build
+   cd ../desktop
+   npm run sync:web
+   ```
+
+3. Запустите десктопное приложение:
+
+   ```bash
+   npm start
+   ```
+
+### Режим разработки
+
+- Запустите dev-сервер Vite в `client` (`npm run dev`).
+- В другом терминале запустите Electron (`npm run dev` в `desktop`). Приложение откроет `http://localhost:5173` (значение можно изменить через `DEV_SERVER_URL`).
+
+### Сборка установщиков
+
+Используйте [`electron-builder`](https://www.electron.build/) через готовые скрипты:
+
+```bash
+npm run build       # текущая ОС
+npm run build:linux # AppImage и deb
+npm run build:win   # NSIS и portable
+npm run build:mac   # DMG и ZIP
+```
+
+Перед запуском убедитесь, что каталог `desktop/web-dist` содержит актуальную сборку. Подробнее — в [desktop/README.md](desktop/README.md) и [docs/ru/desktop.md](docs/ru/desktop.md).
+
 ## Документация
 
 - Русская версия: [docs/ru/about.md](docs/ru/about.md), [docs/ru/architecture.md](docs/ru/architecture.md), [docs/ru/database.md](docs/ru/database.md), [docs/ru/api.md](docs/ru/api.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md), [docs/ru/client.md](docs/ru/client.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/api_security_improvements.md](docs/api_security_improvements.md).
 - [Скриншоты клиента](docs/screenshots/) - docs/screenshots
 - Переменные окружения: [docs/ru/env_variables.md](docs/ru/env_variables.md) · [docs/en/env_variables.md](docs/en/env_variables.md)
+- Desktop-клиент: [docs/ru/desktop.md](docs/ru/desktop.md) · [docs/en/desktop.md](docs/en/desktop.md)
 - Английская версия: [docs/en/about.md](docs/en/about.md), [docs/en/architecture.md](docs/en/architecture.md), [docs/en/database.md](docs/en/database.md), [docs/en/api.md](docs/en/api.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md), [docs/en/client.md](docs/en/client.md), [docs/en/api_security.md](docs/en/api_security.md).
 
 ## Примеры интеграции
