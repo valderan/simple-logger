@@ -20,7 +20,7 @@ import DeleteIcon from '@mui/icons-material/DeleteOutline';
 import {
   CreateProjectPayload,
   TelegramBotUrlInfo,
-  TelegramDeepLinks,
+  TelegramCommands,
   TelegramRecipient
 } from '../../api/types';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -34,7 +34,7 @@ export interface ProjectFormProps {
   error?: string | null;
   secondaryActions?: ReactNode[];
   rateLimitPerMinute?: number;
-  telegramLinks?: TelegramDeepLinks;
+  telegramCommands?: TelegramCommands;
   telegramBotInfo?: TelegramBotUrlInfo;
 }
 
@@ -59,7 +59,7 @@ export const ProjectForm = ({
   error,
   secondaryActions = [],
   rateLimitPerMinute,
-  telegramLinks,
+  telegramCommands,
   telegramBotInfo
 }: ProjectFormProps): JSX.Element => {
   const [formState, setFormState] = useState<CreateProjectPayload>(() => cloneInitialValues(initialValues));
@@ -386,14 +386,14 @@ export const ProjectForm = ({
                 <Typography variant="subtitle1">
                   {t('projectForm.telegramDeepLinksTitle')}
                 </Typography>
-                {!telegramLinks && (
+                {!telegramCommands && (
                   <Alert severity="info">{t('projectForm.telegramLinkSaveNotice')}</Alert>
                 )}
-                {telegramLinks &&
-                  (telegramLinks.subscribe || telegramLinks.unsubscribe ? (
+                {telegramCommands &&
+                  (telegramCommands.subscribe || telegramCommands.unsubscribe ? (
                     <Stack spacing={1.5}>
-                      {renderLinkRow(t('projectForm.telegramSubscribeLink'), telegramLinks.subscribe, 'subscribe')}
-                      {renderLinkRow(t('projectForm.telegramUnsubscribeLink'), telegramLinks.unsubscribe, 'unsubscribe')}
+                      {renderLinkRow(t('projectForm.telegramSubscribeLink'), telegramCommands.subscribe, 'subscribe')}
+                      {renderLinkRow(t('projectForm.telegramUnsubscribeLink'), telegramCommands.unsubscribe, 'unsubscribe')}
                     </Stack>
                   ) : (
                     <Alert severity={telegramBotInfo?.botActive === false ? 'warning' : 'info'}>

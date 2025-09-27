@@ -15,22 +15,19 @@ const extractChatIds = (recipients: TelegramRecipient[]): Set<string> =>
 async function buildProjectResponse(project: ProjectDocument, botInfo?: BotUrlInfo) {
   const json = project.toJSON();
   const info = botInfo ?? (await defaultNotifier.getBotUrlInfo());
-  let links: { subscribe: string | null; unsubscribe: string | null } = {
-    subscribe: null,
-    unsubscribe: null
-  };
-
-  if (json.telegramNotify?.enabled) {
-    const [subscribe, unsubscribe] = await Promise.all([
-      defaultNotifier.buildDeepLink('ADD', json.uuid, info),
-      defaultNotifier.buildDeepLink('DELETE', json.uuid, info)
-    ]);
-    links = { subscribe, unsubscribe };
-  }
+  const commands: { subscribe: string | null; unsubscribe: string | null } = json.telegramNotify?.enabled
+    ? {
+        subscribe: defaultNotifier.buildCommand('ADD', json.uuid),
+        unsubscribe: defaultNotifier.buildCommand('DELETE', json.uuid)
+      }
+    : {
+        subscribe: null,
+        unsubscribe: null
+      };
 
   return {
     ...json,
-    telegramLinks: links,
+    telegramCommands: commands,
     telegramBot: info
   };
 }
@@ -325,19 +322,19 @@ export async function getProjectTelegramInfo(req: Request, res: Response): Promi
   }
 
   const botInfo = await defaultNotifier.getBotUrlInfo();
-  const [subscribe, unsubscribe] = project.telegramNotify.enabled
-    ? await Promise.all([
-        defaultNotifier.buildDeepLink('ADD', project.uuid, botInfo),
-        defaultNotifier.buildDeepLink('DELETE', project.uuid, botInfo)
-      ])
-    : [null, null];
+  const commands = project.telegramNotify.enabled
+    ? {
+        subscribe: defaultNotifier.buildCommand('ADD', project.uuid),
+        unsubscribe: defaultNotifier.buildCommand('DELETE', project.uuid)
+      }
+    : { subscribe: null, unsubscribe: null };
 
   return res.json({
     projectUuid: project.uuid,
     enabled: project.telegramNotify.enabled,
     antiSpamInterval: project.telegramNotify.antiSpamInterval,
     recipients: project.telegramNotify.recipients,
-    links: { subscribe, unsubscribe },
+    commands,
     bot: botInfo
   });
 }

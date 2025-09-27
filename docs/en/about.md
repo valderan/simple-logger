@@ -55,8 +55,8 @@ Main collections:
 - Bot connection through `BOT_API_KEY`.
 - Managing recipients and tags for notifications.
 - Anti-spam settings with minimum interval between alerts.
-- Direct in-chat control: `ADD_<UUID>`/`DELETE_<UUID>` commands, `/subscriptions` and `/info` menus, language switching via `/language`, and an hour-long lock after ten invalid UUID attempts. Every interaction is stored in `logger-system` for auditing.【F:api/src/telegram/notifier.ts†L76-L370】【F:api/src/telegram/notifier.ts†L385-L399】
-- Deep links for subscription/unsubscription are generated automatically and exposed via the API and web client for every project.【F:api/src/api/controllers/projectController.ts†L1-L267】
+- Direct in-chat control: `ADD:<UUID>`/`DELETE:<UUID>` commands, `/subscriptions` and `/info` menus, language switching via `/language`, and an hour-long lock after ten invalid UUID attempts. Every interaction is stored in `logger-system` for auditing.【F:api/src/telegram/notifier.ts†L76-L370】【F:api/src/telegram/notifier.ts†L385-L399】
+- Subscription/unsubscription commands are generated automatically and exposed via the API and web client for every project.【F:api/src/api/controllers/projectController.ts†L1-L267】
 - Disabling notifications or deleting a project automatically unsubscribes all recipients, sends them a notice, and records the event in the system log.【F:api/src/api/controllers/projectController.ts†L124-L193】【F:api/src/telegram/notifier.ts†L249-L307】
 
 ## Personas

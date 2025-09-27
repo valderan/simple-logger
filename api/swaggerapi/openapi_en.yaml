@@ -1003,20 +1003,20 @@ paths:
           type: boolean
           description: Indicates whether the bot is currently running and can access Telegram.
           example: true
-    TelegramDeepLinks:
+    TelegramCommands:
       type: object
       required: [subscribe, unsubscribe]
       properties:
         subscribe:
           type: string
           nullable: true
-          description: Deep link for subscription: `https://t.me/<bot>?start=ADD_<UUID>`.
-          example: https://t.me/loggerbot?start=ADD_123e4567-e89b-12d3-a456-426614174000
+          description: Subscription command like `ADD:<UUID>`. Becomes `null` when notifications are disabled.
+          example: ADD:123e4567-e89b-12d3-a456-426614174000
         unsubscribe:
           type: string
           nullable: true
-          description: Deep link for unsubscribe: `https://t.me/<bot>?start=DELETE_<UUID>`.
-          example: https://t.me/loggerbot?start=DELETE_123e4567-e89b-12d3-a456-426614174000
+          description: Unsubscribe command like `DELETE:<UUID>`. Becomes `null` when notifications are disabled.
+          example: DELETE:123e4567-e89b-12d3-a456-426614174000
     ProjectInput:
       type: object
       required:
@@ -1061,7 +1061,7 @@ paths:
       allOf:
         - $ref: '#/components/schemas/ProjectInput'
         - type: object
-          required: [_id, uuid, createdAt, updatedAt, telegramLinks, telegramBot]
+          required: [_id, uuid, createdAt, updatedAt, telegramCommands, telegramBot]
           properties:
             _id:
               type: string
@@ -1076,8 +1076,8 @@ paths:
             updatedAt:
               type: string
               format: date-time
-            telegramLinks:
-              $ref: '#/components/schemas/TelegramDeepLinks'
+            telegramCommands:
+              $ref: '#/components/schemas/TelegramCommands'
             telegramBot:
               $ref: '#/components/schemas/TelegramBotUrlInfo'
     LogMetadata:
@@ -1166,7 +1166,7 @@ paths:
             $ref: '#/components/schemas/LogEntry'
     ProjectTelegramInfo:
       type: object
-      required: [projectUuid, enabled, antiSpamInterval, recipients, links, bot]
+      required: [projectUuid, enabled, antiSpamInterval, recipients, commands, bot]
       properties:
         projectUuid:
           type: string
@@ -1180,8 +1180,8 @@ paths:
           type: array
           items:
             $ref: '#/components/schemas/TelegramRecipient'
-        links:
-          $ref: '#/components/schemas/TelegramDeepLinks'
+        commands:
+          $ref: '#/components/schemas/TelegramCommands'
         bot:
           $ref: '#/components/schemas/TelegramBotUrlInfo'
     PingServiceInput:

@@ -201,7 +201,7 @@ export interface Project extends ProjectInput {
   uuid: string;
   createdAt: string;
   updatedAt: string;
-  telegramLinks: TelegramDeepLinks;
+  telegramCommands: TelegramCommands;
   telegramBot: TelegramBotUrlInfo;
 }
 
@@ -406,9 +406,9 @@ export interface TelegramBotUrlInfo {
 }
 
 /**
- * Глубокие ссылки Telegram для быстрого подписывания/отписки.
+ * Команды Telegram для быстрого подписывания/отписки.
  */
-export interface TelegramDeepLinks {
+export interface TelegramCommands {
   subscribe: string | null;
   unsubscribe: string | null;
 }
@@ -421,7 +421,7 @@ export interface ProjectTelegramInfo {
   enabled: boolean;
   antiSpamInterval: number;
   recipients: TelegramRecipient[];
-  links: TelegramDeepLinks;
+  commands: TelegramCommands;
   bot: TelegramBotUrlInfo;
 }
 

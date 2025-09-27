@@ -91,7 +91,7 @@ Content-Type: application/json
 Возврат логов конкретного проекта. Поддерживаемые параметры: `level`, `text`, `tag`, `user`, `ip`, `service`, `startDate`, `endDate`, `logId`.
 
 ### 3.7 GET `/:uuid/telegram`
-Возвращает состояние интеграции с Telegram: включена ли рассылка, текущий антиспам, подписчики и готовые deep-link ссылки.
+Возвращает состояние интеграции с Telegram: включена ли рассылка, текущий антиспам, подписчики и готовые команды.
 
 **Ответ `200 OK`**
 ```json
@@ -102,9 +102,9 @@ Content-Type: application/json
   "recipients": [
     { "chatId": "123456789", "tags": ["CRITICAL"] }
   ],
-  "links": {
-    "subscribe": "https://t.me/loggerbot?start=ADD_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
-    "unsubscribe": "https://t.me/loggerbot?start=DELETE_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
+  "commands": {
+    "subscribe": "ADD:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+    "unsubscribe": "DELETE:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
   },
   "bot": {
     "url": "https://t.me/loggerbot",
@@ -114,7 +114,7 @@ Content-Type: application/json
 }
 ```
 
-Если бот недоступен, поля `links.subscribe` и `links.unsubscribe` будут `null`.
+Если уведомления отключены, поля `commands.subscribe` и `commands.unsubscribe` будут `null`.
 
 ### 3.8 DELETE `/:uuid/telegram/recipients/:chatId`
 Удаляет конкретного подписчика и уведомляет его об отписке. В ответе возвращается обновлённый объект проекта.
@@ -127,9 +127,9 @@ Content-Type: application/json
   "project": {
     "uuid": "0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
     "name": "Orders Service",
-    "telegramLinks": {
-      "subscribe": "https://t.me/loggerbot?start=ADD_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
-      "unsubscribe": "https://t.me/loggerbot?start=DELETE_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
+    "telegramCommands": {
+      "subscribe": "ADD:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+      "unsubscribe": "DELETE:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
     },
     "telegramBot": {
       "url": "https://t.me/loggerbot",

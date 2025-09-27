@@ -21,14 +21,14 @@ export interface Project {
   customTags: string[];
   accessLevel: AccessLevel;
   telegramNotify: TelegramSettings;
-  telegramLinks: TelegramDeepLinks;
+  telegramCommands: TelegramCommands;
   telegramBot: TelegramBotUrlInfo;
   debugMode: boolean;
   createdAt?: string;
   updatedAt?: string;
 }
 
-export interface TelegramDeepLinks {
+export interface TelegramCommands {
   subscribe: string | null;
   unsubscribe: string | null;
 }
@@ -132,7 +132,7 @@ export interface ProjectTelegramInfo {
   enabled: boolean;
   antiSpamInterval: number;
   recipients: TelegramRecipient[];
-  links: TelegramDeepLinks;
+  commands: TelegramCommands;
   bot: TelegramBotUrlInfo;
 }
 

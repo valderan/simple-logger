@@ -14,7 +14,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     addInvalid: 'Проект с указанным UUID не найден или формат неверный.',
     deleteSuccess: 'Подписка на проект {{name}} ({{uuid}}) отменена.',
     deleteMissing: 'Подписка на проект не найдена.',
-    invalidFormat: 'Некорректная команда. Используйте ADD_<UUID> или DELETE_<UUID>.',
+    invalidFormat: 'Некорректная команда. Используйте ADD:UUID или DELETE:UUID.',
     blocked: 'Вы 10 раз отправили неверный UUID. Бот перестанет принимать ваши сообщения на 1 час.',
     stillBlocked: 'Вы временно заблокированы. Попробуйте снова через час.',
     subscriptionsEmpty: 'У вас нет активных подписок.',
@@ -39,7 +39,7 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     addInvalid: 'Project not found or UUID format is invalid.',
     deleteSuccess: 'Subscription for project {{name}} ({{uuid}}) was removed.',
     deleteMissing: 'Subscription not found.',
-    invalidFormat: 'Invalid command. Use ADD_<UUID> or DELETE_<UUID>.',
+    invalidFormat: 'Invalid command. Use ADD:UUID or DELETE:UUID.',
     blocked: 'You have entered an invalid UUID 10 times. The bot will ignore messages for 1 hour.',
     stillBlocked: 'You are temporarily blocked. Try again later.',
     subscriptionsEmpty: 'You have no active subscriptions.',
@@ -188,12 +188,12 @@ export class TelegramNotifier {
       return;
     }
 
-    if (/^add[:_]/i.test(text)) {
+    if (/^add:/i.test(text)) {
       await this.processAttach(chatId, userId, text, language);
       return;
     }
 
-    if (/^delete[:_]/i.test(text)) {
+    if (/^delete:/i.test(text)) {
       await this.processDetach(chatId, userId, text, language);
       return;
     }
@@ -224,11 +224,11 @@ export class TelegramNotifier {
         if (!payload) {
           break;
         }
-        if (/^add[:_]/i.test(payload)) {
+        if (/^add:/i.test(payload)) {
           await this.processAttach(chatId, userId, payload, language);
           return;
         }
-        if (/^delete[:_]/i.test(payload)) {
+        if (/^delete:/i.test(payload)) {
           await this.processDetach(chatId, userId, payload, language);
           return;
         }
@@ -241,7 +241,7 @@ export class TelegramNotifier {
   }
 
   private extractUuid(text: string): string | null {
-    const match = text.trim().match(/^[^:_]+[:_]\s*(.+)$/);
+    const match = text.trim().match(/^[^:]+:\s*(.+)$/);
     if (!match) {
       return null;
     }
@@ -607,18 +607,8 @@ export class TelegramNotifier {
     });
   }
 
-  async buildDeepLink(
-    action: 'ADD' | 'DELETE',
-    projectUuid: string,
-    botInfo?: { url: string | null }
-  ): Promise<string | null> {
-    const info = botInfo ?? (await this.getBotUrlInfo());
-    if (!info.url) {
-      return null;
-    }
-    const baseUrl = info.url.endsWith('/') ? info.url.slice(0, -1) : info.url;
-    const parameter = encodeURIComponent(`${action}_${projectUuid}`);
-    return `${baseUrl}?start=${parameter}`;
+  buildCommand(action: 'ADD' | 'DELETE', projectUuid: string): string {
+    return `${action}:${projectUuid}`;
   }
 }
 
