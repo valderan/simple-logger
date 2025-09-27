@@ -32,7 +32,7 @@ export type {
   RateLimitSettings,
   TelegramStatus,
   TelegramBotUrlInfo,
-  TelegramDeepLinks,
+  TelegramCommands,
   ProjectTelegramInfo,
   RemoveTelegramRecipientResponse
 } from './types.js';

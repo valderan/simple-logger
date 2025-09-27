@@ -111,7 +111,7 @@ export const EditProjectPage = (): JSX.Element => {
             onSubmit={handleSubmit}
             error={formError}
             rateLimitPerMinute={rateLimitQuery.data?.rateLimitPerMinute}
-            telegramLinks={projectQuery.data.telegramLinks}
+            telegramCommands={projectQuery.data.telegramCommands}
             telegramBotInfo={projectQuery.data.telegramBot}
             secondaryActions={[
               <Button key="cancel" variant="text" onClick={() => navigate('/projects')}>

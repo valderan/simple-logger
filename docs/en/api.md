@@ -50,7 +50,7 @@ After several failed attempts the caller IP is locked for one hour.
 | `PUT` | `/:uuid/ping-services/:serviceId` | Update ping service parameters. |
 | `DELETE` | `/:uuid/ping-services/:serviceId` | Remove a ping service from the project. |
 | `POST` | `/:uuid/ping-services/check` | Trigger a manual ping check. |
-| `GET` | `/:uuid/telegram` | Retrieve Telegram integration state and deep links. |
+| `GET` | `/:uuid/telegram` | Retrieve Telegram integration state and ready-to-copy commands. |
 | `DELETE` | `/:uuid/telegram/recipients/:chatId` | Remove a specific recipient and notify them. |
 
 Example request:
@@ -78,7 +78,7 @@ Content-Type: application/json
 
 The `201 Created` response contains the project with its generated `uuid`.
 
-Every project response also includes a `telegramLinks` block with ready-to-use URLs like `https://t.me/<bot>?start=ADD_<UUID>` and `https://t.me/<bot>?start=DELETE_<UUID>`, as well as the `telegramBot` object with current bot URL information. When the bot is inactive the links are `null`.
+Every project response also includes a `telegramCommands` block with commands such as `ADD:<UUID>` and `DELETE:<UUID>`, together with the `telegramBot` object that describes the current bot URL. When notifications are disabled the commands are `null`.
 
 Deleting a project returns the number of removed records:
 

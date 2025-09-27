@@ -50,7 +50,7 @@ Content-Type: application/json
 | `PUT` | `/:uuid/ping-services/:serviceId` | Обновление параметров ping-сервиса. |
 | `DELETE` | `/:uuid/ping-services/:serviceId` | Удаление ping-сервиса из проекта. |
 | `POST` | `/:uuid/ping-services/check` | Ручной запуск проверки. |
-| `GET` | `/:uuid/telegram` | Текущее состояние интеграции с Telegram и deep-link ссылки. |
+| `GET` | `/:uuid/telegram` | Текущее состояние интеграции с Telegram и готовые команды. |
 | `DELETE` | `/:uuid/telegram/recipients/:chatId` | Отписать конкретного получателя и уведомить его. |
 
 Пример создания проекта:
@@ -78,7 +78,7 @@ Content-Type: application/json
 
 Ответ `201 Created` содержит созданный объект с полем `uuid`.
 
-Каждый проект в ответах API дополнительно включает блок `telegramLinks` с глубокими ссылками вида `https://t.me/<bot>?start=ADD_<UUID>` и `https://t.me/<bot>?start=DELETE_<UUID>`, а также объект `telegramBot` с актуальной ссылкой на бота и источником данных. Если бот недоступен, ссылки будут `null`.
+Каждый проект в ответах API дополнительно включает блок `telegramCommands` с командами `ADD:<UUID>` и `DELETE:<UUID>`, а также объект `telegramBot` с актуальной ссылкой на бота и источником данных. Если уведомления отключены, команды будут `null`.
 
 Удаление проекта возвращает количество удалённых логов и ping-сервисов:
 

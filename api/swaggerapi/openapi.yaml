@@ -1007,20 +1007,20 @@ components:
           type: boolean
           description: Запущен ли бот и доступен ли Telegram API.
           example: true
-    TelegramDeepLinks:
+    TelegramCommands:
       type: object
       required: [subscribe, unsubscribe]
       properties:
         subscribe:
           type: string
           nullable: true
-          description: Глубокая ссылка для подписки вида `https://t.me/<bot>?start=ADD_<UUID>`.
-          example: https://t.me/loggerbot?start=ADD_123e4567-e89b-12d3-a456-426614174000
+          description: Команда для подписки вида `ADD:<UUID>`. Значение `null`, если уведомления отключены.
+          example: ADD:123e4567-e89b-12d3-a456-426614174000
         unsubscribe:
           type: string
           nullable: true
-          description: Глубокая ссылка для отписки вида `https://t.me/<bot>?start=DELETE_<UUID>`.
-          example: https://t.me/loggerbot?start=DELETE_123e4567-e89b-12d3-a456-426614174000
+          description: Команда для отписки вида `DELETE:<UUID>`. Значение `null`, если уведомления отключены.
+          example: DELETE:123e4567-e89b-12d3-a456-426614174000
     ProjectInput:
       type: object
       required:
@@ -1065,7 +1065,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/ProjectInput'
         - type: object
-          required: [_id, uuid, createdAt, updatedAt, telegramLinks, telegramBot]
+          required: [_id, uuid, createdAt, updatedAt, telegramCommands, telegramBot]
           properties:
             _id:
               type: string
@@ -1080,8 +1080,8 @@ components:
             updatedAt:
               type: string
               format: date-time
-            telegramLinks:
-              $ref: '#/components/schemas/TelegramDeepLinks'
+            telegramCommands:
+              $ref: '#/components/schemas/TelegramCommands'
             telegramBot:
               $ref: '#/components/schemas/TelegramBotUrlInfo'
     LogMetadata:
@@ -1170,7 +1170,7 @@ components:
             $ref: '#/components/schemas/LogEntry'
     ProjectTelegramInfo:
       type: object
-      required: [projectUuid, enabled, antiSpamInterval, recipients, links, bot]
+      required: [projectUuid, enabled, antiSpamInterval, recipients, commands, bot]
       properties:
         projectUuid:
           type: string
@@ -1184,8 +1184,8 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TelegramRecipient'
-        links:
-          $ref: '#/components/schemas/TelegramDeepLinks'
+        commands:
+          $ref: '#/components/schemas/TelegramCommands'
         bot:
           $ref: '#/components/schemas/TelegramBotUrlInfo'
     PingServiceInput:

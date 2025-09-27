@@ -91,7 +91,7 @@ Remove a project together with related logs and ping services (except `logger-sy
 Return logs for a specific project. Supported query parameters: `level`, `text`, `tag`, `user`, `ip`, `service`, `startDate`, `endDate`, `logId`.
 
 ### 3.7 GET `/:uuid/telegram`
-Returns Telegram integration status: whether notifications are enabled, current anti-spam interval, recipients list, and deep links.
+Returns Telegram integration status: whether notifications are enabled, current anti-spam interval, recipients list, and ready-to-copy commands.
 
 **Response `200 OK`**
 ```json
@@ -102,9 +102,9 @@ Returns Telegram integration status: whether notifications are enabled, current 
   "recipients": [
     { "chatId": "123456789", "tags": ["CRITICAL"] }
   ],
-  "links": {
-    "subscribe": "https://t.me/loggerbot?start=ADD_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
-    "unsubscribe": "https://t.me/loggerbot?start=DELETE_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
+  "commands": {
+    "subscribe": "ADD:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+    "unsubscribe": "DELETE:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
   },
   "bot": {
     "url": "https://t.me/loggerbot",
@@ -114,7 +114,7 @@ Returns Telegram integration status: whether notifications are enabled, current 
 }
 ```
 
-When the bot is inactive the `links` fields are `null`.
+When notifications are disabled the `commands` fields are `null`.
 
 ### 3.8 DELETE `/:uuid/telegram/recipients/:chatId`
 Removes a specific recipient and sends them an unsubscribe message. The updated project snapshot is returned in the response.
@@ -127,9 +127,9 @@ Removes a specific recipient and sends them an unsubscribe message. The updated 
   "project": {
     "uuid": "0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
     "name": "Orders Service",
-    "telegramLinks": {
-      "subscribe": "https://t.me/loggerbot?start=ADD_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
-      "unsubscribe": "https://t.me/loggerbot?start=DELETE_0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
+    "telegramCommands": {
+      "subscribe": "ADD:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+      "unsubscribe": "DELETE:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
     },
     "telegramBot": {
       "url": "https://t.me/loggerbot",
