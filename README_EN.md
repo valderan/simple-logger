@@ -14,6 +14,8 @@
 >
 > • 🇷🇺 Russian resources: [docs/ru/api.md](docs/ru/api.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md)
 >
+> • 🖥️ Desktop: [docs/en/desktop.md](docs/en/desktop.md) · [docs/ru/desktop.md](docs/ru/desktop.md)
+>
 > • ⚙️ Environment variables: [docs/en/env_variables.md](docs/en/env_variables.md) · [docs/ru/env_variables.md](docs/ru/env_variables.md)
 > 
 > • 📘 OpenAPI specs: [api/swaggerapi/openapi.yaml](api/swaggerapi/openapi.yaml) · [api/swaggerapi/openapi_en.yaml](api/swaggerapi/openapi_en.yaml)
@@ -65,6 +67,7 @@ To share the bot link use `GET /api/settings/telegram-url` or the `getTelegramBo
 | `docs/` | Documentation in Russian and English, database schema, and client guide. |
 | `docs/examples/` | Ready-made integration scripts for Bash, Go, Python, and TypeScript. |
 | `ts-library/` | TypeScript SDK for the API and logger, ready for npm publishing. |
+| `desktop/` | Electron application that embeds the production web client for desktop platforms. |
 
 ## TypeScript SDK at a glance
 
@@ -151,11 +154,57 @@ docker compose up --build
 
 The container builds the production bundle and serves it with Nginx on port `80`. Provide `VITE_API_URL`, `VITE_LOGGER_VERSION`, `VITE_LOGGER_PAGE_URL` during the build (legacy keys without the prefix can still be set for third-party scripts).
 
+## Running the desktop client
+
+### Preparation
+
+1. Install dependencies:
+
+   ```bash
+   cd desktop
+   npm install
+   ```
+
+2. Build the web client and copy it into `desktop/web-dist`:
+
+   ```bash
+   cd ../client
+   npm install
+   npm run build
+   cd ../desktop
+   npm run sync:web
+   ```
+
+3. Launch the Electron shell:
+
+   ```bash
+   npm start
+   ```
+
+### Development workflow
+
+- Start the Vite dev server in `client` (`npm run dev`).
+- Run `npm run dev` in `desktop`. Electron opens `http://localhost:5173` by default; override it with `DEV_SERVER_URL`.
+
+### Packaging installers
+
+Use [`electron-builder`](https://www.electron.build/):
+
+```bash
+npm run build       # current OS
+npm run build:linux # AppImage and deb
+npm run build:win   # NSIS installer and portable build
+npm run build:mac   # DMG and ZIP
+```
+
+Ensure `desktop/web-dist` contains the up-to-date web bundle before packaging. See [desktop/README_EN.md](desktop/README_EN.md) and [docs/en/desktop.md](docs/en/desktop.md) for details.
+
 ## Documentation
 
 - Russian: [docs/ru/about.md](docs/ru/about.md), [docs/ru/architecture.md](docs/ru/architecture.md), [docs/ru/database.md](docs/ru/database.md), [docs/ru/api.md](docs/ru/api.md), [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md), [docs/ru/client.md](docs/ru/client.md), [docs/ru/api_security.md](docs/ru/api_security.md), [docs/api_security_improvements.md](docs/api_security_improvements.md).
 - [Client screenshots](docs/screenshots/) - docs/screenshots
 - Environment variables: [docs/en/env_variables.md](docs/en/env_variables.md) · [docs/ru/env_variables.md](docs/ru/env_variables.md)
+- Desktop client: [docs/en/desktop.md](docs/en/desktop.md) · [docs/ru/desktop.md](docs/ru/desktop.md)
 - English: [docs/en/about.md](docs/en/about.md), [docs/en/architecture.md](docs/en/architecture.md), [docs/en/database.md](docs/en/database.md), [docs/en/api.md](docs/en/api.md), [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md), [docs/en/client.md](docs/en/client.md), [docs/en/api_security.md](docs/en/api_security.md).
 
 ## Integration examples
