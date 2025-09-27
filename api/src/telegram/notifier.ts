@@ -29,6 +29,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     commandLanguage: 'Сменить язык',
     unknownProject: 'Проект с UUID {{uuid}} не найден.',
     unsubscribeConfirmation: 'Подписка отменена.',
+    unsubscribeDisabled: 'Уведомления для проекта {{name}} отключены. Подписка удалена.',
+    unsubscribeDeleted: 'Проект {{name}} удалён. Подписка удалена.',
     botStarted: 'Телеграм-бот запущен и принимает сообщения.'
   },
   en: {
@@ -52,6 +54,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     commandLanguage: 'Change language',
     unknownProject: 'Project with UUID {{uuid}} not found.',
     unsubscribeConfirmation: 'Subscription removed.',
+    unsubscribeDisabled: 'Notifications for project {{name}} have been disabled. Subscription removed.',
+    unsubscribeDeleted: 'Project {{name}} has been deleted. Subscription removed.',
     botStarted: 'Telegram bot started and listens for messages.'
   }
 };
@@ -214,6 +218,23 @@ export class TelegramNotifier {
         await this.askLanguage(chatId, language);
         await this.logAction('telegram_command_language', { chatId: chatIdStr, userId });
         break;
+      case '/start': {
+        const payload = text.split(' ').slice(1).join(' ').trim();
+        await this.logAction('telegram_command_start', { chatId: chatIdStr, userId, payload });
+        if (!payload) {
+          break;
+        }
+        if (/^add:/i.test(payload)) {
+          await this.processAttach(chatId, userId, payload, language);
+          return;
+        }
+        if (/^delete:/i.test(payload)) {
+          await this.processDetach(chatId, userId, payload, language);
+          return;
+        }
+        await this.bot?.sendMessage(chatId, TRANSLATIONS[language].invalidFormat);
+        break;
+      }
       default:
         break;
     }
@@ -514,7 +535,7 @@ export class TelegramNotifier {
     return { ...this.botUrlInfo, botActive: Boolean(this.bot) };
   }
 
-  private async logAction(message: string, metadata: Record<string, unknown>): Promise<void> {
+  async logAction(message: string, metadata: Record<string, unknown>): Promise<void> {
     try {
       const enriched: Record<string, unknown> = { ...metadata };
       if (!Object.prototype.hasOwnProperty.call(enriched, 'userId')) {
@@ -526,6 +547,70 @@ export class TelegramNotifier {
       // eslint-disable-next-line no-console
       console.error('Failed to write telegram system log', error);
     }
+  }
+
+  private resolveLanguageForChat(chatId: string): Language {
+    const numericChatId = Number(chatId);
+    if (!Number.isNaN(numericChatId) && this.userLanguages.has(numericChatId)) {
+      return this.userLanguages.get(numericChatId)!;
+    }
+    return 'ru';
+  }
+
+  async notifyUnsubscribed(
+    project: ProjectDocument,
+    chatId: string,
+    reason: 'manual' | 'project_disabled' | 'project_deleted'
+  ): Promise<void> {
+    const language = this.resolveLanguageForChat(chatId);
+    const numericChatId = Number(chatId);
+    const templateKey =
+      reason === 'project_disabled'
+        ? 'unsubscribeDisabled'
+        : reason === 'project_deleted'
+          ? 'unsubscribeDeleted'
+          : 'deleteSuccess';
+
+    if (!Number.isNaN(numericChatId) && this.bot) {
+      try {
+        await this.bot.sendMessage(
+          numericChatId,
+          this.interpolate(TRANSLATIONS[language][templateKey], {
+            name: project.name,
+            uuid: project.uuid
+          })
+        );
+      } catch (error) {
+        await this.logAction('telegram_unsubscribe_notification_error', {
+          chatId,
+          projectUuid: project.uuid,
+          reason,
+          error: (error as Error).message,
+          userId: chatId
+        });
+      }
+    }
+
+    await this.logAction('telegram_subscription_removed', {
+      chatId,
+      projectUuid: project.uuid,
+      reason,
+      userId: chatId
+    });
+  }
+
+  async buildDeepLink(
+    action: 'ADD' | 'DELETE',
+    projectUuid: string,
+    botInfo?: { url: string | null }
+  ): Promise<string | null> {
+    const info = botInfo ?? (await this.getBotUrlInfo());
+    if (!info.url) {
+      return null;
+    }
+    const baseUrl = info.url.endsWith('/') ? info.url.slice(0, -1) : info.url;
+    const parameter = encodeURIComponent(`${action}:${projectUuid}`);
+    return `${baseUrl}?start=${parameter}`;
   }
 }
 

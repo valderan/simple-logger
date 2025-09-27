@@ -29,5 +29,10 @@ export type {
   BlacklistUpdatePayload,
   WhitelistEntry,
   WhitelistPayload,
-  RateLimitSettings
+  RateLimitSettings,
+  TelegramStatus,
+  TelegramBotUrlInfo,
+  TelegramDeepLinks,
+  ProjectTelegramInfo,
+  RemoveTelegramRecipientResponse
 } from './types.js';

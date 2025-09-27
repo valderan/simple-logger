@@ -188,7 +188,18 @@ export const translations: Record<Locale, TranslationRecord> = {
       antiSpamHint: 'Anti-spam interval: {{interval}} min.',
       rateLimitGlobal: 'Rate limit: {{value}} requests/min (configured under Security settings).',
       rateLimitGlobalUnknown: 'Rate limit follows the global security setting (default 120 requests/min).',
-      rateLimitBypass: 'Whitelist and Docker-only projects bypass the global rate limit.'
+      rateLimitBypass: 'Whitelist and Docker-only projects bypass the global rate limit.',
+      telegramDeepLinksTitle: 'Telegram deep links',
+      telegramSubscribeLink: 'Subscribe link (ADD)',
+      telegramUnsubscribeLink: 'Unsubscribe link (DELETE)',
+      telegramCopyLink: 'Copy link',
+      telegramLinkCopiedSubscribe: 'Subscribe link copied to clipboard.',
+      telegramLinkCopiedUnsubscribe: 'Unsubscribe link copied to clipboard.',
+      telegramLinkCopyError: 'Failed to copy link. Try again.',
+      telegramLinkUnavailable: 'Unable to generate the link. Ensure the bot is active.',
+      telegramLinkUnavailableShort: 'Not available',
+      telegramLinkSaveNotice: 'Save the project to generate links automatically.',
+      telegramLinkBotInactive: 'Telegram bot is inactive or URL is unknown.'
     },
     addProject: {
       title: 'Create project',
@@ -659,7 +670,18 @@ export const translations: Record<Locale, TranslationRecord> = {
       antiSpamHint: 'Анти-спам интервал: {{interval}} мин.',
       rateLimitGlobal: 'Rate limit: {{value}} запросов/мин (управляется в разделе "Настройки безопасности").',
       rateLimitGlobalUnknown: 'Rate limit определяется глобальной настройкой безопасности (по умолчанию 120 запросов/мин).',
-      rateLimitBypass: 'Проекты с доступом "Белый список" и "Только Docker" не попадают под глобальный rate limit.'
+      rateLimitBypass: 'Проекты с доступом "Белый список" и "Только Docker" не попадают под глобальный rate limit.',
+      telegramDeepLinksTitle: 'Ссылки для Telegram',
+      telegramSubscribeLink: 'Ссылка для подписки (ADD)',
+      telegramUnsubscribeLink: 'Ссылка для отписки (DELETE)',
+      telegramCopyLink: 'Скопировать ссылку',
+      telegramLinkCopiedSubscribe: 'Ссылка для подписки скопирована.',
+      telegramLinkCopiedUnsubscribe: 'Ссылка для отписки скопирована.',
+      telegramLinkCopyError: 'Не удалось скопировать ссылку. Повторите попытку.',
+      telegramLinkUnavailable: 'Не удалось сформировать ссылку. Проверьте, что бот активен.',
+      telegramLinkUnavailableShort: 'Недоступно',
+      telegramLinkSaveNotice: 'Сохраните проект, чтобы ссылки сформировались автоматически.',
+      telegramLinkBotInactive: 'Телеграм-бот не активен или ссылка неизвестна.'
     },
     addProject: {
       title: 'Добавление проекта',

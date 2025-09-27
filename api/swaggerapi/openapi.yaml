@@ -382,6 +382,55 @@ paths:
           $ref: '#/components/responses/UnauthorizedResponse'
         '403':
           $ref: '#/components/responses/ForbiddenResponse'
+  /api/projects/{uuid}/telegram:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+    get:
+      tags: [Projects]
+      summary: Телеграм-интеграция проекта
+      description: Возвращает ссылки для подписки, состояние бота и текущие настройки уведомлений.
+      responses:
+        '200':
+          description: Информация о Телеграм-интеграции проекта.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectTelegramInfo'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект не найден.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/projects/{uuid}/telegram/recipients/{chatId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectUuidPathParam'
+      - $ref: '#/components/parameters/TelegramChatIdPathParam'
+    delete:
+      tags: [Projects]
+      summary: Удалить подписчика Telegram
+      description: Отписывает выбранного получателя и отправляет ему уведомление об отключении рассылки.
+      responses:
+        '200':
+          description: Подписчик удалён.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemoveTelegramRecipientResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedResponse'
+        '403':
+          $ref: '#/components/responses/ForbiddenResponse'
+        '404':
+          description: Проект или подписчик не найдены.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/logs:
     get:
       tags: [Logs]
@@ -797,6 +846,14 @@ components:
       schema:
         type: string
         format: uuid
+    TelegramChatIdPathParam:
+      name: chatId
+      in: path
+      required: true
+      description: Идентификатор подписчика Telegram.
+      schema:
+        type: string
+        example: '123456789'
     LogProjectUuidQueryParam:
       name: uuid
       in: query
@@ -950,6 +1007,20 @@ components:
           type: boolean
           description: Запущен ли бот и доступен ли Telegram API.
           example: true
+    TelegramDeepLinks:
+      type: object
+      required: [subscribe, unsubscribe]
+      properties:
+        subscribe:
+          type: string
+          nullable: true
+          description: Глубокая ссылка для подписки вида `https://t.me/<bot>?start=ADD:<UUID>`.
+          example: https://t.me/loggerbot?start=ADD:123e4567-e89b-12d3-a456-426614174000
+        unsubscribe:
+          type: string
+          nullable: true
+          description: Глубокая ссылка для отписки вида `https://t.me/<bot>?start=DELETE:<UUID>`.
+          example: https://t.me/loggerbot?start=DELETE:123e4567-e89b-12d3-a456-426614174000
     ProjectInput:
       type: object
       required:
@@ -994,6 +1065,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/ProjectInput'
         - type: object
+          required: [_id, uuid, createdAt, updatedAt, telegramLinks, telegramBot]
           properties:
             _id:
               type: string
@@ -1008,6 +1080,10 @@ components:
             updatedAt:
               type: string
               format: date-time
+            telegramLinks:
+              $ref: '#/components/schemas/TelegramDeepLinks'
+            telegramBot:
+              $ref: '#/components/schemas/TelegramBotUrlInfo'
     LogMetadata:
       type: object
       properties:
@@ -1092,6 +1168,26 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LogEntry'
+    ProjectTelegramInfo:
+      type: object
+      required: [projectUuid, enabled, antiSpamInterval, recipients, links, bot]
+      properties:
+        projectUuid:
+          type: string
+          format: uuid
+        enabled:
+          type: boolean
+        antiSpamInterval:
+          type: integer
+          minimum: 1
+        recipients:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelegramRecipient'
+        links:
+          $ref: '#/components/schemas/TelegramDeepLinks'
+        bot:
+          $ref: '#/components/schemas/TelegramBotUrlInfo'
     PingServiceInput:
       type: object
       required: [name, url]
@@ -1166,6 +1262,19 @@ components:
         serviceId:
           type: string
           example: 6650f47f9d3ab00015a81234
+    RemoveTelegramRecipientResponse:
+      type: object
+      required: [message, chatId, project]
+      properties:
+        message:
+          type: string
+          example: Получатель удален
+        chatId:
+          type: string
+          description: Chat ID удаленного подписчика.
+          example: '123456789'
+        project:
+          $ref: '#/components/schemas/Project'
     WhitelistPayload:
       type: object
       required: [ip]

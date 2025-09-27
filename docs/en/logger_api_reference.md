@@ -90,6 +90,58 @@ Remove a project together with related logs and ping services (except `logger-sy
 ### 3.6 GET `/:uuid/logs`
 Return logs for a specific project. Supported query parameters: `level`, `text`, `tag`, `user`, `ip`, `service`, `startDate`, `endDate`, `logId`.
 
+### 3.7 GET `/:uuid/telegram`
+Returns Telegram integration status: whether notifications are enabled, current anti-spam interval, recipients list, and deep links.
+
+**Response `200 OK`**
+```json
+{
+  "projectUuid": "0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+  "enabled": true,
+  "antiSpamInterval": 30,
+  "recipients": [
+    { "chatId": "123456789", "tags": ["CRITICAL"] }
+  ],
+  "links": {
+    "subscribe": "https://t.me/loggerbot?start=ADD:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+    "unsubscribe": "https://t.me/loggerbot?start=DELETE:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
+  },
+  "bot": {
+    "url": "https://t.me/loggerbot",
+    "source": "telegram",
+    "botActive": true
+  }
+}
+```
+
+When the bot is inactive the `links` fields are `null`.
+
+### 3.8 DELETE `/:uuid/telegram/recipients/:chatId`
+Removes a specific recipient and sends them an unsubscribe message. The updated project snapshot is returned in the response.
+
+**Response `200 OK`**
+```json
+{
+  "message": "Recipient removed",
+  "chatId": "123456789",
+  "project": {
+    "uuid": "0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+    "name": "Orders Service",
+    "telegramLinks": {
+      "subscribe": "https://t.me/loggerbot?start=ADD:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111",
+      "unsubscribe": "https://t.me/loggerbot?start=DELETE:0a5c9ae6-9c2c-4fb3-a471-0c2c1163c111"
+    },
+    "telegramBot": {
+      "url": "https://t.me/loggerbot",
+      "source": "telegram",
+      "botActive": true
+    }
+  }
+}
+```
+
+If the recipient is missing the API returns `404 Not Found` with an error payload.
+
 ## 4. Ping services `/projects/{uuid}/ping-services`
 
 ### 4.1 POST `/`

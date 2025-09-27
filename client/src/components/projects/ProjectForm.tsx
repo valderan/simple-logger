@@ -17,8 +17,14 @@ import {
 } from '@mui/material';
 import Grid from '@mui/material/Grid';
 import DeleteIcon from '@mui/icons-material/DeleteOutline';
-import { CreateProjectPayload, TelegramRecipient } from '../../api/types';
+import {
+  CreateProjectPayload,
+  TelegramBotUrlInfo,
+  TelegramDeepLinks,
+  TelegramRecipient
+} from '../../api/types';
 import { useTranslation } from '../../hooks/useTranslation';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 
 export interface ProjectFormProps {
   initialValues: CreateProjectPayload;
@@ -28,6 +34,8 @@ export interface ProjectFormProps {
   error?: string | null;
   secondaryActions?: ReactNode[];
   rateLimitPerMinute?: number;
+  telegramLinks?: TelegramDeepLinks;
+  telegramBotInfo?: TelegramBotUrlInfo;
 }
 
 const cloneInitialValues = (values: CreateProjectPayload): CreateProjectPayload => ({
@@ -50,12 +58,15 @@ export const ProjectForm = ({
   onSubmit,
   error,
   secondaryActions = [],
-  rateLimitPerMinute
+  rateLimitPerMinute,
+  telegramLinks,
+  telegramBotInfo
 }: ProjectFormProps): JSX.Element => {
   const [formState, setFormState] = useState<CreateProjectPayload>(() => cloneInitialValues(initialValues));
   const [customTagInput, setCustomTagInput] = useState('');
   const [recipientInput, setRecipientInput] = useState({ chatId: '', tags: '' });
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
   const { t } = useTranslation();
 
   const accessLevelRateLimitMessage = useMemo(() => {
@@ -69,7 +80,16 @@ export const ProjectForm = ({
 
   useEffect(() => {
     setFormState(cloneInitialValues(initialValues));
+    setCopyState(null);
   }, [initialValues]);
+
+  useEffect(() => {
+    if (!copyState) {
+      return;
+    }
+    const timer = window.setTimeout(() => setCopyState(null), 4000);
+    return () => window.clearTimeout(timer);
+  }, [copyState]);
 
   const hasTelegramRecipients = useMemo(() => formState.telegramNotify.recipients.length > 0, [formState.telegramNotify.recipients]);
 
@@ -127,6 +147,62 @@ export const ProjectForm = ({
     }
     onSubmit(formState);
   };
+
+  const handleCopyLink = async (link: string | null, type: 'subscribe' | 'unsubscribe') => {
+    if (!link) {
+      setCopyState({ message: t('projectForm.telegramLinkUnavailable'), severity: 'error' });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopyState({
+        message:
+          type === 'subscribe'
+            ? t('projectForm.telegramLinkCopiedSubscribe')
+            : t('projectForm.telegramLinkCopiedUnsubscribe'),
+        severity: 'success'
+      });
+    } catch {
+      setCopyState({ message: t('projectForm.telegramLinkCopyError'), severity: 'error' });
+    }
+  };
+
+  const renderLinkRow = (label: string, link: string | null, type: 'subscribe' | 'unsubscribe') => (
+    <Stack
+      key={type}
+      direction={{ xs: 'column', md: 'row' }}
+      spacing={1.5}
+      alignItems={{ xs: 'stretch', md: 'center' }}
+    >
+      <Typography variant="body2" sx={{ minWidth: { md: 200 }, fontWeight: 600 }}>
+        {label}
+      </Typography>
+      <Typography
+        variant="body2"
+        sx={{
+          fontFamily: 'monospace',
+          wordBreak: 'break-all',
+          bgcolor: 'background.paper',
+          px: 1.5,
+          py: 0.75,
+          borderRadius: 1,
+          border: (theme) => `1px solid ${theme.palette.divider}`,
+          flex: 1
+        }}
+      >
+        {link ?? t('projectForm.telegramLinkUnavailableShort')}
+      </Typography>
+      <Button
+        variant="outlined"
+        startIcon={<ContentCopyIcon fontSize="small" />}
+        onClick={() => handleCopyLink(link, type)}
+        disabled={!link}
+        sx={{ width: { xs: '100%', md: 'auto' } }}
+      >
+        {t('projectForm.telegramCopyLink')}
+      </Button>
+    </Stack>
+  );
 
   return (
     <Box component="form" onSubmit={handleSubmit} noValidate>
@@ -304,6 +380,29 @@ export const ProjectForm = ({
                     </IconButton>
                   </Stack>
                 ))}
+              </Stack>
+
+              <Stack spacing={1.5}>
+                <Typography variant="subtitle1">
+                  {t('projectForm.telegramDeepLinksTitle')}
+                </Typography>
+                {!telegramLinks && (
+                  <Alert severity="info">{t('projectForm.telegramLinkSaveNotice')}</Alert>
+                )}
+                {telegramLinks &&
+                  (telegramLinks.subscribe || telegramLinks.unsubscribe ? (
+                    <Stack spacing={1.5}>
+                      {renderLinkRow(t('projectForm.telegramSubscribeLink'), telegramLinks.subscribe, 'subscribe')}
+                      {renderLinkRow(t('projectForm.telegramUnsubscribeLink'), telegramLinks.unsubscribe, 'unsubscribe')}
+                    </Stack>
+                  ) : (
+                    <Alert severity={telegramBotInfo?.botActive === false ? 'warning' : 'info'}>
+                      {telegramBotInfo?.botActive === false
+                        ? t('projectForm.telegramLinkBotInactive')
+                        : t('projectForm.telegramLinkUnavailable')}
+                    </Alert>
+                  ))}
+                {copyState && <Alert severity={copyState.severity}>{copyState.message}</Alert>}
               </Stack>
             </Stack>
           )}

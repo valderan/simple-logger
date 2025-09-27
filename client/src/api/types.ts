@@ -21,9 +21,16 @@ export interface Project {
   customTags: string[];
   accessLevel: AccessLevel;
   telegramNotify: TelegramSettings;
+  telegramLinks: TelegramDeepLinks;
+  telegramBot: TelegramBotUrlInfo;
   debugMode: boolean;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface TelegramDeepLinks {
+  subscribe: string | null;
+  unsubscribe: string | null;
 }
 
 export interface LogMetadata {
@@ -118,6 +125,21 @@ export interface TelegramBotUrlInfo {
   url: string | null;
   source: 'env' | 'telegram' | 'inactive' | 'unknown';
   botActive: boolean;
+}
+
+export interface ProjectTelegramInfo {
+  projectUuid: string;
+  enabled: boolean;
+  antiSpamInterval: number;
+  recipients: TelegramRecipient[];
+  links: TelegramDeepLinks;
+  bot: TelegramBotUrlInfo;
+}
+
+export interface RemoveTelegramRecipientResponse {
+  message: string;
+  chatId: string;
+  project: Project;
 }
 
 export interface SystemLogPayload {

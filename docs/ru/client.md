@@ -58,7 +58,7 @@ client/
 
 Все запросы инкапсулированы в модуле `src/api`. Функции используют `axios` с базовым URL из `config.ts` и автоматически подставляют токен из `AuthContext`. Ключевые вызовы:
 
-- `fetchProjects`, `createProject`, `updateProject`, `deleteProject` — CRUD для проектов.
+- `fetchProjects`, `createProject`, `updateProject`, `deleteProject`, `fetchProjectTelegramInfo`, `removeProjectTelegramRecipient` — CRUD для проектов и управление подписчиками Telegram.
 - `filterLogs`, `deleteLogs`, `ingestLog` — получение и очистка логов.
 - `createPingService`, `updatePingService`, `deletePingService`, `triggerPingCheck` — управление мониторингом и ручные проверки.
 - `fetchRateLimitSettings`, `updateRateLimitSettings`, `fetchTelegramStatus`, `fetchTelegramBotUrl` — настройки безопасности и диагностика Telegram.
@@ -93,6 +93,7 @@ docker compose up --build
 - Состояние фильтров логов сохраняется в query-параметрах, что позволяет делиться ссылками.
 - Компоненты таблиц используют `@mui/x-data-grid` для виртуализации и кастомных действий в строках.
 - Страница Telegram показывает статус бота (подключён / нет токена) на основе `/api/settings/telegram-status` и ссылку из `/api/settings/telegram-url`, если она доступна.
+- При включении уведомлений на форме проекта отображаются deep-link ссылки для подписки и отписки с кнопкой копирования; при отключении блок скрывается автоматически.
 - Раздел Ping services автоматически обновляет время последней проверки в фоне каждые две минуты, не превышая лимиты API.
 - Таблица Ping services использует иконки вместо текстовых действий, а клик по строке открывает подробности с тегами и статусом сервиса.
 - Изменение rate limit требует подтверждения и логируется в проект `logger-system` как предупреждение.
