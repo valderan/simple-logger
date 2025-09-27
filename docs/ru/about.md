@@ -55,7 +55,7 @@
 - Подключение бота через `BOT_API_KEY`.
 - Управление списком получателей и тегами для уведомлений.
 - Настройка антиспама: минимальный интервал между оповещениями.
-- Управление подписками прямо из Telegram: команды `ADD:<UUID>`/`DELETE:<UUID>`, меню `/subscriptions`, `/info`, выбор языка `/language` и часовая блокировка после 10 неверных UUID. Все действия логируются в `logger-system`.【F:api/src/telegram/notifier.ts†L76-L370】【F:api/src/telegram/notifier.ts†L385-L399】
+- Управление подписками прямо из Telegram: команды `ADD_<UUID>`/`DELETE_<UUID>`, меню `/subscriptions`, `/info`, выбор языка `/language` и часовая блокировка после 10 неверных UUID. Все действия логируются в `logger-system`.【F:api/src/telegram/notifier.ts†L76-L370】【F:api/src/telegram/notifier.ts†L385-L399】
 - Автоматически формируемые deep-link ссылки (подписка/отписка) доступны в API и веб-клиенте для каждого проекта.【F:api/src/api/controllers/projectController.ts†L1-L267】
 - При отключении уведомлений или удалении проекта все подписчики отписываются, получают уведомление и событие фиксируется в системном журнале.【F:api/src/api/controllers/projectController.ts†L124-L193】【F:api/src/telegram/notifier.ts†L249-L307】
 

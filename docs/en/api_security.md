@@ -90,8 +90,8 @@ Example: if a website check runs every minute and the site stays down, the `PING
 
 When `BOT_API_KEY` is present the bot starts polling, registers menu commands, and handles interactive events. Responses follow the language selected via `/language` (Russian or English).【F:api/src/telegram/notifier.ts†L76-L220】【F:api/src/telegram/notifier.ts†L290-L370】
 
-- Sending `ADD:<UUID>` subscribes the chat to a project after validating the UUID and confirming that the project exists. Users receive confirmations, duplicates are prevented, and the error counter resets.【F:api/src/telegram/notifier.ts†L222-L255】
-- Sending `DELETE:<UUID>` removes the subscription or reports that the chat is not linked to the project.【F:api/src/telegram/notifier.ts†L257-L288】
+- Sending `ADD_<UUID>` subscribes the chat to a project after validating the UUID and confirming that the project exists. Users receive confirmations, duplicates are prevented, and the error counter resets.【F:api/src/telegram/notifier.ts†L226-L259】
+- Sending `DELETE_<UUID>` removes the subscription or reports that the chat is not linked to the project.【F:api/src/telegram/notifier.ts†L261-L292】
 - `/subscriptions` lists active projects and exposes inline buttons that trigger instant unsubscribe callbacks.【F:api/src/telegram/notifier.ts†L201-L220】【F:api/src/telegram/notifier.ts†L290-L358】
 - `/info` returns the current `USERID` and `CHATID` so operators can forward them to administrators for manual onboarding.【F:api/src/telegram/notifier.ts†L201-L211】
 - Invalid UUID attempts increment a counter; after ten failures the bot blocks the user for an hour, notifies them about the lock, and ignores further messages during the cooldown.【F:api/src/telegram/notifier.ts†L167-L180】【F:api/src/telegram/notifier.ts†L385-L399】

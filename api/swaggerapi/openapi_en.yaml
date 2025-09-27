@@ -1010,13 +1010,13 @@ paths:
         subscribe:
           type: string
           nullable: true
-          description: Deep link for subscription: `https://t.me/<bot>?start=ADD:<UUID>`.
-          example: https://t.me/loggerbot?start=ADD:123e4567-e89b-12d3-a456-426614174000
+          description: Deep link for subscription: `https://t.me/<bot>?start=ADD_<UUID>`.
+          example: https://t.me/loggerbot?start=ADD_123e4567-e89b-12d3-a456-426614174000
         unsubscribe:
           type: string
           nullable: true
-          description: Deep link for unsubscribe: `https://t.me/<bot>?start=DELETE:<UUID>`.
-          example: https://t.me/loggerbot?start=DELETE:123e4567-e89b-12d3-a456-426614174000
+          description: Deep link for unsubscribe: `https://t.me/<bot>?start=DELETE_<UUID>`.
+          example: https://t.me/loggerbot?start=DELETE_123e4567-e89b-12d3-a456-426614174000
     ProjectInput:
       type: object
       required:
