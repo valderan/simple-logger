@@ -243,12 +243,21 @@ Simple Logger автоматически сохраняет IP-адрес ист
     "ip": "10.0.0.5",
     "service": "billing",
     "user": "user-1",
+    "chatId": "532184920",
+    "userId": "532184920",
+    "projectUuid": "da3c9c2a-07f5-4b39-8bd6-74ae3de487d1",
+    "projectSubscriptions": [
+      "da3c9c2a-07f5-4b39-8bd6-74ae3de487d1",
+      "e9f1db85-0b9f-4890-8c0a-e0f249c66721"
+    ],
     "extra": {"orderId": "A-42"}
   },
   "clientIP": "203.0.113.10",
   "rateLimitPerMinute": 120
 }
 ```
+
+Поля `metadata.chatId`, `metadata.userId` и `metadata.projectUuid` заполняются автоматически для событий Telegram. Если чат подписан на несколько проектов, дополнительно возвращается массив `metadata.projectSubscriptions` со всеми связанными UUID.
 
 При ошибке структуры событие записывается в `logger-system`.
 

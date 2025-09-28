@@ -32,7 +32,7 @@ The client located in `client/` offers the following sections:
 Main collections:
 
 - `projects` – project metadata, log format, tags, access settings, Telegram notifications, `debugMode` flag, and the per-project `maxLogEntries` retention limit.
-- `logs` – log entries with level, message, tags, metadata (IP, service, user, extra fields).
+- `logs` – log entries with level, message, tags, metadata (IP, service, user, Telegram chat/user IDs, project context, extra fields).
 - `pingservices` – URL, interval, latest status, last check timestamp, alert tags.
 - `whitelists` – allowed IPs and comments.
 

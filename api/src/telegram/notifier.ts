@@ -1,5 +1,6 @@
 import TelegramBot from 'node-telegram-bot-api';
 import { validate as uuidValidate } from 'uuid';
+import { LogMetadata } from '../api/models/Log';
 import { ProjectDocument, ProjectModel } from '../api/models/Project';
 import { writeSystemLog } from '../api/utils/systemLogger';
 
@@ -559,14 +560,62 @@ export class TelegramNotifier {
   async logAction(message: string, metadata: Record<string, unknown>): Promise<void> {
     try {
       const enriched: Record<string, unknown> = { ...metadata };
-      if (!Object.prototype.hasOwnProperty.call(enriched, 'chatId')) {
-        enriched.chatId = null;
+      let chatId: string | undefined;
+
+      if (Object.prototype.hasOwnProperty.call(enriched, 'chatId')) {
+        const value = enriched.chatId;
+        if (typeof value === 'string') {
+          chatId = value;
+        } else if (typeof value === 'number') {
+          chatId = value.toString();
+        } else if (value != null) {
+          chatId = String(value);
+        }
       }
-      if (!Object.prototype.hasOwnProperty.call(enriched, 'userId')) {
-        const chatId = enriched.chatId;
-        enriched.userId = chatId ?? null;
+
+      if (chatId) {
+        enriched.chatId = chatId;
+      } else {
+        delete enriched.chatId;
       }
-      await writeSystemLog(message, { tags: ['TELEGRAM'], metadata: enriched });
+
+      if (Object.prototype.hasOwnProperty.call(enriched, 'userId')) {
+        const value = enriched.userId;
+        if (value == null) {
+          delete enriched.userId;
+        } else if (typeof value === 'string') {
+          enriched.userId = value;
+        } else {
+          enriched.userId = String(value);
+        }
+      } else if (chatId) {
+        enriched.userId = chatId;
+      }
+
+      if (Object.prototype.hasOwnProperty.call(enriched, 'projectUuid')) {
+        const value = enriched.projectUuid;
+        if (value == null || value === '') {
+          delete enriched.projectUuid;
+        } else if (typeof value === 'string') {
+          enriched.projectUuid = value;
+        } else {
+          enriched.projectUuid = String(value);
+        }
+      }
+
+      if (chatId) {
+        const subscriptions = await ProjectModel.find({ 'telegramNotify.recipients.chatId': chatId })
+          .select({ uuid: 1 })
+          .lean();
+        const projectUuids = subscriptions.map((project) => project.uuid);
+        if (projectUuids.length > 1 && !Array.isArray(enriched.projectSubscriptions)) {
+          enriched.projectSubscriptions = projectUuids;
+        } else if (projectUuids.length === 1 && !Object.prototype.hasOwnProperty.call(enriched, 'projectUuid')) {
+          enriched.projectUuid = projectUuids[0];
+        }
+      }
+
+      await writeSystemLog(message, { tags: ['TELEGRAM'], metadata: enriched as LogMetadata });
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Failed to write telegram system log', error);

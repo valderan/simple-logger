@@ -251,6 +251,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       filtersToggle: 'Additional filters',
       deleteConfirm: 'Delete by filter',
       detailsToggleLabel: 'Open log details on row click',
+      metadataToggleLabel: 'Show metadata column',
       detailsDialogTitle: 'Log details',
       detailsRaw: 'Raw entry',
       levelOptions: {
@@ -266,7 +267,11 @@ export const translations: Record<Locale, TranslationRecord> = {
         ip: 'IP: {{value}}',
         clientIp: 'Client IP: {{value}}',
         service: 'Service: {{value}}',
-        user: 'User: {{value}}'
+        user: 'User: {{value}}',
+        telegramChat: 'Telegram chat ID: {{value}}',
+        telegramUser: 'Telegram user ID: {{value}}',
+        projectUuidMeta: 'Related project UUID: {{value}}',
+        projectSubscriptions: 'Project subscriptions: {{value}}'
       },
       metadataHeader: 'Metadata',
       messageHeader: 'Message',
@@ -736,6 +741,7 @@ export const translations: Record<Locale, TranslationRecord> = {
       filtersToggle: 'Дополнительные фильтры',
       deleteConfirm: 'Удалить по фильтру',
       detailsToggleLabel: 'Открывать подробности по клику',
+      metadataToggleLabel: 'Показывать столбец метаданных',
       detailsDialogTitle: 'Подробности лога',
       detailsRaw: 'Исходная запись',
       levelOptions: {
@@ -751,7 +757,11 @@ export const translations: Record<Locale, TranslationRecord> = {
         ip: 'IP: {{value}}',
         clientIp: 'IP клиента: {{value}}',
         service: 'Сервис: {{value}}',
-        user: 'Пользователь: {{value}}'
+        user: 'Пользователь: {{value}}',
+        telegramChat: 'ID чата Telegram: {{value}}',
+        telegramUser: 'ID пользователя Telegram: {{value}}',
+        projectUuidMeta: 'UUID связанного проекта: {{value}}',
+        projectSubscriptions: 'Подписки пользователя: {{value}}'
       },
       metadataHeader: 'Метаданные',
       messageHeader: 'Сообщение',

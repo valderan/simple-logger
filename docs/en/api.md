@@ -124,6 +124,8 @@ Content-Type: application/json
 }
 ```
 
+Telegram-driven actions (bot commands and admin changes to Telegram recipients) enrich system logs with `metadata.chatId`, `metadata.userId`, `metadata.projectUuid`, and, when a chat is linked to multiple projects, `metadata.projectSubscriptions`. Operators can therefore trace incidents back to a specific conversation and understand the affected projects.
+
 Invalid payloads are captured as incidents inside the system project `logger-system`.
 
 Possible responses when ingesting logs:
