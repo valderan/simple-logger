@@ -77,7 +77,7 @@ export const DashboardPage = (): JSX.Element => {
       .flatMap((query) => query.data?.logs ?? [])
       .filter((log) => criticalLevels.includes(log.level) || log.tags.some((tag) => tag.includes('ERROR')))
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    return allLogs.slice(0, 8);
+    return allLogs.slice(0, 3);
   }, [logsQueries]);
 
   const handleIncidentClick = (log: LogEntry) => {

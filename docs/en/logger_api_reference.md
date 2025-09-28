@@ -259,6 +259,8 @@ The service always records the originating IP in the `clientIP` field, regardles
 
 Fields `metadata.chatId`, `metadata.userId`, and `metadata.projectUuid` are populated automatically for Telegram events. When a chat subscribes to several projects the response also includes `metadata.projectSubscriptions` with every related UUID.
 
+When Telegram notifications are enabled, each alert starts with `<Project name> (<UUID>)` so operators can immediately tell which project triggered the message.
+
 Invalid payloads are recorded inside the `logger-system` project.
 
 Other responses:

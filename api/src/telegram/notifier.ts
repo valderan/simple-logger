@@ -114,6 +114,8 @@ export class TelegramNotifier {
     }
     const now = Date.now();
     const intervalMs = project.telegramNotify.antiSpamInterval * 60 * 1000;
+    const projectLabel = `${project.name} (${project.uuid})`;
+    const messageWithProject = `${projectLabel}\n${message}`;
     for (const recipient of project.telegramNotify.recipients) {
       if (recipient.tags.length && !recipient.tags.includes(tag)) {
         continue;
@@ -123,7 +125,7 @@ export class TelegramNotifier {
       if (nextAllowed > now) {
         continue;
       }
-      await this.bot.sendMessage(recipient.chatId, message);
+      await this.bot.sendMessage(recipient.chatId, messageWithProject);
       await this.logAction('telegram_notification_sent', {
         projectUuid: project.uuid,
         chatId: recipient.chatId,

@@ -88,6 +88,8 @@ Telegram settings are stored per project inside the `Project` document. Each rec
 
 Example: if a website check runs every minute and the site stays down, the `PING_DOWN` notification is sent only once per configured interval. With a 15-minute anti-spam window, repeated alerts are suppressed until the timeout expires, protecting the team from notification storms.
 
+Each outgoing message now begins with `<Name> (<UUID>)`, so recipients immediately see which project raised the incident even when they subscribe to multiple systems.
+
 When `BOT_API_KEY` is present the bot starts polling, registers menu commands, and handles interactive events. Responses follow the language selected via `/language` (Russian or English).【F:api/src/telegram/notifier.ts†L76-L220】【F:api/src/telegram/notifier.ts†L290-L370】
 
 - Sending `ADD:<UUID>` subscribes the chat to a project after validating the UUID and confirming that the project exists. Users receive confirmations, duplicates are prevented, and the error counter resets.【F:api/src/telegram/notifier.ts†L226-L259】
