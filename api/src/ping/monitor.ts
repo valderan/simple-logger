@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { PingServiceDocument, PingServiceModel } from '../api/models/PingService';
 import { ProjectModel } from '../api/models/Project';
+import { writeSystemLog } from '../api/utils/systemLogger';
 import { defaultNotifier } from '../telegram/notifier';
 
 /**
@@ -22,8 +23,23 @@ export class PingMonitor {
     await service.save();
 
     const project = await ProjectModel.findOne({ uuid: service.projectUuid });
-    if (project && service.lastStatus === 'down') {
-      await defaultNotifier.notify(project, `Ping-сервис ${service.name} недоступен`, 'PING_DOWN');
+    if (service.lastStatus === 'down') {
+      await writeSystemLog(`Ping-сервис ${service.name} недоступен`, {
+        level: 'ERROR',
+        tags: ['PING', 'MONITOR'],
+        metadata: {
+          service: 'ping-monitor',
+          extra: {
+            projectUuid: service.projectUuid,
+            pingServiceId: service.id,
+            url: service.url,
+            intervalSeconds: service.interval
+          }
+        }
+      });
+      if (project) {
+        await defaultNotifier.notify(project, `Ping-сервис ${service.name} недоступен`, 'PING_DOWN');
+      }
     }
     return service;
   }

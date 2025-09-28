@@ -380,7 +380,7 @@ paths:
     post:
       tags: [Projects, PingServices]
       summary: Trigger ping checks
-      description: Immediately checks all ping services for the project and returns fresh data.
+      description: Immediately checks all ping services for the project and returns fresh data. When a URL is unreachable the outage is logged to Logger Core and triggers a Telegram alert if the project is configured for notifications.
       responses:
         '200':
           description: Check results.
@@ -485,7 +485,7 @@ paths:
     post:
       tags: [Logs]
       summary: Ingest a log
-      description: Accepts and stores a log from a client.
+      description: Accepts and stores a log from a client. When Telegram alerts are enabled the chat message starts with `<Name> (<UUID>)`.
       security: []
       requestBody:
         required: true

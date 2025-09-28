@@ -43,8 +43,8 @@ Read the full guides in the repository:
 ## Features
 
 - Ingest, store, and filter logs by project UUID.
-- Ping monitoring for HTTP services with manual probe triggers.
-- Telegram notifications based on tags and incidents.
+- Ping monitoring for HTTP services with manual probe triggers and outage records stored in Logger Core.
+- Telegram notifications based on tags and incidents, each prefixed with the project name and UUID.
 - Per-project retention limits (`maxLogEntries`) with critical alerts when the quota is exhausted.
 - IP allowlist disables the rate limiter for trusted addresses, while global rate limiting protects all other clients.
 - Web client with dark/light themes, search, and detailed log views.

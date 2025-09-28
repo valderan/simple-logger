@@ -32,7 +32,7 @@ simple-logger/
 1. **Log ingestion** – services call `POST /api/logs` with their project UUID. `logController` validates input, stores the document, and records incidents in `logger-system` if the payload is invalid.
 2. **Project management** – administrators authenticate via `/api/auth/login` and manage projects, ping checks, and the whitelist under `/api/projects/*` and `/api/settings/*`.
 3. **Log browsing and metrics** – the web client uses TanStack Query to talk to the API, caches responses, and renders tables/charts. Log filters are synced to the query string.
-4. **Ping monitoring** – when a check is created a MongoDB record is stored and the worker in `src/ping` periodically probes the target URL. Results are displayed in the client and can trigger Telegram alerts.
+4. **Ping monitoring** – when a check is created a MongoDB record is stored and the worker in `src/ping` periodically probes the target URL. Every outage is recorded inside `logger-system` and, if Telegram is enabled, raises an alert for project subscribers.
 
 ## Security and operations
 
