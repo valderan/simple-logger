@@ -68,11 +68,6 @@ export const PingServicesPage = (): JSX.Element => {
   } = useQuery({ queryKey: ['projects'], queryFn: fetchProjects });
 
   const selectedUuid = searchParams.get('uuid') || projects?.[0]?.uuid;
-  const selectedProject = useMemo(
-    () => (projects ?? []).find((project) => project.uuid === selectedUuid) ?? null,
-    [projects, selectedUuid]
-  );
-
   const {
     data: services,
     isLoading: servicesLoading,
@@ -170,7 +165,7 @@ export const PingServicesPage = (): JSX.Element => {
         interval: Math.max(MIN_INTERVAL, Math.min(MAX_INTERVAL, Number(formData.interval))),
         telegramTags: parseTags(formData.telegramTags)
       }),
-    onSuccess: async (service) => {
+    onSuccess: async () => {
       setDialogOpen(false);
       resetForm();
       setFeedback({ severity: 'success', message: t('ping.serviceCreated') });
@@ -194,7 +189,7 @@ export const PingServicesPage = (): JSX.Element => {
         telegramTags: parseTags(formData.telegramTags)
       });
     },
-    onSuccess: async (service) => {
+    onSuccess: async () => {
       setDialogOpen(false);
       resetForm();
       setFeedback({ severity: 'success', message: t('ping.serviceUpdated') });
