@@ -142,6 +142,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Запрещено записывать логи в системный проект.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Превышен лимит сохранённых логов для проекта.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
     put:
       tags: [Projects]
       summary: Обновление проекта
@@ -1031,6 +1043,7 @@ components:
         - accessLevel
         - telegramNotify
         - debugMode
+        - maxLogEntries
       properties:
         name:
           type: string
@@ -1061,6 +1074,11 @@ components:
         debugMode:
           type: boolean
           default: false
+        maxLogEntries:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Максимальное число логов, сохраняемых для проекта. Значение `0` отключает ограничение.
     Project:
       allOf:
         - $ref: '#/components/schemas/ProjectInput'
@@ -1364,6 +1382,10 @@ components:
         message:
           type: string
           example: Требуется авторизация
+        code:
+          type: string
+          description: Машинно-читабельный код ошибки, если он доступен.
+          example: LOG_LIMIT_EXCEEDED
         details:
           description: Дополнительные сведения об ошибке (могут отсутствовать).
     ValidationErrorResponse:

@@ -46,10 +46,17 @@ export interface ApiClientOptions {
 /**
  * Общий метод обработки ошибок API.
  */
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(message: string, public status: number) {
     super(message);
     this.name = 'ApiError';
+  }
+}
+
+export class LogLimitExceededError extends ApiError {
+  constructor(message: string) {
+    super(message, 409);
+    this.name = 'LogLimitExceededError';
   }
 }
 
@@ -359,7 +366,11 @@ export class ApiClient {
       headers
     });
     if (!response.ok) {
-      const message = await ApiClient.safeReadError(response);
+      const payload = await ApiClient.safeReadErrorPayload(response);
+      const message = payload.message ?? `HTTP ${response.status}`;
+      if (response.status === 409 && payload.code === 'LOG_LIMIT_EXCEEDED') {
+        throw new LogLimitExceededError(message);
+      }
       throw new ApiError(message, response.status);
     }
     if (response.status === 204) {
@@ -385,12 +396,11 @@ export class ApiClient {
   /**
    * Безопасное чтение сообщения об ошибке.
    */
-  private static async safeReadError(response: Response): Promise<string> {
+  private static async safeReadErrorPayload(response: Response): Promise<{ message?: string; code?: string }> {
     try {
-      const payload = (await response.json()) as { message?: string };
-      return payload?.message ?? `HTTP ${response.status}`;
+      return (await response.json()) as { message?: string; code?: string };
     } catch {
-      return `HTTP ${response.status}`;
+      return {};
     }
   }
 }

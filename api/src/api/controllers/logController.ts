@@ -85,6 +85,42 @@ export async function ingestLog(req: Request, res: Response): Promise<Response> 
     return res.status(404).json({ message: 'Проект не найден' });
   }
 
+  if (project.uuid === 'logger-system') {
+    await writeSystemLog('Blocked external log attempt to Logger Core', {
+      level: 'SECURITY',
+      tags: ['INGEST', 'LOGGER_CORE'],
+      metadata: {
+        ip: clientIp,
+        service: 'log-ingest',
+        extra: { reason: 'external_write_forbidden' }
+      }
+    });
+    return res.status(403).json({ message: 'Запрещено записывать логи в системный проект' });
+  }
+
+  if (project.maxLogEntries > 0) {
+    const currentCount = await LogModel.countDocuments({ projectUuid: uuid });
+    if (currentCount >= project.maxLogEntries) {
+      await writeSystemLog(`Log storage limit exceeded for project ${uuid}`, {
+        level: 'CRITICAL',
+        tags: ['LOG_CAP', 'ALERT'],
+        metadata: {
+          ip: clientIp,
+          service: 'log-ingest',
+          extra: {
+            projectUuid: uuid,
+            maxLogEntries: project.maxLogEntries,
+            currentCount
+          }
+        }
+      });
+      return res.status(409).json({
+        message: 'Превышен лимит хранения логов для проекта',
+        code: 'LOG_LIMIT_EXCEEDED'
+      });
+    }
+  }
+
   const savedLog = await LogModel.create({
     projectUuid: uuid,
     level: log.level,

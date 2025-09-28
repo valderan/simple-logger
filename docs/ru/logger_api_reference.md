@@ -60,11 +60,14 @@ Content-Type: application/json
     "recipients": [{"chatId": "123456", "tags": ["ERROR", "CRITICAL"]}],
     "antiSpamInterval": 30
   },
-  "debugMode": false
+  "debugMode": false,
+  "maxLogEntries": 0
 }
 ```
 
 **Ответ `201 Created`** — объект проекта с полем `uuid`.
+
+Поле `maxLogEntries` задаёт максимальное количество логов для проекта (`0` — без ограничений). Для Logger Core лимит всегда отключён.
 
 ### 3.2 GET `/`
 Список проектов (последние сверху).
@@ -248,6 +251,11 @@ Simple Logger автоматически сохраняет IP-адрес ист
 ```
 
 При ошибке структуры событие записывается в `logger-system`.
+
+Дополнительно эндпоинт может вернуть:
+
+- `403 Forbidden` — внешняя попытка записать лог в `logger-system`.
+- `409 Conflict` — превышен лимит `maxLogEntries` (в теле есть `code = LOG_LIMIT_EXCEEDED`, а в Logger Core появляется запись с тегами `LOG_CAP` и `ALERT`).
 
 ### 5.2 GET `/`
 Фильтрация логов по тем же параметрам, что и `/:uuid/logs`. Требует токен.

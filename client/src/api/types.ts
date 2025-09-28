@@ -24,6 +24,7 @@ export interface Project {
   telegramCommands: TelegramCommands;
   telegramBot: TelegramBotUrlInfo;
   debugMode: boolean;
+  maxLogEntries: number;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -103,6 +104,7 @@ export interface CreateProjectPayload {
   accessLevel: AccessLevel;
   telegramNotify: TelegramSettings;
   debugMode: boolean;
+  maxLogEntries: number;
 }
 
 export interface CreatePingServicePayload {
@@ -140,13 +142,6 @@ export interface RemoveTelegramRecipientResponse {
   message: string;
   chatId: string;
   project: Project;
-}
-
-export interface SystemLogPayload {
-  message: string;
-  level?: string;
-  tags?: string[];
-  metadata?: Record<string, unknown>;
 }
 
 export interface LogFilter {

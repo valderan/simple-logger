@@ -22,5 +22,6 @@ curl -sS -X PUT "${BASE_URL}/projects/${PROJECT_UUID}" \
           "recipients": [{"chatId": "123456", "tags": ["ERROR", "CRITICAL"]}],
           "antiSpamInterval": 20
         },
-        "debugMode": false
+        "debugMode": false,
+        "maxLogEntries": 0
       }' | jq

@@ -39,6 +39,7 @@ export interface ProjectAttributes {
   accessLevel: AccessLevel;
   telegramNotify: TelegramSettings;
   debugMode: boolean;
+  maxLogEntries: number;
 }
 
 export interface ProjectDocument extends ProjectAttributes, Document {
@@ -73,7 +74,8 @@ const ProjectSchema = new Schema<ProjectDocument, ProjectModel>({
   customTags: { type: [String], default: [] },
   accessLevel: { type: String, enum: ['global', 'whitelist', 'docker'], default: 'global' },
   telegramNotify: { type: TelegramSettingsSchema, default: () => ({}) },
-  debugMode: { type: Boolean, default: false }
+  debugMode: { type: Boolean, default: false },
+  maxLogEntries: { type: Number, default: 0, min: 0 }
 }, {
   timestamps: true
 });
@@ -99,7 +101,8 @@ ProjectSchema.statics.ensureSystemProject = async function ensureSystemProject()
       recipients: [],
       antiSpamInterval: 30
     },
-    debugMode: true
+    debugMode: true,
+    maxLogEntries: 0
   });
 };
 

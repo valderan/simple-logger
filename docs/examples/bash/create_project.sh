@@ -19,5 +19,6 @@ curl -sS -X POST "${BASE_URL}/projects" \
           "recipients": [{"chatId": "123456", "tags": ["ERROR", "CRITICAL"]}],
           "antiSpamInterval": 30
         },
-        "debugMode": false
+        "debugMode": false,
+        "maxLogEntries": 0
       }' | jq

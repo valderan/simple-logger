@@ -72,11 +72,14 @@ Content-Type: application/json
     "recipients": [{"chatId": "123456", "tags": ["ERROR", "CRITICAL"]}],
     "antiSpamInterval": 30
   },
-  "debugMode": false
+  "debugMode": false,
+  "maxLogEntries": 0
 }
 ```
 
 The `201 Created` response contains the project with its generated `uuid`.
+
+The `maxLogEntries` field controls retention per project. When the value is greater than zero the API stops accepting new logs once the limit is reached. Logger Core always works without a limit regardless of the setting.
 
 Every project response also includes a `telegramCommands` block with commands such as `ADD:<UUID>` and `DELETE:<UUID>`, together with the `telegramBot` object that describes the current bot URL. When notifications are disabled the commands are `null`.
 
@@ -122,6 +125,14 @@ Content-Type: application/json
 ```
 
 Invalid payloads are captured as incidents inside the system project `logger-system`.
+
+Possible responses when ingesting logs:
+
+- `201 Created` — log saved successfully. The response echoes the stored document and includes `rateLimitPerMinute`.
+- `400 Bad Request` — validation failed.
+- `403 Forbidden` — external client attempted to write into Logger Core. The event is recorded as a security incident.
+- `404 Not Found` — the project does not exist.
+- `409 Conflict` — the project exhausted its `maxLogEntries` quota. A critical event with tags `LOG_CAP` and `ALERT` is written to Logger Core so operators can react.
 
 Log filtering accepts `uuid`, `level`, `text`, `tag`, `user`, `ip`, `service`, `startDate`, `endDate`, `logId`:
 
