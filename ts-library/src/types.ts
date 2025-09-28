@@ -174,6 +174,7 @@ export interface ProjectInput {
   accessLevel: 'global' | 'whitelist' | 'docker';
   telegramNotify: TelegramSettings;
   debugMode: boolean;
+  maxLogEntries: number;
 }
 
 /**

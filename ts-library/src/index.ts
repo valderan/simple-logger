@@ -3,7 +3,7 @@
  */
 
 export { Logger } from './logger.js';
-export { ApiClient } from './apiClient.js';
+export { ApiClient, ApiError, LogLimitExceededError } from './apiClient.js';
 export type {
   LoggerOptions,
   LogOptions,

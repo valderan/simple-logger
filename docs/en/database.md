@@ -15,6 +15,7 @@ MongoDB is used as the primary datastore. Key collections and fields are listed 
 | `accessLevel` | enum | Access mode: `global`, `whitelist`, `docker`. |
 | `telegramNotify` | object | Telegram notification settings. |
 | `debugMode` | boolean | Skip Telegram notifications when `true`. |
+| `maxLogEntries` | number | Maximum stored log entries (`0` = unlimited). |
 | `createdAt/updatedAt` | date | Timestamps managed by Mongoose. |
 
 ## Collection `logs`

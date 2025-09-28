@@ -22,7 +22,8 @@ async function main(): Promise<void> {
         recipients: [{ chatId: '123456', tags: ['ERROR', 'CRITICAL'] }],
         antiSpamInterval: 20
       },
-      debugMode: false
+      debugMode: false,
+      maxLogEntries: 0
     });
 
     console.log('Project updated. New description:', updated.description);

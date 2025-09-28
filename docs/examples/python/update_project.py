@@ -23,6 +23,7 @@ def update_project() -> None:
             "antiSpamInterval": 20,
         },
         "debugMode": False,
+        "maxLogEntries": 0,
     }
 
     response = requests.put(

@@ -24,6 +24,7 @@ export interface Project {
     antiSpamInterval: number;
   };
   debugMode: boolean;
+  maxLogEntries: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -146,6 +147,7 @@ export class LoggerApiClient {
       antiSpamInterval?: number;
     };
     debugMode?: boolean;
+    maxLogEntries?: number;
   }): Promise<Project> {
     return this.request<Project>({
       method: 'POST',
@@ -189,6 +191,7 @@ export class LoggerApiClient {
         antiSpamInterval?: number;
       };
       debugMode?: boolean;
+      maxLogEntries?: number;
     }
   ): Promise<Project> {
     return this.request<Project>({

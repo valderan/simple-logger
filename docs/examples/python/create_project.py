@@ -20,6 +20,7 @@ def create_project() -> None:
             "antiSpamInterval": 30,
         },
         "debugMode": False,
+        "maxLogEntries": 0,
     }
 
     response = requests.post(

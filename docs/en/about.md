@@ -31,7 +31,7 @@ The client located in `client/` offers the following sections:
 
 Main collections:
 
-- `projects` – project metadata, log format, tags, access settings, Telegram notifications, `debugMode` flag.
+- `projects` – project metadata, log format, tags, access settings, Telegram notifications, `debugMode` flag, and the per-project `maxLogEntries` retention limit.
 - `logs` – log entries with level, message, tags, metadata (IP, service, user, extra fields).
 - `pingservices` – URL, interval, latest status, last check timestamp, alert tags.
 - `whitelists` – allowed IPs and comments.
@@ -45,7 +45,9 @@ Main collections:
 
 ### Security and auditing
 
-- The `logger-system` project is created automatically and stores internal events.
+- The `logger-system` project is created automatically, stores internal events, and accepts write operations only from the platform itself.
+- The public ingestion API denies attempts to submit logs for `logger-system`.
+- Telegram chat commands cannot subscribe to `logger-system`; only internal tooling may manage its recipients.
 - Invalid UUIDs are registered as security incidents.
 - All login attempts are recorded with IP and timestamp.
 - Rate limiting and IP whitelist are enabled by default.

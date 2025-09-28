@@ -8,7 +8,6 @@ import {
   ProjectLogResponse,
   PingService,
   RateLimitSettings,
-  SystemLogPayload,
   TelegramBotUrlInfo,
   TelegramStatus,
   ProjectTelegramInfo,
@@ -148,24 +147,6 @@ export const removeProjectTelegramRecipient = async (uuid: string, chatId: strin
     `/api/projects/${uuid}/telegram/recipients/${encodeURIComponent(chatId)}`
   );
   return data;
-};
-
-export const logSystemEvent = async ({
-  message,
-  level = 'INFO',
-  tags = ['ADMIN_ACTION'],
-  metadata
-}: SystemLogPayload) => {
-  await apiClient.post('/api/logs', {
-    uuid: 'logger-system',
-    log: {
-      level,
-      message,
-      tags,
-      metadata,
-      timestamp: new Date().toISOString()
-    }
-  });
 };
 
 export const fetchWhitelist = async () => {

@@ -23,7 +23,8 @@ func main() {
             "recipients":       []map[string]any{{"chatId": "123456", "tags": []string{"ERROR", "CRITICAL"}}},
             "antiSpamInterval": 30,
         },
-        "debugMode": false,
+        "debugMode":     false,
+        "maxLogEntries": 0,
     }
 
     body, _ := json.Marshal(payload)

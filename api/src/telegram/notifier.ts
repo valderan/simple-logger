@@ -31,7 +31,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     unsubscribeConfirmation: 'Подписка отменена.',
     unsubscribeDisabled: 'Уведомления для проекта {{name}} отключены. Подписка удалена.',
     unsubscribeDeleted: 'Проект {{name}} удалён. Подписка удалена.',
-    botStarted: 'Телеграм-бот запущен и принимает сообщения.'
+    botStarted: 'Телеграм-бот запущен и принимает сообщения.',
+    systemSubscribeForbidden: 'Подписка на Logger Core через чат недоступна.'
   },
   en: {
     addSuccess: 'You are subscribed to project {{name}} ({{uuid}}).',
@@ -56,7 +57,8 @@ const TRANSLATIONS: Record<Language, Record<string, string>> = {
     unsubscribeConfirmation: 'Subscription removed.',
     unsubscribeDisabled: 'Notifications for project {{name}} have been disabled. Subscription removed.',
     unsubscribeDeleted: 'Project {{name}} has been deleted. Subscription removed.',
-    botStarted: 'Telegram bot started and listens for messages.'
+    botStarted: 'Telegram bot started and listens for messages.',
+    systemSubscribeForbidden: 'Subscribing to Logger Core via chat is not allowed.'
   }
 };
 
@@ -262,6 +264,17 @@ export class TelegramNotifier {
     }
 
     const chatIdStr = chatId.toString();
+    if (project.uuid === 'logger-system') {
+      await this.bot?.sendMessage(chatId, TRANSLATIONS[language].systemSubscribeForbidden);
+      await this.logAction('telegram_subscription_forbidden_logger_core', {
+        chatId: chatIdStr,
+        userId,
+        projectUuid: project.uuid
+      });
+      this.resetInvalid(chatId);
+      return;
+    }
+
     const exists = project.telegramNotify.recipients.find((recipient) => recipient.chatId === chatIdStr);
     if (exists) {
       await this.bot?.sendMessage(chatId, this.interpolate(TRANSLATIONS[language].addExists, {
@@ -546,6 +559,9 @@ export class TelegramNotifier {
   async logAction(message: string, metadata: Record<string, unknown>): Promise<void> {
     try {
       const enriched: Record<string, unknown> = { ...metadata };
+      if (!Object.prototype.hasOwnProperty.call(enriched, 'chatId')) {
+        enriched.chatId = null;
+      }
       if (!Object.prototype.hasOwnProperty.call(enriched, 'userId')) {
         const chatId = enriched.chatId;
         enriched.userId = chatId ?? null;

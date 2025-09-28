@@ -45,6 +45,7 @@ Read the full guides in the repository:
 - Ingest, store, and filter logs by project UUID.
 - Ping monitoring for HTTP services with manual probe triggers.
 - Telegram notifications based on tags and incidents.
+- Per-project retention limits (`maxLogEntries`) with critical alerts when the quota is exhausted.
 - IP allowlist disables the rate limiter for trusted addresses, while global rate limiting protects all other clients.
 - Web client with dark/light themes, search, and detailed log views.
 
@@ -57,6 +58,12 @@ Administrators can call `GET /api/settings/telegram-status` to instantly verify 
 - SDK docs: [docs/ts-library-doc/ApiClient-en.md](docs/ts-library-doc/ApiClient-en.md#api-settings) · [docs/ts-library-doc/ApiClient-ru.md](docs/ts-library-doc/ApiClient-ru.md#настройки-api)
 
 To share the bot link use `GET /api/settings/telegram-url` or the `getTelegramBotUrl()` helper. The service returns the URL from `BOT_URL` or, when the bot is active, resolves the username via Telegram Bot API. Read more in [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md#67-get-telegram-url) and [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md#67-get-telegram-url).
+
+## Logger Core safeguards
+
+- The public `/api/logs` endpoint rejects any attempt to write into the `logger-system` project and logs the incident for auditing.
+- Telegram chat commands (`ADD:<UUID>`) cannot subscribe to Logger Core; subscriptions are managed exclusively from the admin interface.
+- When a project reaches its `maxLogEntries` cap the system writes a critical `LOG_CAP`/`ALERT` record into Logger Core and responds with `409 Conflict`.
 
 ## Project components
 

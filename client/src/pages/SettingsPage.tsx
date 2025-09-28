@@ -28,7 +28,6 @@ import {
   fetchBlacklist,
   fetchWhitelist,
   filterLogs,
-  logSystemEvent,
   updateBlacklistEntry,
   removeWhitelistEntry,
   updateRateLimitSettings
@@ -156,16 +155,6 @@ export const SettingsPage = (): JSX.Element => {
       setPendingRateLimit(null);
       setRateLimitInput(String(data.rateLimitPerMinute));
       queryClient.invalidateQueries({ queryKey: ['rate-limit'] });
-      try {
-        await logSystemEvent({
-          level: 'WARNING',
-          tags: ['SECURITY', 'SETTINGS', 'RATE_LIMIT'],
-          message: `Rate limit changed to ${data.rateLimitPerMinute} requests per minute`,
-          metadata: { rateLimitPerMinute: data.rateLimitPerMinute }
-        });
-      } catch (error) {
-        console.error('Failed to log rate limit change', error);
-      }
     },
     onError: () => {
       setRateLimitFeedback({ severity: 'error', message: t('settings.rateLimitUpdateError') });

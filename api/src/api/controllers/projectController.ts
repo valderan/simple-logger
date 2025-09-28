@@ -44,7 +44,8 @@ const projectSchema = z.object({
     recipients: z.array(z.object({ chatId: z.string(), tags: z.array(z.string()).default([]) })).default([]),
     antiSpamInterval: z.number().min(1).default(15)
   }).default({ enabled: false, recipients: [], antiSpamInterval: 15 }),
-  debugMode: z.boolean().default(false)
+  debugMode: z.boolean().default(false),
+  maxLogEntries: z.number().int().min(0).default(0)
 });
 
 const pingSchema = z.object({
@@ -67,6 +68,9 @@ export async function createProject(req: Request, res: Response): Promise<Respon
     return res.status(400).json({ message: 'Неверный формат данных', details: parsed.error.flatten() });
   }
   const data = parsed.data;
+  if (data.maxLogEntries < 0) {
+    data.maxLogEntries = 0;
+  }
   const project = await ProjectModel.create(data);
   if (project.telegramNotify.enabled) {
     await defaultNotifier.logAction('telegram_notifications_enabled', {
@@ -139,7 +143,11 @@ export async function updateProject(req: Request, res: Response): Promise<Respon
   const previousEnabled = project.telegramNotify.enabled;
   const previousChatIds = extractChatIds(project.telegramNotify.recipients);
 
-  project.set(parsed.data);
+  const updatedData = parsed.data;
+  if (uuid === 'logger-system') {
+    updatedData.maxLogEntries = 0;
+  }
+  project.set(updatedData);
 
   if (!project.telegramNotify.enabled) {
     project.telegramNotify.recipients = [];

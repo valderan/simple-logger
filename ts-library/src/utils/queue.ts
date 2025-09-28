@@ -3,6 +3,7 @@
  */
 
 import type { ApiQueueItem, ApiQueueStatus } from '../types.js';
+import { LogLimitExceededError } from '../apiClient.js';
 
 /**
  * Результат обработки элемента очереди API.
@@ -141,7 +142,11 @@ export class RateLimitedQueue {
       try {
         await this.dispatcher(item);
       } catch (error) {
-        console.error('Не удалось отправить лог в API:', error);
+        if (error instanceof LogLimitExceededError) {
+          console.error('Лимит хранения логов для проекта превышен:', error.message);
+        } else {
+          console.error('Не удалось отправить лог в API:', error);
+        }
       }
     } finally {
       this.processing = false;

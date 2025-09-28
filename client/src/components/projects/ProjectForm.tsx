@@ -36,12 +36,14 @@ export interface ProjectFormProps {
   rateLimitPerMinute?: number;
   telegramCommands?: TelegramCommands;
   telegramBotInfo?: TelegramBotUrlInfo;
+  maxLogEntriesReadOnly?: boolean;
 }
 
 const cloneInitialValues = (values: CreateProjectPayload): CreateProjectPayload => ({
   ...values,
   defaultTags: [...values.defaultTags],
   customTags: [...values.customTags],
+  maxLogEntries: values.maxLogEntries,
   telegramNotify: {
     ...values.telegramNotify,
     recipients: values.telegramNotify.recipients.map((recipient) => ({
@@ -60,7 +62,8 @@ export const ProjectForm = ({
   secondaryActions = [],
   rateLimitPerMinute,
   telegramCommands,
-  telegramBotInfo
+  telegramBotInfo,
+  maxLogEntriesReadOnly = false
 }: ProjectFormProps): JSX.Element => {
   const [formState, setFormState] = useState<CreateProjectPayload>(() => cloneInitialValues(initialValues));
   const [customTagInput, setCustomTagInput] = useState('');
@@ -263,6 +266,24 @@ export const ProjectForm = ({
                 />
               }
               label={t('projectForm.debugMode')}
+            />
+            <TextField
+              label={t('projectForm.maxLogEntriesLabel')}
+              type="number"
+              sx={{ width: { xs: '100%', sm: 220 } }}
+              value={formState.maxLogEntries}
+              onChange={(event) => {
+                const nextValue = Number(event.target.value);
+                const safeValue = Number.isNaN(nextValue) ? 0 : Math.max(0, Math.floor(nextValue));
+                setFormState((prev) => ({ ...prev, maxLogEntries: safeValue }));
+              }}
+              inputProps={{ min: 0 }}
+              disabled={maxLogEntriesReadOnly}
+              helperText={
+                maxLogEntriesReadOnly
+                  ? t('projectForm.maxLogEntriesLocked')
+                  : t('projectForm.maxLogEntriesHelper')
+              }
             />
           </Stack>
           <Typography variant="body2" color="text.secondary">

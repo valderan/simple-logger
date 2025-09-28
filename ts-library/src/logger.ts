@@ -16,6 +16,7 @@ import type {
 } from './types.js';
 import { RateLimitedQueue } from './utils/queue.js';
 import { FileQueue, type FileQueueItem } from './utils/file.js';
+import { LogLimitExceededError } from './apiClient.js';
 
 const DEFAULT_TEMPLATE_NAME = 'default';
 const DEFAULT_FILE_OPTIONS = {
@@ -397,7 +398,17 @@ export class Logger {
       body: JSON.stringify(item.body)
     });
     if (!response.ok) {
-      throw new Error(`Ошибка API: ${response.status}`);
+      let payload: { message?: string; code?: string } | null = null;
+      try {
+        payload = (await response.json()) as { message?: string; code?: string };
+      } catch {
+        payload = null;
+      }
+      if (response.status === 409 && payload?.code === 'LOG_LIMIT_EXCEEDED') {
+        throw new LogLimitExceededError(payload.message ?? 'Log storage limit exceeded');
+      }
+      const message = payload?.message ?? `Ошибка API: ${response.status}`;
+      throw new Error(message);
     }
 
     if (this.rateLimitAuto) {

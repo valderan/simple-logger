@@ -46,6 +46,7 @@
 - Приём, хранение и фильтрация логов по UUID проекта.
 - Ping-мониторинг HTTP-сервисов с ручным запуском проверок.
 - Telegram-оповещения по тегам и инцидентам.
+- Персональные лимиты хранения (`maxLogEntries`) с критическим алертом при переполнении.
 - Белый список IP, отключающий rate limit для доверенных адресов, и глобальный rate limiting для остальных клиентов.
 - Веб-клиент с тёмной/светлой темой, поиском и детальным просмотром событий.
 
@@ -58,6 +59,12 @@
 - Описание клиента: [docs/ts-library-doc/ApiClient-ru.md](docs/ts-library-doc/ApiClient-ru.md#настройки-api) · [docs/ts-library-doc/ApiClient-en.md](docs/ts-library-doc/ApiClient-en.md#api-settings)
 
 Чтобы поделиться ссылкой на бота, используйте `GET /api/settings/telegram-url` или метод `getTelegramBotUrl()` в SDK. Сервис отдаёт адрес из `BOT_URL`, либо при активном боте запрашивает username напрямую у Telegram. Подробности — в [docs/ru/logger_api_reference.md](docs/ru/logger_api_reference.md#67-get-telegram-url) и [docs/en/logger_api_reference.md](docs/en/logger_api_reference.md#67-get-telegram-url).
+
+## Ограничения Logger Core
+
+- Публичный эндпоинт `/api/logs` блокирует любые попытки записать события в системный проект `logger-system`; такие обращения фиксируются как инциденты безопасности.
+- Команды Telegram-бота (`ADD:<UUID>`) не позволяют подписаться на Logger Core, подписчики управляются только из административного интерфейса.
+- При превышении лимита `maxLogEntries` для проекта система создаёт критический лог с тегами `LOG_CAP` и `ALERT` в Logger Core и возвращает ошибку `409 Conflict` клиенту.
 
 ## Компоненты проекта
 

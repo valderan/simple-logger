@@ -84,7 +84,9 @@ all protected endpoints.
 ## Error handling
 
 When the API responds with a non-success status, `ApiClient` throws an `ApiError` instance with
-`message` and `status` properties populated from the response.
+`message` and `status` properties populated from the response. A dedicated `LogLimitExceededError`
+is raised for `409 Conflict` responses with code `LOG_LIMIT_EXCEEDED`, allowing clients to react to
+storage quotas separately.
 
 ```ts
 try {
@@ -108,7 +110,8 @@ const project = await client.createProject({
   customTags: [],
   accessLevel: 'global',
   telegramNotify: { enabled: false },
-  debugMode: false
+  debugMode: false,
+  maxLogEntries: 0
 });
 
 await client.ingestLog({

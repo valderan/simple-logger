@@ -22,7 +22,8 @@ const projectToFormValues = (project: Project): CreateProjectPayload => ({
     ...project.telegramNotify,
     recipients: project.telegramNotify.recipients ?? []
   },
-  debugMode: project.debugMode
+  debugMode: project.debugMode,
+  maxLogEntries: project.maxLogEntries
 });
 
 export const EditProjectPage = (): JSX.Element => {
@@ -113,6 +114,7 @@ export const EditProjectPage = (): JSX.Element => {
             rateLimitPerMinute={rateLimitQuery.data?.rateLimitPerMinute}
             telegramCommands={projectQuery.data.telegramCommands}
             telegramBotInfo={projectQuery.data.telegramBot}
+            maxLogEntriesReadOnly={projectQuery.data.uuid === 'logger-system'}
             secondaryActions={[
               <Button key="cancel" variant="text" onClick={() => navigate('/projects')}>
                 {t('common.cancel')}

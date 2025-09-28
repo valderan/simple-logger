@@ -18,7 +18,8 @@ async function main(): Promise<void> {
         recipients: [{ chatId: '123456', tags: ['ERROR', 'CRITICAL'] }],
         antiSpamInterval: 30
       },
-      debugMode: false
+      debugMode: false,
+      maxLogEntries: 0
     });
 
     console.log('Created project UUID:', project.uuid);

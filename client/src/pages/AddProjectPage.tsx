@@ -33,7 +33,8 @@ const emptyProjectForm: CreateProjectPayload = {
   customTags: [],
   accessLevel: 'global',
   telegramNotify: { enabled: false, recipients: [], antiSpamInterval: 15 },
-  debugMode: false
+  debugMode: false,
+  maxLogEntries: 0
 };
 
 export const AddProjectPage = (): JSX.Element => {

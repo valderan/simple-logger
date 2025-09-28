@@ -96,6 +96,31 @@ describe('Logger API', () => {
     expect(filterResponse.body.logs[0].clientIP).toBe('127.0.0.1');
   });
 
+  it('запрещает внешнюю запись в Logger Core', async () => {
+    const response = await request(app).post('/api/logs').send({
+      uuid: 'logger-system',
+      log: {
+        level: 'INFO',
+        message: 'Внешняя попытка записи',
+        tags: ['TEST']
+      }
+    });
+
+    expect(response.status).toBe(403);
+    expect(response.body.message).toMatch(/системный проект/);
+
+    const systemLog = await LogModel.findOne({
+      projectUuid: 'logger-system',
+      message: 'Blocked external log attempt to Logger Core'
+    })
+      .sort({ timestamp: -1 })
+      .lean();
+
+    expect(systemLog).not.toBeNull();
+    expect(systemLog?.tags).toEqual(expect.arrayContaining(['LOGGER_CORE']));
+    expect(systemLog?.metadata?.extra?.reason).toBe('external_write_forbidden');
+  });
+
   it('управляет белым списком IP', async () => {
     const createResponse = await request(app)
       .post('/api/settings/whitelist')
@@ -154,6 +179,59 @@ describe('Logger API', () => {
       .lean();
     expect(systemLog).not.toBeNull();
     expect(systemLog?.metadata?.extra?.issues).toMatch(/message/);
+  });
+
+  it('блокирует запись при превышении лимита логов проекта', async () => {
+    const createLimitedProject = await request(app)
+      .post('/api/projects')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        name: 'Limited Project',
+        logFormat: { level: 'string', message: 'string' },
+        customTags: ['LIMIT'],
+        telegramNotify: { enabled: false, recipients: [], antiSpamInterval: 15 },
+        debugMode: true,
+        maxLogEntries: 1
+      });
+
+    expect(createLimitedProject.status).toBe(201);
+    const limitedUuid = createLimitedProject.body.uuid;
+    expect(limitedUuid).toBeDefined();
+
+    const firstLog = await request(app).post('/api/logs').send({
+      uuid: limitedUuid,
+      log: {
+        level: 'INFO',
+        message: 'Первый лог',
+        tags: ['LIMIT']
+      }
+    });
+    expect(firstLog.status).toBe(201);
+
+    const secondLog = await request(app).post('/api/logs').send({
+      uuid: limitedUuid,
+      log: {
+        level: 'ERROR',
+        message: 'Второй лог',
+        tags: ['LIMIT']
+      }
+    });
+
+    expect(secondLog.status).toBe(409);
+    expect(secondLog.body.code).toBe('LOG_LIMIT_EXCEEDED');
+
+    const systemLog = await LogModel.findOne({
+      projectUuid: 'logger-system',
+      message: 'Log storage limit exceeded for project ' + limitedUuid
+    })
+      .sort({ timestamp: -1 })
+      .lean();
+
+    expect(systemLog).not.toBeNull();
+    expect(systemLog?.tags).toEqual(expect.arrayContaining(['LOG_CAP', 'ALERT']));
+    expect(systemLog?.metadata?.extra?.maxLogEntries).toBe(1);
+    expect(systemLog?.metadata?.extra?.projectUuid).toBe(limitedUuid);
+    expect(systemLog?.metadata?.extra?.currentCount).toBeGreaterThanOrEqual(1);
   });
 
   it('удаляет проект вместе с логами и ping-сервисами', async () => {

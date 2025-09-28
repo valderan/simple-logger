@@ -92,6 +92,9 @@ await client.login({ username: 'admin', password: 'secret' });
 - `message` — сообщение из ответа (или `HTTP <код>`).
 - `status` — HTTP-статус.
 
+Для конфликта `409` с кодом `LOG_LIMIT_EXCEEDED` выбрасывается отдельное исключение `LogLimitExceededError`,
+которое упрощает реакцию на переполнение хранилища конкретного проекта.
+
 ```ts
 try {
   await client.getProject('unknown');
@@ -114,7 +117,8 @@ const project = await client.createProject({
   customTags: [],
   accessLevel: 'global',
   telegramNotify: { enabled: false },
-  debugMode: false
+  debugMode: false,
+  maxLogEntries: 0
 });
 
 await client.ingestLog({

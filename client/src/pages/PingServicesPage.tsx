@@ -29,15 +29,7 @@ import { DataGrid, type GridCellParams, type GridColDef } from '@mui/x-data-grid
 import AutorenewIcon from '@mui/icons-material/Autorenew';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import {
-  createPingService,
-  deletePingService,
-  fetchPingServices,
-  fetchProjects,
-  logSystemEvent,
-  triggerPingCheck,
-  updatePingService
-} from '../api';
+import { createPingService, deletePingService, fetchPingServices, fetchProjects, triggerPingCheck, updatePingService } from '../api';
 import { PingService, Project } from '../api/types';
 import { LoadingState } from '../components/common/LoadingState';
 import { ErrorState } from '../components/common/ErrorState';
@@ -183,20 +175,6 @@ export const PingServicesPage = (): JSX.Element => {
       resetForm();
       setFeedback({ severity: 'success', message: t('ping.serviceCreated') });
       queryClient.invalidateQueries({ queryKey: ['ping-services', selectedUuid] });
-      try {
-        await logSystemEvent({
-          message: `Ping service "${service.name}" created for project ${selectedProject?.name ?? selectedUuid}`,
-          tags: ['PING_SERVICE', 'ADMIN_ACTION', 'CREATE'],
-          metadata: {
-            projectUuid: selectedUuid,
-            serviceId: service._id,
-            interval: service.interval,
-            url: service.url
-          }
-        });
-      } catch (error) {
-        console.error('Failed to log ping service creation', error);
-      }
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);
@@ -221,20 +199,6 @@ export const PingServicesPage = (): JSX.Element => {
       resetForm();
       setFeedback({ severity: 'success', message: t('ping.serviceUpdated') });
       queryClient.invalidateQueries({ queryKey: ['ping-services', selectedUuid] });
-      try {
-        await logSystemEvent({
-          message: `Ping service "${service.name}" updated for project ${selectedProject?.name ?? selectedUuid}`,
-          tags: ['PING_SERVICE', 'ADMIN_ACTION', 'UPDATE'],
-          metadata: {
-            projectUuid: selectedUuid,
-            serviceId: service._id,
-            interval: service.interval,
-            url: service.url
-          }
-        });
-      } catch (error) {
-        console.error('Failed to log ping service update', error);
-      }
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);
@@ -252,24 +216,10 @@ export const PingServicesPage = (): JSX.Element => {
 
   const deleteServiceMutation = useMutation({
     mutationFn: (service: PingService) => deletePingService(selectedUuid as string, service._id),
-    onSuccess: async (_, service) => {
+    onSuccess: async () => {
       setFeedback({ severity: 'success', message: t('ping.serviceDeleted') });
       setDeleteTarget(null);
       queryClient.invalidateQueries({ queryKey: ['ping-services', selectedUuid] });
-      try {
-        await logSystemEvent({
-          message: `Ping service "${service.name}" deleted from project ${selectedProject?.name ?? selectedUuid}`,
-          tags: ['PING_SERVICE', 'ADMIN_ACTION', 'DELETE'],
-          metadata: {
-            projectUuid: selectedUuid,
-            serviceId: service._id,
-            interval: service.interval,
-            url: service.url
-          }
-        });
-      } catch (error) {
-        console.error('Failed to log ping service deletion', error);
-      }
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);
@@ -282,15 +232,6 @@ export const PingServicesPage = (): JSX.Element => {
     onSuccess: async (data) => {
       queryClient.setQueryData(['ping-services', selectedUuid], data);
       setFeedback({ severity: 'success', message: t('ping.projectCheckTriggered') });
-      try {
-        await logSystemEvent({
-          message: `Manual ping check triggered for project ${selectedProject?.name ?? selectedUuid}`,
-          tags: ['PING_SERVICE', 'ADMIN_ACTION', 'CHECK'],
-          metadata: { projectUuid: selectedUuid }
-        });
-      } catch (error) {
-        console.error('Failed to log project ping check', error);
-      }
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);
@@ -303,26 +244,9 @@ export const PingServicesPage = (): JSX.Element => {
       void serviceId;
       return triggerPingCheck(selectedUuid as string);
     },
-    onSuccess: async (data, serviceId) => {
+    onSuccess: async (data) => {
       queryClient.setQueryData(['ping-services', selectedUuid], data);
-      const updatedService = data.find((service) => service._id === serviceId);
       setFeedback({ severity: 'success', message: t('ping.serviceCheckTriggered') });
-      if (updatedService) {
-        try {
-          await logSystemEvent({
-            message: `Manual ping check triggered for service "${updatedService.name}" in project ${selectedProject?.name ?? selectedUuid}`,
-            tags: ['PING_SERVICE', 'ADMIN_ACTION', 'CHECK'],
-            metadata: {
-              projectUuid: selectedUuid,
-              serviceId: updatedService._id,
-              interval: updatedService.interval,
-              url: updatedService.url
-            }
-          });
-        } catch (error) {
-          console.error('Failed to log ping service check', error);
-        }
-      }
     },
     onError: (error: unknown) => {
       const { message } = parseApiError(error);

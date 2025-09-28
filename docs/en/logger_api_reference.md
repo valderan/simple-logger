@@ -60,11 +60,14 @@ Content-Type: application/json
     "recipients": [{"chatId": "123456", "tags": ["ERROR", "CRITICAL"]}],
     "antiSpamInterval": 30
   },
-  "debugMode": false
+  "debugMode": false,
+  "maxLogEntries": 0
 }
 ```
 
 **Response `201 Created`** – project object containing the `uuid`.
+
+Use `maxLogEntries` to cap the stored log count per project. Set it to `0` to disable the limit. Logger Core always operates without a cap.
 
 ### 3.2 GET `/`
 List projects (newest first).
@@ -248,6 +251,11 @@ The service always records the originating IP in the `clientIP` field, regardles
 ```
 
 Invalid payloads are recorded inside the `logger-system` project.
+
+Other responses:
+
+- `403 Forbidden` — external attempt to ingest into Logger Core.
+- `409 Conflict` — project reached its `maxLogEntries` limit (payload includes `code = LOG_LIMIT_EXCEEDED` and the system writes a `LOG_CAP`/`ALERT` entry into Logger Core).
 
 ### 5.2 GET `/`
 Filter logs using the same parameters as `/:uuid/logs`. Requires a token.
