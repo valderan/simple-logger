@@ -8,6 +8,7 @@ import {
   Card,
   CardContent,
   Collapse,
+  Checkbox,
   Dialog,
   DialogActions,
   DialogContent,
@@ -40,9 +41,11 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ContentCopyIcon from '@mui/icons-material/ContentCopyOutlined';
 import CloseIcon from '@mui/icons-material/Close';
 import { copyToClipboard } from '../utils/clipboard';
+import { getCookie, setCookie } from '../utils/cookies';
 
 const defaultFilter: LogFilter = { uuid: '', projectUuid: undefined, logId: undefined };
 const DETAILS_MODE_STORAGE_KEY = 'logger:logsDetailsMode';
+const SHOW_METADATA_COOKIE_KEY = 'logger:logsShowMetadata';
 
 export const LogsPage = (): JSX.Element => {
   const queryClient = useQueryClient();
@@ -56,6 +59,10 @@ export const LogsPage = (): JSX.Element => {
     }
 
     return window.localStorage.getItem(DETAILS_MODE_STORAGE_KEY) === 'true';
+  });
+  const [showMetadataColumn, setShowMetadataColumn] = useState<boolean>(() => {
+    const stored = getCookie(SHOW_METADATA_COOKIE_KEY);
+    return stored === 'true';
   });
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const { t } = useTranslation();
@@ -145,93 +152,141 @@ export const LogsPage = (): JSX.Element => {
     }
   }, [detailsModeEnabled]);
 
+  const metadataColumnVisible = showMetadataColumn && !isSmDown;
+
   const columns = useMemo<GridColDef<LogEntry>[]>(
-    () => [
-      {
-        field: 'timestamp',
-        headerName: t('logs.timestampHeader'),
-        minWidth: isSmDown ? 160 : 200,
-        flex: isMdDown ? 1.1 : 0.8,
-        renderCell: (params) => (
-          <Stack spacing={0.5} sx={{ width: '100%' }}>
-            <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
-              {formatDateTime(params.row.timestamp)}
-            </Typography>
-            <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-              <Typography variant="caption" color="text.secondary">
-                {params.row.level}
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}
-              >
-                {params.row._id}
-              </Typography>
-            </Stack>
-          </Stack>
-        )
-      },
-      {
-        field: 'message',
-        headerName: t('logs.messageHeader'),
-        flex: 1.5,
-        renderCell: (params) => (
-          <Stack spacing={1} sx={{ width: '100%' }}>
-            <Typography
-              variant="body2"
-              sx={{
-                display: '-webkit-box',
-                WebkitLineClamp: 3,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-                whiteSpace: 'normal'
-              }}
-            >
-              {params.row.message}
-            </Typography>
-            {params.row.tags.length > 0 && (
-              <Typography variant="caption" color="text.secondary">
-                {t('logs.tagsLabel', { tags: params.row.tags.join(', ') })}
-              </Typography>
-            )}
-          </Stack>
-        )
-      },
-      {
-        field: 'metadata',
-        headerName: t('logs.metadataHeader'),
-        flex: 1,
-        renderCell: (params) => {
-          const metadata = params.row.metadata ?? {};
-          const ip = metadata.ip ?? t('common.notAvailable');
-          const service = metadata.service ?? t('common.notAvailable');
-          const user = metadata.user ?? t('common.notAvailable');
-          return (
+    () => {
+      const baseColumns: GridColDef<LogEntry>[] = [
+        {
+          field: 'timestamp',
+          headerName: t('logs.timestampHeader'),
+          minWidth: isSmDown ? 160 : 200,
+          flex: isMdDown ? 1.1 : 0.8,
+          renderCell: (params) => (
             <Stack spacing={0.5} sx={{ width: '100%' }}>
-              <Typography
-                variant="body2"
-                sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              >
-                {t('logs.metadata.ip', { value: ip })}
+              <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                {formatDateTime(params.row.timestamp)}
               </Typography>
-              <Typography
-                variant="body2"
-                sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              >
-                {t('logs.metadata.service', { value: service })}
-              </Typography>
-              <Typography
-                variant="body2"
-                sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-              >
-                {t('logs.metadata.user', { value: user })}
-              </Typography>
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                <Typography variant="caption" color="text.secondary">
+                  {params.row.level}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}
+                >
+                  {params.row._id}
+                </Typography>
+              </Stack>
             </Stack>
-          );
+          )
+        },
+        {
+          field: 'message',
+          headerName: t('logs.messageHeader'),
+          flex: 1.5,
+          renderCell: (params) => (
+            <Stack spacing={1} sx={{ width: '100%' }}>
+              <Typography
+                variant="body2"
+                sx={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  whiteSpace: 'normal'
+                }}
+              >
+                {params.row.message}
+              </Typography>
+              {params.row.tags.length > 0 && (
+                <Typography variant="caption" color="text.secondary">
+                  {t('logs.tagsLabel', { tags: params.row.tags.join(', ') })}
+                </Typography>
+              )}
+            </Stack>
+          )
         }
-      },
-      {
+      ];
+
+      if (metadataColumnVisible) {
+        baseColumns.push({
+          field: 'metadata',
+          headerName: t('logs.metadataHeader'),
+          flex: 1,
+          renderCell: (params) => {
+            const metadata = params.row.metadata ?? {};
+            const ip = metadata.ip ?? t('common.notAvailable');
+            const service = metadata.service ?? t('common.notAvailable');
+            const user = metadata.user ?? t('common.notAvailable');
+            const chatId = metadata.chatId;
+            const userId = metadata.userId;
+            const projectUuidMeta = metadata.projectUuid;
+            const projectSubscriptions = Array.isArray(metadata.projectSubscriptions)
+              ? metadata.projectSubscriptions
+              : [];
+            return (
+              <Stack spacing={0.5} sx={{ width: '100%' }}>
+                <Typography
+                  variant="body2"
+                  sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                >
+                  {t('logs.metadata.ip', { value: ip })}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                >
+                  {t('logs.metadata.service', { value: service })}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                >
+                  {t('logs.metadata.user', { value: user })}
+                </Typography>
+                {chatId && (
+                  <Typography
+                    variant="body2"
+                    sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {t('logs.metadata.telegramChat', { value: chatId })}
+                  </Typography>
+                )}
+                {userId && (
+                  <Typography
+                    variant="body2"
+                    sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {t('logs.metadata.telegramUser', { value: userId })}
+                  </Typography>
+                )}
+                {projectUuidMeta && (
+                  <Typography
+                    variant="body2"
+                    sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {t('logs.metadata.projectUuidMeta', { value: projectUuidMeta })}
+                  </Typography>
+                )}
+                {projectSubscriptions.length > 0 && (
+                  <Typography
+                    variant="body2"
+                    sx={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                  >
+                    {t('logs.metadata.projectSubscriptions', {
+                      value: projectSubscriptions.join(', ')
+                    })}
+                  </Typography>
+                )}
+              </Stack>
+            );
+          }
+        });
+      }
+
+      baseColumns.push({
         field: 'actions',
         headerName: t('logs.actionsHeader'),
         minWidth: isSmDown ? 180 : 220,
@@ -282,16 +337,20 @@ export const LogsPage = (): JSX.Element => {
             </Box>
           );
         }
-      }
-    ],
-    [deletingLogId, handleCopyLog, isDeleteLogPending, isMdDown, isSmDown, mutateDeleteLog, t]
-  );
+      });
 
-  const columnVisibilityModel = useMemo(
-    () => ({
-      metadata: !isSmDown
-    }),
-    [isSmDown]
+      return baseColumns;
+    },
+    [
+      deletingLogId,
+      handleCopyLog,
+      isDeleteLogPending,
+      isMdDown,
+      isSmDown,
+      metadataColumnVisible,
+      mutateDeleteLog,
+      t
+    ]
   );
 
   const handleDetailsModeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -301,6 +360,12 @@ export const LogsPage = (): JSX.Element => {
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(DETAILS_MODE_STORAGE_KEY, isEnabled ? 'true' : 'false');
     }
+  };
+
+  const handleShowMetadataChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = event.target.checked;
+    setShowMetadataColumn(isChecked);
+    setCookie(SHOW_METADATA_COOKIE_KEY, isChecked ? 'true' : 'false');
   };
 
   const handleCellClick = useCallback<GridEventListener<'cellClick'>>(
@@ -395,7 +460,21 @@ export const LogsPage = (): JSX.Element => {
       return;
     }
     const csv = [
-      ['timestamp', 'level', 'message', 'tags', 'ip', 'service', 'user', 'projectUuid', '_id'].join(';'),
+      [
+        'timestamp',
+        'level',
+        'message',
+        'tags',
+        'ip',
+        'service',
+        'user',
+        'chatId',
+        'userId',
+        'projectUuid',
+        'metadataProjectUuid',
+        'metadataSubscriptions',
+        '_id'
+      ].join(';'),
       ...rows.map((row) =>
         [
           formatDateTime(row.timestamp),
@@ -405,7 +484,13 @@ export const LogsPage = (): JSX.Element => {
           row.metadata?.ip ?? '',
           row.metadata?.service ?? '',
           row.metadata?.user ?? '',
+          row.metadata?.chatId ?? '',
+          row.metadata?.userId ?? '',
           row.projectUuid,
+          row.metadata?.projectUuid ?? '',
+          Array.isArray(row.metadata?.projectSubscriptions)
+            ? row.metadata?.projectSubscriptions.join(',')
+            : '',
           row._id
         ].join(';')
       )
@@ -597,10 +682,23 @@ export const LogsPage = (): JSX.Element => {
                   {bulkDeleteMutation.isPending ? t('logs.deleting') : t('logs.deleteByFilter')}
                 </Button>
               </Stack>
-              <FormControlLabel
-                control={<Switch checked={detailsModeEnabled} onChange={handleDetailsModeChange} color="primary" />}
-                label={t('logs.detailsToggleLabel')}
-              />
+              <Stack spacing={1} alignItems="flex-start">
+                <FormControlLabel
+                  control={<Switch checked={detailsModeEnabled} onChange={handleDetailsModeChange} color="primary" />}
+                  label={t('logs.detailsToggleLabel')}
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={showMetadataColumn}
+                      onChange={handleShowMetadataChange}
+                      color="primary"
+                      disabled={isSmDown}
+                    />
+                  }
+                  label={t('logs.metadataToggleLabel')}
+                />
+              </Stack>
             </Stack>
             {logsQuery.isLoading && <LoadingState label={t('common.loadingLogs')} />}
             {logsQuery.isError && <ErrorState message={t('logs.logsLoadError')} onRetry={() => logsQuery.refetch()} />}
@@ -623,7 +721,6 @@ export const LogsPage = (): JSX.Element => {
                     rows={displayLogs}
                     columns={columns}
                     getRowId={(row) => row._id}
-                    columnVisibilityModel={columnVisibilityModel}
                     autoHeight={isSmDown}
                     getRowHeight={() => 'auto'}
                     pageSizeOptions={[10, 25, 50]}
@@ -725,6 +822,28 @@ export const LogsPage = (): JSX.Element => {
                 </Typography>
                 <Typography variant="body2">
                   {t('logs.metadata.user', { value: selectedLog.metadata?.user ?? t('common.notAvailable') })}
+                </Typography>
+                <Typography variant="body2">
+                  {t('logs.metadata.telegramChat', {
+                    value: selectedLog.metadata?.chatId ?? t('common.notAvailable')
+                  })}
+                </Typography>
+                <Typography variant="body2">
+                  {t('logs.metadata.telegramUser', {
+                    value: selectedLog.metadata?.userId ?? t('common.notAvailable')
+                  })}
+                </Typography>
+                <Typography variant="body2">
+                  {t('logs.metadata.projectUuidMeta', {
+                    value: selectedLog.metadata?.projectUuid ?? t('common.notAvailable')
+                  })}
+                </Typography>
+                <Typography variant="body2">
+                  {t('logs.metadata.projectSubscriptions', {
+                    value: selectedLog.metadata?.projectSubscriptions?.length
+                      ? selectedLog.metadata.projectSubscriptions.join(', ')
+                      : t('common.notAvailable')
+                  })}
                 </Typography>
               </Stack>
               <Stack spacing={1}>

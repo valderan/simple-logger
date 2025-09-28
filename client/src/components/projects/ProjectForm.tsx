@@ -242,7 +242,7 @@ export const ProjectForm = ({
 
         <Stack spacing={2}>
           <Typography variant="h6">{t('projectForm.tagsTitle')}</Typography>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
             <FormControl sx={{ minWidth: { xs: '100%', md: 220 } }}>
               <InputLabel id="access-level-label">{t('projectForm.accessLevel')}</InputLabel>
               <Select
@@ -322,7 +322,7 @@ export const ProjectForm = ({
         </Stack>
 
         <Stack spacing={2}>
-          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+          <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -356,7 +356,7 @@ export const ProjectForm = ({
               <Typography variant="subtitle1">
                 {t('projectForm.recipientsCount', { count: formState.telegramNotify.recipients.length })}
               </Typography>
-              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'center' }}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} alignItems={{ xs: 'stretch', md: 'flex-start' }}>
                 <TextField
                   label={t('projectForm.chatId')}
                   value={recipientInput.chatId}

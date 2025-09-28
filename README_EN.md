@@ -48,6 +48,7 @@ Read the full guides in the repository:
 - Per-project retention limits (`maxLogEntries`) with critical alerts when the quota is exhausted.
 - IP allowlist disables the rate limiter for trusted addresses, while global rate limiting protects all other clients.
 - Web client with dark/light themes, search, and detailed log views.
+- Telegram system logs automatically add `chatId`, `userId`, `projectUuid`, and (for multi-project chats) `projectSubscriptions` so operators can trace issues to the exact conversation.
 
 ## Telegram bot status check
 

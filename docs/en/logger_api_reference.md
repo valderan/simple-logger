@@ -243,12 +243,21 @@ The service always records the originating IP in the `clientIP` field, regardles
     "ip": "10.0.0.5",
     "service": "billing",
     "user": "user-1",
+    "chatId": "532184920",
+    "userId": "532184920",
+    "projectUuid": "da3c9c2a-07f5-4b39-8bd6-74ae3de487d1",
+    "projectSubscriptions": [
+      "da3c9c2a-07f5-4b39-8bd6-74ae3de487d1",
+      "e9f1db85-0b9f-4890-8c0a-e0f249c66721"
+    ],
     "extra": {"orderId": "A-42"}
   },
   "clientIP": "203.0.113.10",
   "rateLimitPerMinute": 120
 }
 ```
+
+Fields `metadata.chatId`, `metadata.userId`, and `metadata.projectUuid` are populated automatically for Telegram events. When a chat subscribes to several projects the response also includes `metadata.projectSubscriptions` with every related UUID.
 
 Invalid payloads are recorded inside the `logger-system` project.
 

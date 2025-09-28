@@ -43,6 +43,14 @@ export interface LogMetadata {
   service?: string;
   /** Идентификатор пользователя, связанного с событием. */
   user?: string;
+  /** Идентификатор чата Telegram, ассоциированного с событием. */
+  chatId?: string;
+  /** Идентификатор пользователя Telegram, инициировавшего событие. */
+  userId?: string;
+  /** UUID проекта, связанного с системным событием. */
+  projectUuid?: string;
+  /** Перечень подписок пользователя Telegram, если их несколько. */
+  projectSubscriptions?: string[];
   /** Дополнительные произвольные данные. */
   extra?: Record<string, unknown>;
   /** Позволяет расширять структуру пользовательскими полями. */

@@ -27,7 +27,7 @@ MongoDB is used as the primary datastore. Key collections and fields are listed 
 | `message` | string | Log message. |
 | `tags` | string[] | Tags associated with the event. |
 | `timestamp` | date | Event time (indexed). |
-| `metadata` | object | IP, service, user, and extra context. |
+| `metadata` | object | IP, service, user, Telegram chat/user IDs, project UUIDs, and extra context. |
 
 ## Collection `pingservices`
 

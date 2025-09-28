@@ -7,8 +7,18 @@ export interface LogMetadata {
   service?: string;
   /** Пользователь или сессия. */
   user?: string;
+  /** Идентификатор чата Telegram, связанный с событием. */
+  chatId?: string;
+  /** Идентификатор пользователя Telegram, инициировавшего событие. */
+  userId?: string;
+  /** UUID проекта, к которому относится системный лог. */
+  projectUuid?: string;
+  /** Список подписок пользователя Telegram, если их несколько. */
+  projectSubscriptions?: string[];
   /** Дополнительные данные. */
   extra?: Record<string, unknown>;
+  /** Позволяет хранить дополнительные произвольные поля. */
+  [key: string]: unknown;
 }
 
 export interface LogAttributes {
@@ -35,6 +45,10 @@ const LogSchema = new Schema<LogDocument>({
     ip: { type: String },
     service: { type: String },
     user: { type: String },
+    chatId: { type: String },
+    userId: { type: String },
+    projectUuid: { type: String },
+    projectSubscriptions: { type: [String] },
     extra: { type: Schema.Types.Mixed }
   }
 }, { timestamps: false });

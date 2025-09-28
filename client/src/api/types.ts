@@ -38,7 +38,12 @@ export interface LogMetadata {
   ip?: string;
   service?: string;
   user?: string;
+  chatId?: string;
+  userId?: string;
+  projectUuid?: string;
+  projectSubscriptions?: string[];
   extra?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface LogEntry {

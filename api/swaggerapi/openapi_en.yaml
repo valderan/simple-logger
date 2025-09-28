@@ -1107,6 +1107,22 @@ paths:
           type: string
         user:
           type: string
+        chatId:
+          type: string
+          description: Telegram chat identifier related to the event.
+        userId:
+          type: string
+          description: Telegram user identifier of the actor.
+        projectUuid:
+          type: string
+          format: uuid
+          description: Project UUID associated with the system log entry.
+        projectSubscriptions:
+          type: array
+          description: List of Telegram project subscriptions for the chat.
+          items:
+            type: string
+            format: uuid
         extra:
           type: object
           additionalProperties: true

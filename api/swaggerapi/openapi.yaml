@@ -1111,6 +1111,22 @@ components:
           type: string
         user:
           type: string
+        chatId:
+          type: string
+          description: Идентификатор чата Telegram.
+        userId:
+          type: string
+          description: Идентификатор пользователя Telegram.
+        projectUuid:
+          type: string
+          format: uuid
+          description: UUID проекта, к которому относится системный лог.
+        projectSubscriptions:
+          type: array
+          description: Список подписок пользователя Telegram.
+          items:
+            type: string
+            format: uuid
         extra:
           type: object
           additionalProperties: true
